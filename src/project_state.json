@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Whisper: a decentralized, community-empowered civic accountability platform on Internet Computer (ICP), designed as a hierarchy of hyper-local to national “installations” with modular canisters, stable-memory persistence, cycle-efficient operation, and developer-controlled deployment/upgrades (no unilateral canister creation/shutdown by the platform).",
+  "architectural_notes": [
+    "Platform runs on Internet Computer (ICP) with modular, upgradeable canisters; persistence must survive upgrades via stable memory patterns.",
+    "Developer-controlled deployment/upgrade model: do not assume the app can auto-create/shutdown canisters; use dfx/scripts controlled by developers.",
+    "Hierarchy of installations (City → County → State → National) with explicit escalation/linking interfaces from day one.",
+    "Design for cycle efficiency: prefer query calls for reads, batch work/notifications, and include low-cycle monitoring/alerts.",
+    "Resilience plan: periodic snapshots/exports for recovery (e.g., to IPFS/Arweave via oracles) plus migration/import hooks if a canister runs out of cycles.",
+    "Draft/dev builds may rely on heap memory for ephemeral/working state only; production/live data that must persist across upgrades must be stored in stable memory (source of truth), following ICP stable memory upgrade patterns."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-create-a-top-level-architecture-document-that-confirms-the-whisper-vision-and-translates-it-into-an-icp-aligned-base-architecture-no-full-feature-implementation-the-document-must-explicitly-cover-1-hierarchical-installations-city-county-state-national-concept-2-citizen-led-founding-and-provisional-activation-milestones-3-modular-subsystems-with-escalation-linking-hooks-from-day-one-and-4-integrity-equality-principles-e-g-immutable-auditable-logs-impact-based-rewards-as-a-future-module",
+      "title": "Create a top-level architecture document that confirms the Whisper vision and translates it into an ICP-aligned base architecture (no full feature implementation). The document must explicitly cover: (1) hierarchical “installations” (city→county→state→national) concept, (2) citizen-led founding and provisional activation milestones, (3) modular subsystems with escalation/linking hooks from day one, and (4) integrity/equality principles (e.g., immutable/auditable logs; impact-based rewards as a future module).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-include-a-text-based-ascii-system-diagram-that-shows-the-intended-components-and-call-flows-on-icp-frontend-internet-identity-a-top-level-controller-governance-canister-installation-canisters-e-g-whisperdavenport-ia-shared-modules-services-e-g-jurisdiction-blueprint-db-hook-inter-installation-escalation-calls-and-optional-snapshot-export-oracle-boundary-described-as-external-off-chain-developer-operated",
+      "title": "Include a text-based (ASCII) system diagram that shows the intended components and call flows on ICP: frontend, Internet Identity, a top-level controller/governance canister, installation canisters (e.g., WhisperDavenport-IA), shared modules/services (e.g., jurisdiction blueprint DB hook), inter-installation escalation calls, and optional snapshot/export oracle boundary (described as external/off-chain, developer-operated).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-outline-a-phased-development-plan-that-starts-with-a-single-prototype-installation-e-g-whisperdavenport-ia-and-explicitly-lists-what-is-in-phase-0-1-vs-later-phases-the-plan-must-include-hooks-for-scaling-installation-registry-jurisdiction-resolution-interface-escalation-api-even-if-later-phases-are-not-implemented-now",
+      "title": "Outline a phased development plan that starts with a single prototype installation (e.g., WhisperDavenport-IA) and explicitly lists what is in Phase 0/1 vs later phases. The plan must include “hooks for scaling” (installation registry, jurisdiction resolution interface, escalation API) even if later phases are not implemented now.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-provide-a-sample-developer-controlled-deployment-configuration-example-include-a-sample-dfx-json-snippet-and-a-short-section-describing-how-developers-would-deploy-upgrade-the-controller-and-an-installation-canister-and-later-add-more-without-assuming-the-platform-can-create-shutdown-canisters-keep-it-as-documentation-snippet-not-a-full-automation-suite",
+      "title": "Provide a sample developer-controlled deployment configuration example: include a sample dfx.json snippet and a short section describing how developers would deploy/upgrade the controller and an installation canister (and later add more), without assuming the platform can create/shutdown canisters. Keep it as documentation/snippet, not a full automation suite.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-coherent-distinctive-visual-theme-direction-for-the-initial-ui-shell-no-feature-ui-required-define-a-consistent-palette-typography-spacing-and-component-style-guidelines-suitable-for-a-civic-accountability-platform-avoid-a-blue-purple-default-palette-unless-explicitly-requested",
+      "title": "Add a coherent, distinctive visual theme direction for the initial UI shell (no feature UI required): define a consistent palette, typography, spacing, and component style guidelines suitable for a civic accountability platform. Avoid a blue/purple default palette unless explicitly requested.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-visible-create-instance-entry-point-on-the-existing-whisperdavenport-ia-frontend-shell-no-backend-integration-yet-place-it-in-the-primary-ui-e-g-header-actions-area-near-the-existing-connect-button-and-or-in-a-prominent-section-of-the-main-page-so-users-can-discover-the-citizen-led-instance-creation-flow",
+      "title": "Add a visible “Create Instance” entry point on the existing WhisperDavenport-IA frontend shell (no backend integration yet). Place it in the primary UI (e.g., header actions area near the existing “Connect” button, and/or in a prominent section of the main page) so users can discover the citizen-led instance creation flow.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-minimal-ui-response-for-the-create-instance-entry-point-ui-only-on-click-show-a-lightweight-placeholder-view-modal-dialog-sheet-or-inline-panel-that-clearly-states-that-instance-creation-will-be-implemented-in-the-next-step-and-includes-a-brief-plain-language-description-of-what-an-instance-is-city-county-state-whisper-site",
+      "title": "Implement a minimal UI response for the “Create Instance” entry point (UI-only). On click, show a lightweight placeholder view (modal/dialog/sheet or inline panel) that clearly states that instance creation will be implemented in the next step, and includes a brief plain-language description of what an “instance” is (city/county/state Whisper site).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Produce high-level base architecture for Whisper (ICP): confirm vision + text/ASCII system diagram",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Define modular ICP canister patterns for Whisper (controller + installation/sub-site canisters, escalation interfaces, jurisdiction DB hooks)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Define data persistence/backup approach on ICP (stable memory upgrade strategy, snapshot/export plan to off-chain storage via oracles, recovery/migration hooks)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Define cycle management strategy (cycle-efficient queries/updates, low-cycle warnings, developer alert/top-up hooks)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Outline phased development plan starting with a single prototype installation (e.g., WhisperDavenport-IA) with scaling hooks",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Provide developer-controlled deployment configuration example (e.g., sample dfx.json snippet / scripts) aligned with constraints",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Define modular ICP canister base patterns for Whisper that align with Caffeine/ICP constraints: a single-actor Motoko codebase in this project, developer-controlled canister creation/deployment (no platform-initiated creation/shutdown), and upgrade-friendly state management. Provide suggested module boundaries and interfaces (as prose + interface sketches), including: controller/registry responsibilities, installation responsibilities, escalation endpoints, and jurisdiction blueprint DB hooks (expandable to state/federal).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Specify the data persistence and upgrade strategy for ICP: what must live in stable memory, how upgrades are handled (preupgrade/postupgrade patterns), how to avoid “bird’s nest” data coupling, and how to support future migration to new canisters if cycles run out or a canister must be replaced. Include a snapshot/export plan described at a high level (developer-operated/off-chain via oracles) and an import/recovery hook concept.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Define a cycle management strategy aligned with ICP best practices: prefer queries for reads, batch/aggregate expensive operations, avoid unbounded loops, add low-cycle warning/monitoring guidance, and describe developer alert/top-up hooks (developer-operated). Include guidance for cycle budgeting per installation and how to prevent outages due to cycle depletion.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Citizen-led sub-site instance creation flow (incremental slices): start with Step 1 adding a “Create Instance” button on the WhisperDavenport-IA shell (no backend yet), then expand to form, registry canister duplicate check, and admin moderation",
+      "reqIds": [],
+      "status": "in_progress"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Whisper",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

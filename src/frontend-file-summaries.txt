@@ -1,0 +1,11 @@
+{
+  "frontend/docs/ARCHITECTURE.md": "Comprehensive architecture document confirming Whisper's vision, defining hierarchical installations (city→county→state→national), ICP canister mapping, modular subsystems with scaling hooks, and integrity principles. Includes ASCII system diagram showing component relationships and call flows.",
+  "frontend/docs/PHASED_PLAN.md": "Detailed phased development plan with 8 phases from architecture foundation through advanced features, each with explicit deliverables, architectural hooks, non-goals, and success criteria to prevent scope creep.",
+  "frontend/docs/DEPLOYMENT.md": "Developer-controlled deployment guide including sample dfx.json configuration, deployment steps for local and mainnet, upgrade workflow with stable memory patterns, recovery paths, cycle management strategy, and best practices.",
+  "frontend/docs/STYLE_GUIDE.md": "Visual design system defining Whisper's civic aesthetic with slate/red/green palette (avoiding blue/purple), Inter typography, intentional border radius variation, subtle shadows, accessibility requirements, and component styling guidelines.",
+  "frontend/src/index.css": "Global styles implementing the Whisper civic theme with OKLCH color tokens for light/dark modes, Inter and JetBrains Mono fonts, typography scale, focus states, custom scrollbar, and status badge component classes.",
+  "frontend/tailwind.config.js": "Tailwind configuration extending theme with Whisper color tokens, custom border radii (sharp/subtle/moderate), shadow utilities, Inter/JetBrains Mono font families, and animation keyframes.",
+  "frontend/src/App.tsx": "Main app shell with header, hero section, architecture overview, core principles, and hierarchical installations preview; now includes \"Create Instance\" button in header and prominent CTA card that opens a UI-only placeholder via local state.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks file with example useIsParent hook demonstrating backend integration pattern for future feature development.",
+  "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx": "Dismissible placeholder card component that explains instance creation concept (city/county/state Whisper sites) with visual examples and descriptions; purely informational UI with no backend integration."
+}

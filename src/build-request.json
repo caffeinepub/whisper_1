@@ -1,0 +1,73 @@
+{
+  "kind": "build_request",
+  "title": "Step 1: Add “Create Instance” entry point button to the existing Whisper shell (no backend)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-9",
+      "text": "Add a visible “Create Instance” entry point on the existing WhisperDavenport-IA frontend shell (no backend integration yet). Place it in the primary UI (e.g., header actions area near the existing “Connect” button, and/or in a prominent section of the main page) so users can discover the citizen-led instance creation flow.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Start with step 1 of recommended list"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A button or link labeled exactly “Create Instance” is visible on the main app shell without requiring navigation or authentication.",
+        "Clicking “Create Instance” does not call the backend and does not require any canister changes.",
+        "The entry point is styled consistently with the existing theme (Tailwind + shadcn components already used in App.tsx)."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "Implement a minimal UI response for the “Create Instance” entry point (UI-only). On click, show a lightweight placeholder view (modal/dialog/sheet or inline panel) that clearly states that instance creation will be implemented in the next step, and includes a brief plain-language description of what an “instance” is (city/county/state Whisper site).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Start with step 1 of recommended list"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking “Create Instance” opens a placeholder UI (modal/dialog/sheet/inline card) without navigating away or breaking the page layout.",
+        "The placeholder contains English user-facing text that mentions city/county/state as possible instance levels.",
+        "The placeholder UI can be dismissed/closed and returns the user to the main shell state.",
+        "No form fields, duplicate checks, registry calls, or admin screens are implemented in this step."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any frontend files under the immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "This step must be frontend-only: do not add Motoko canister methods, do not update backend/main.mo, and do not add deployment/dfx steps for this slice.",
+    "Do not rebuild or alter unrelated planned features (AI assistant, issue reporting, Issue Projects, user roles/verification, dashboards, tokenomics/WSP) beyond what is strictly necessary to display the new button and placeholder UI.",
+    "Use English for any user-facing text."
+  ],
+  "nonGoals": [
+    "Instance creation form fields (name/type/description).",
+    "Registry canister creation (check_duplicate/create_provisional).",
+    "Connecting the UI to any backend actor calls.",
+    "Admin moderation dashboard or actions (approve/reject/delete/merge).",
+    "Verification gating (verified_basic) and any authentication changes.",
+    "Parent jurisdiction suggestion logic.",
+    "Notifications to admins or WSP rewards hooks."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "backend/main.mo": "Defines installation and effect types, stores installations in an array, and provides a query to check if a given parent matches any installation's parent field.",
+  "feature_evidence.json": "Feature evidence report listing planned UI features, associated files, components, and test IDs for the Create Instance entry point and placeholder UI.",
+  "frontend-file-summaries.txt": "Prewritten summaries mapping various frontend documentation and source files to concise descriptions for build planning.",
+  "frontend/docs/ARCHITECTURE.md": "Architecture document detailing Whisper’s vision, hierarchical installation model, ICP canister mapping, and modular subsystem design.",
+  "frontend/docs/DEPLOYMENT.md": "Developer-focused deployment guide describing dfx configuration, deployment steps, upgrade workflow, and cycle management.",
+  "frontend/docs/PHASED_PLAN.md": "Phased development plan outlining deliverables, non-goals, and scaling hooks from prototype to multi-installation architecture.",
+  "frontend/docs/STYLE_GUIDE.md": "Visual style guide defining Whisper’s civic design philosophy, color system, typography, and UI styling principles.",
+  "frontend/index.css": "Global Tailwind-based stylesheet defining theme tokens, light/dark mode variables, and base element styling.",
+  "frontend/index.html": "HTML entry point containing the root mount point and script bootstrapping the frontend app.",
+  "frontend/src/App.tsx": "Main app layout rendering the header, hero content, create-instance CTA, and conditional placeholder card.",
+  "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx": "Displays a placeholder card explaining future instance creation with examples and a close button.",
+  "frontend/src/hooks/useActor.ts": "Creates and manages a backend actor tied to the user’s identity, refetching queries when it changes.",
+  "frontend/src/hooks/useInternetIdentity.ts": "Provides Internet Identity authentication state, login, and identity persistence through a React context.",
+  "frontend/src/hooks/useQueries.ts": "Defines sample React Query hook for checking parent-child relationships using the backend actor.",
+  "frontend/src/index.css": "Global Tailwind-based styles defining the civic color system, typography, and theming variables.",
+  "frontend/src/main.tsx": "Bootstrap file wiring React, React Query, Internet Identity provider, and global styles.",
+  "frontend/tailwind.config.js": "Tailwind configuration extending colors, themes, typography, and custom utilities for the app.",
+  "project_state.json": "Defines the project's state, vision, architecture constraints, and requirements for a decentralized ICP-based hierarchical civic platform. Lists architectural notes, existing features, and design principles for modular, upgradeable canisters with stable-memory persistence."
+}

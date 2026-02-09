@@ -1,0 +1,42 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-a-visible-create-instance-entry-point-on-the-existing-whisperdavenport-ia-frontend-shell-no-backend-integration-yet-place-it-in-the-primary-ui-e-g-header-actions-area-near-the-existing-connect-button-and-or-in-a-prominent-section-of-the-main-page-so-users-can-discover-the-citizen-led-instance-creation-flow",
+      "featureTitle": "Add a visible “Create Instance” entry point on the existing WhisperDavenport-IA frontend shell (no backend integration yet). Place it in the primary UI (e.g., header actions area near the existing “Connect” button, and/or in a prominent section of the main page) so users can discover the citizen-led instance creation flow.",
+      "files": [
+        "frontend/src/App.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-minimal-ui-response-for-the-create-instance-entry-point-ui-only-on-click-show-a-lightweight-placeholder-view-modal-dialog-sheet-or-inline-panel-that-clearly-states-that-instance-creation-will-be-implemented-in-the-next-step-and-includes-a-brief-plain-language-description-of-what-an-instance-is-city-county-state-whisper-site",
+      "featureTitle": "Implement a minimal UI response for the “Create Instance” entry point (UI-only). On click, show a lightweight placeholder view (modal/dialog/sheet or inline panel) that clearly states that instance creation will be implemented in the next step, and includes a brief plain-language description of what an “instance” is (city/county/state Whisper site).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

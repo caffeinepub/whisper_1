@@ -1,0 +1,50 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Step 1: Create Instance entry point + UI-only placeholder in Whisper shell",
+  "requirements": [
+    {
+      "id": "REQ-9",
+      "summary": "Add a visible “Create Instance” entry point in the primary WhisperDavenport-IA UI (header actions and/or prominent main section) with no backend calls.",
+      "acceptanceCriteria": [
+        "A button or link labeled exactly “Create Instance” is visible on the main app shell without requiring navigation or authentication.",
+        "Clicking “Create Instance” does not call the backend and does not require any canister changes.",
+        "The entry point is styled consistently with the existing theme (Tailwind + shadcn components already used in App.tsx)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add a new header action Button labeled exactly “Create Instance” near the existing “Connect” button, wired to UI-only state (no actor usage, no network calls). Use the shadcn-ui Button component already used in this file for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add a prominent “Create Instance” call-to-action in the main content area (e.g., near the hero section) that triggers the same UI-only open state as the header button, ensuring discoverability without navigation or authentication. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "On click of “Create Instance”, show a dismissible lightweight UI-only placeholder explaining instance creation is coming next step and defining an “instance” as a city/county/state Whisper site.",
+      "acceptanceCriteria": [
+        "Clicking “Create Instance” opens a placeholder UI (modal/dialog/sheet/inline card) without navigating away or breaking the page layout.",
+        "The placeholder contains English user-facing text that mentions city/county/state as possible instance levels.",
+        "The placeholder UI can be dismissed/closed and returns the user to the main shell state.",
+        "No form fields, duplicate checks, registry calls, or admin screens are implemented in this step."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+          "operation": "create",
+          "description": "Create a lightweight, dismissible placeholder UI component rendered as an inline panel/card (no routing) that contains English text describing that instance creation will be implemented in the next step and defines an “instance” as a city/county/state Whisper site. Use shadcn-ui Card and Button components for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire the CreateInstancePlaceholderCard into the existing shell using local React state (open/closed). Clicking either “Create Instance” entry point opens it; a Close/Dismiss action hides it and restores the main shell state. Keep behavior UI-only: do not import/use backend actor hooks or queries. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}
