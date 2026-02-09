@@ -1,60 +1,77 @@
 {
   "kind": "build_request",
-  "title": "Step 1: Add “Create Instance” entry point button to the existing Whisper shell (no backend)",
+  "title": "Complete Steps 8–9: Proposal Details + Approve/Reject Moderation Flow",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-9",
-      "text": "Add a visible “Create Instance” entry point on the existing WhisperDavenport-IA frontend shell (no backend integration yet). Place it in the primary UI (e.g., header actions area near the existing “Connect” button, and/or in a prominent section of the main page) so users can discover the citizen-led instance creation flow.",
+      "id": "REQ-20",
+      "text": "Implement/finish Step 8 by ensuring the Proposals list UI is reachable from the existing app shell and reliably renders all Create Instance proposals returned by the backend in a clear list with loading, empty, and error states (all user-facing text in English).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-3"
         ],
         "quotes": [
-          "Start with step 1 of recommended list"
+          "now complete steps 8 and 9 together"
         ]
       },
       "acceptanceCriteria": [
-        "A button or link labeled exactly “Create Instance” is visible on the main app shell without requiring navigation or authentication.",
-        "Clicking “Create Instance” does not call the backend and does not require any canister changes.",
-        "The entry point is styled consistently with the existing theme (Tailwind + shadcn components already used in App.tsx)."
+        "From the main app shell, a user can navigate to a Proposals view/section without needing a page reload.",
+        "While proposals are loading, a visible loading state is shown.",
+        "If the backend returns zero proposals, an English empty-state message is shown.",
+        "If the backend call fails, an English error message is shown.",
+        "When proposals exist, the list shows at least: instance name, proposer, and current status for each proposal."
       ]
     },
     {
-      "id": "REQ-10",
-      "text": "Implement a minimal UI response for the “Create Instance” entry point (UI-only). On click, show a lightweight placeholder view (modal/dialog/sheet or inline panel) that clearly states that instance creation will be implemented in the next step, and includes a brief plain-language description of what an “instance” is (city/county/state Whisper site).",
+      "id": "REQ-21",
+      "text": "Implement/finish Step 8 by providing a proposal detail view that lets a user inspect a single proposal in full, using the backend query capability (either from list data or by fetching by instance name), with clear loading/error handling and English user-facing text.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-3"
         ],
         "quotes": [
-          "Start with step 1 of recommended list"
+          "now complete steps 8 and 9 together"
         ]
       },
       "acceptanceCriteria": [
-        "Clicking “Create Instance” opens a placeholder UI (modal/dialog/sheet/inline card) without navigating away or breaking the page layout.",
-        "The placeholder contains English user-facing text that mentions city/county/state as possible instance levels.",
-        "The placeholder UI can be dismissed/closed and returns the user to the main shell state.",
-        "No form fields, duplicate checks, registry calls, or admin screens are implemented in this step."
+        "Each proposal in the list has a clear action (e.g., a button) to open a detail view for that proposal.",
+        "The detail view displays, at minimum: instance name, proposer, description, and status.",
+        "If the detail fetch is in progress, a loading state is shown inside the detail view.",
+        "If the detail fetch fails, an English error message is shown inside the detail view."
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "text": "Implement/finish Step 9 by adding a minimal approve/reject moderation action for proposals: provide frontend controls to update status (e.g., Pending → Approved/Rejected) and add corresponding backend validation so updates are restricted to supported statuses and are only allowed from Pending. UI must show clear English success/failure feedback and reflect updated status after mutation.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "now complete steps 8 and 9 together"
+        ]
+      },
+      "acceptanceCriteria": [
+        "In the proposal detail view, when a proposal is Pending, the user can choose Approve or Reject.",
+        "When the status update succeeds, the UI shows an English success message and the updated status is visible without a full page reload.",
+        "When the status update fails (e.g., proposal not found, invalid status, or trying to update a non-Pending proposal), the UI shows an English error message.",
+        "Backend rejects unsupported statuses (anything other than Pending/Approved/Rejected) and rejects transitions from non-Pending statuses (returns failure).",
+        "After a successful status update, the proposals list reflects the updated status (via query invalidation/refetch)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any frontend files under the immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "This step must be frontend-only: do not add Motoko canister methods, do not update backend/main.mo, and do not add deployment/dfx steps for this slice.",
-    "Do not rebuild or alter unrelated planned features (AI assistant, issue reporting, Issue Projects, user roles/verification, dashboards, tokenomics/WSP) beyond what is strictly necessary to display the new button and placeholder UI.",
-    "Use English for any user-facing text."
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Do not modify files under frontend/src/components/ui or other frontend immutablePaths listed in SYSTEM_CONTEXT; compose existing UI components instead.",
+    "All user-facing text must be in English."
   ],
   "nonGoals": [
-    "Instance creation form fields (name/type/description).",
-    "Registry canister creation (check_duplicate/create_provisional).",
-    "Connecting the UI to any backend actor calls.",
-    "Admin moderation dashboard or actions (approve/reject/delete/merge).",
-    "Verification gating (verified_basic) and any authentication changes.",
-    "Parent jurisdiction suggestion logic.",
-    "Notifications to admins or WSP rewards hooks."
+    "Do not implement real governance, role-based access control, or Internet Identity gating for approving/rejecting (demo-only controls are sufficient).",
+    "Do not implement canister creation or installation deployment as part of approving a proposal.",
+    "Do not add notifications, real-time updates, or external integrations."
   ],
   "imageRequirements": {
     "required": [],

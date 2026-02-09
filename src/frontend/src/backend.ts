@@ -89,11 +89,65 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface backendInterface {
-    isParent(childId: Principal, parentId: Principal): Promise<boolean>;
+export interface Proposal {
+    status: string;
+    description: string;
+    proposer: Principal;
+    instanceName: string;
 }
+export interface backendInterface {
+    getAllProposals(): Promise<Array<[string, Proposal]>>;
+    getProposal(instanceName: string): Promise<Proposal | null>;
+    isInstanceNameTaken(instanceName: string): Promise<boolean>;
+    isParent(childId: Principal, parentId: Principal): Promise<boolean>;
+    submitProposal(description: string, instanceName: string, status: string): Promise<boolean>;
+    updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
+}
+import type { Proposal as _Proposal } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async getAllProposals(): Promise<Array<[string, Proposal]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllProposals();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllProposals();
+            return result;
+        }
+    }
+    async getProposal(arg0: string): Promise<Proposal | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProposal(arg0);
+                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProposal(arg0);
+            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async isInstanceNameTaken(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isInstanceNameTaken(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isInstanceNameTaken(arg0);
+            return result;
+        }
+    }
     async isParent(arg0: Principal, arg1: Principal): Promise<boolean> {
         if (this.processError) {
             try {
@@ -108,6 +162,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async submitProposal(arg0: string, arg1: string, arg2: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitProposal(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitProposal(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async updateProposalStatus(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateProposalStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateProposalStatus(arg0, arg1);
+            return result;
+        }
+    }
+}
+function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Proposal]): Proposal | null {
+    return value.length === 0 ? null : value[0];
 }
 export interface CreateActorOptions {
     agent?: Agent;

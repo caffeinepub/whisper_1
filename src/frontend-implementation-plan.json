@@ -1,48 +1,88 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Step 1: Create Instance entry point + UI-only placeholder in Whisper shell",
+  "title": "Steps 8–9: Proposals List, Details, and Approve/Reject UI Flow",
   "requirements": [
     {
-      "id": "REQ-9",
-      "summary": "Add a visible “Create Instance” entry point in the primary WhisperDavenport-IA UI (header actions and/or prominent main section) with no backend calls.",
+      "id": "REQ-20",
+      "summary": "Ensure the Proposals list is reachable from the app shell and renders all proposals with loading, empty, and error states (English text).",
       "acceptanceCriteria": [
-        "A button or link labeled exactly “Create Instance” is visible on the main app shell without requiring navigation or authentication.",
-        "Clicking “Create Instance” does not call the backend and does not require any canister changes.",
-        "The entry point is styled consistently with the existing theme (Tailwind + shadcn components already used in App.tsx)."
+        "From the main app shell, a user can navigate to a Proposals view/section without needing a page reload.",
+        "While proposals are loading, a visible loading state is shown.",
+        "If the backend returns zero proposals, an English empty-state message is shown.",
+        "If the backend call fails, an English error message is shown.",
+        "When proposals exist, the list shows at least: instance name, proposer, and current status for each proposal."
       ],
       "file_operations": [
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add a new header action Button labeled exactly “Create Instance” near the existing “Connect” button, wired to UI-only state (no actor usage, no network calls). Use the shadcn-ui Button component already used in this file for consistent styling. Verify the component's usage instructions before implementing."
+          "description": "Tighten wiring from the app shell to the proposals area to make navigation unambiguous and reliable (still no reload). Keep using existing shadcn-ui Button (from the shadcn-ui component library) for the header toggle; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
           "operation": "modify",
-          "description": "Add a prominent “Create Instance” call-to-action in the main content area (e.g., near the hero section) that triggers the same UI-only open state as the header button, ensuring discoverability without navigation or authentication. Verify the component's usage instructions before implementing."
+          "description": "Harden list rendering so it always shows an appropriate UI state (loading vs empty vs error vs list), including when the backend actor is still initializing. Keep English-only user-facing strings. Continue composing existing shadcn-ui components (Card, Badge, Alert, Skeleton, Button, Separator); verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Adjust proposals query behavior to better support reliable loading/empty/error states in the UI (e.g., consistent thrown errors and avoiding silent 'undefined' UI states while the actor initializes)."
         }
       ]
     },
     {
-      "id": "REQ-10",
-      "summary": "On click of “Create Instance”, show a dismissible lightweight UI-only placeholder explaining instance creation is coming next step and defining an “instance” as a city/county/state Whisper site.",
+      "id": "REQ-21",
+      "summary": "Provide a proposal detail view reachable from each list item with full details plus loading/error handling (English text).",
       "acceptanceCriteria": [
-        "Clicking “Create Instance” opens a placeholder UI (modal/dialog/sheet/inline card) without navigating away or breaking the page layout.",
-        "The placeholder contains English user-facing text that mentions city/county/state as possible instance levels.",
-        "The placeholder UI can be dismissed/closed and returns the user to the main shell state.",
-        "No form fields, duplicate checks, registry calls, or admin screens are implemented in this step."
+        "Each proposal in the list has a clear action (e.g., a button) to open a detail view for that proposal.",
+        "The detail view displays, at minimum: instance name, proposer, description, and status.",
+        "If the detail fetch is in progress, a loading state is shown inside the detail view.",
+        "If the detail fetch fails, an English error message is shown inside the detail view."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "operation": "create",
-          "description": "Create a lightweight, dismissible placeholder UI component rendered as an inline panel/card (no routing) that contains English text describing that instance creation will be implemented in the next step and defines an “instance” as a city/county/state Whisper site. Use shadcn-ui Card and Button components for consistent styling. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
+          "operation": "modify",
+          "description": "Ensure each proposal list item’s 'View Details' action clearly opens the detail UI and passes the correct instance identifier for lookup. Continue using shadcn-ui Button and Card compositions; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
           "operation": "modify",
-          "description": "Wire the CreateInstancePlaceholderCard into the existing shell using local React state (open/closed). Clicking either “Create Instance” entry point opens it; a Close/Dismiss action hides it and restores the main shell state. Keep behavior UI-only: do not import/use backend actor hooks or queries. Verify the component's usage instructions before implementing."
+          "description": "Ensure the detail dialog reliably handles all states: loading, fetch error, and 'proposal not found' (null) with explicit English messaging, while displaying required fields (instance name, proposer, description, status). Continue using shadcn-ui Dialog, Alert, Skeleton, Badge, Button, Separator compositions; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Refine the single-proposal query to provide consistent UI-friendly behavior (clear errors for failures and a predictable null/not-found path) to support the detail view’s loading/error states."
+        }
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "summary": "Add approve/reject controls for Pending proposals in the detail view with success/error feedback and status refresh (frontend-only plan).",
+      "acceptanceCriteria": [
+        "In the proposal detail view, when a proposal is Pending, the user can choose Approve or Reject.",
+        "When the status update succeeds, the UI shows an English success message and the updated status is visible without a full page reload.",
+        "When the status update fails (e.g., proposal not found, invalid status, or trying to update a non-Pending proposal), the UI shows an English error message.",
+        "Backend rejects unsupported statuses (anything other than Pending/Approved/Rejected) and rejects transitions from non-Pending statuses (returns failure).",
+        "After a successful status update, the proposals list reflects the updated status (via query invalidation/refetch)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
+          "operation": "modify",
+          "description": "Implement/finish the moderation controls UI: only show Approve/Reject when status is Pending; show clear English success and failure feedback; ensure the updated status is reflected immediately in the dialog after mutation (via refetch/invalidation). Continue composing shadcn-ui Button, Alert, Dialog, Badge; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useUpdateProposalStatus.ts",
+          "operation": "modify",
+          "description": "Strengthen mutation error handling and user-facing error messages (English) when the backend rejects the update, and ensure proposal list + proposal detail queries are invalidated/refetched after success so the list reflects updated status."
+        },
+        {
+          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
+          "operation": "modify",
+          "description": "Ensure the proposals list reliably reflects updated statuses after approve/reject actions (e.g., by relying on existing React Query invalidation/refetch and ensuring list state is not cached in a way that prevents rerender). Continue using shadcn-ui components; verify the component's usage instructions before implementing."
         }
       ]
     }

@@ -1,15 +1,27 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T18:23:29.587Z",
-  "summary": "REQ-9 and REQ-10 appear implemented: a visible \"Create Instance\" entry point is added to the main shell (header and main-page CTA), and clicking it opens a dismissible, UI-only placeholder card describing instances (including city/county/state) with no backend integration indicated in the diff.",
+  "generatedAt": "2026-02-09T19:14:40.488Z",
+  "summary": "The diff implements the proposals list and detail dialog with loading/empty/error states, adds approve/reject controls with success/error feedback, and adds backend + frontend mutation/query support for updating proposal status with pending-only validation and React Query invalidation. One additional, unrelated query hook (isParent) appears in the same hooks file.",
   "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.78,
+  "hallucinated_features": [
+    {
+      "description": "Added/retained a parent-child installation relationship query hook and related backend query (isParent/isParent hook), which is not requested by REQ-20/21/22 (proposal list/detail + approve/reject flow).",
+      "reason": "BuildRequest is specifically about Steps 8–9 for proposals UI + moderation status updates; parent-child relationship checks are outside that scope.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    }
+  ],
+  "confidence": 0.74,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+    "frontend/src/components/proposals/ProposalDetailDialog.tsx",
+    "frontend/src/components/proposals/ProposalsSection.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useUpdateProposalStatus.ts",
     "project_state.json"
   ]
 }

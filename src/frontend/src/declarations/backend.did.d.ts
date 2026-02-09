@@ -10,8 +10,19 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface Proposal {
+  'status' : string,
+  'description' : string,
+  'proposer' : Principal,
+  'instanceName' : string,
+}
 export interface _SERVICE {
+  'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
+  'getProposal' : ActorMethod<[string], [] | [Proposal]>,
+  'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
+  'submitProposal' : ActorMethod<[string, string, string], boolean>,
+  'updateProposalStatus' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

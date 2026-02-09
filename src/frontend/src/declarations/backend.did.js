@@ -8,19 +8,51 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const Proposal = IDL.Record({
+  'status' : IDL.Text,
+  'description' : IDL.Text,
+  'proposer' : IDL.Principal,
+  'instanceName' : IDL.Text,
+});
+
 export const idlService = IDL.Service({
+  'getAllProposals' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
+      ['query'],
+    ),
+  'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+  'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isParent' : IDL.Func([IDL.Principal, IDL.Principal], [IDL.Bool], ['query']),
+  'submitProposal' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+  'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const Proposal = IDL.Record({
+    'status' : IDL.Text,
+    'description' : IDL.Text,
+    'proposer' : IDL.Principal,
+    'instanceName' : IDL.Text,
+  });
+  
   return IDL.Service({
+    'getAllProposals' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
+        ['query'],
+      ),
+    'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+    'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'isParent' : IDL.Func(
         [IDL.Principal, IDL.Principal],
         [IDL.Bool],
         ['query'],
       ),
+    'submitProposal' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+    'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   });
 };
 

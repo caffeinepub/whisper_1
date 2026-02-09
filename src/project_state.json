@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 13,
   "summary": "Whisper: a decentralized, community-empowered civic accountability platform on Internet Computer (ICP), designed as a hierarchy of hyper-local to national “installations” with modular canisters, stable-memory persistence, cycle-efficient operation, and developer-controlled deployment/upgrades (no unilateral canister creation/shutdown by the platform).",
   "architectural_notes": [
     "Platform runs on Internet Computer (ICP) with modular, upgradeable canisters; persistence must survive upgrades via stable memory patterns.",
@@ -66,6 +66,78 @@
       "title": "Implement a minimal UI response for the “Create Instance” entry point (UI-only). On click, show a lightweight placeholder view (modal/dialog/sheet or inline panel) that clearly states that instance creation will be implemented in the next step, and includes a brief plain-language description of what an “instance” is (city/county/state Whisper site).",
       "reqIds": [
         "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-ui-only-create-instance-placeholder-with-a-real-create-instance-form-that-collects-at-minimum-scope-city-county-state-national-instance-name-and-optional-parent-installation-reference-the-form-must-be-reachable-from-the-existing-create-instance-entry-points-in-the-header-and-cta-card-and-all-user-facing-text-must-be-in-english",
+      "title": "Replace the current UI-only Create Instance placeholder with a real \"Create Instance\" form that collects, at minimum: scope (city/county/state/national), instance name, and optional parent installation reference. The form must be reachable from the existing \"Create Instance\" entry points in the header and CTA card, and all user-facing text must be in English.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-create-instance-form-to-the-backend-using-the-existing-actor-react-query-patterns-perform-a-name-availability-check-before-allowing-submission-show-a-clear-success-state-after-submission-and-show-an-english-error-message-when-the-backend-rejects-a-duplicate-name",
+      "title": "Wire the Create Instance form to the backend using the existing actor + React Query patterns: perform a name-availability check before allowing submission, show a clear success state after submission, and show an English error message when the backend rejects a duplicate name.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-create-instance-form-flow-to-correctly-surface-backend-duplicate-name-rejection-and-other-submission-errors-in-english-even-if-the-pre-check-reported-the-name-as-available-race-condition",
+      "title": "Update the Create Instance form flow to correctly surface backend duplicate-name rejection and other submission errors in English, even if the pre-check reported the name as available (race condition).",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-proposals-section-to-the-existing-frontend-shell-that-lists-all-submitted-create-instance-proposals-by-calling-the-existing-backend-query-for-proposals-and-rendering-the-results-in-a-clear-readable-list-table",
+      "title": "Add a \"Proposals\" section to the existing frontend shell that lists all submitted Create Instance proposals by calling the existing backend query for proposals and rendering the results in a clear, readable list/table.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-proposal-detail-view-e-g-modal-dialog-or-expandable-row-that-lets-a-user-inspect-a-single-proposal-in-full-using-the-existing-backend-query-capability-either-by-reading-from-the-list-result-or-fetching-by-instance-name",
+      "title": "Add a proposal detail view (e.g., modal/dialog or expandable row) that lets a user inspect a single proposal in full, using the existing backend query capability (either by reading from the list result or fetching by instance name).",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-minimal-backend-support-and-corresponding-frontend-controls-to-update-a-proposal-s-status-e-g-pending-approved-rejected-for-demo-purposes-with-clear-english-feedback-in-the-ui-when-an-update-succeeds-or-fails",
+      "title": "Implement minimal backend support and corresponding frontend controls to update a proposal's status (e.g., pending → approved/rejected) for demo purposes, with clear English feedback in the UI when an update succeeds or fails.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-finish-step-8-by-ensuring-the-proposals-list-ui-is-reachable-from-the-existing-app-shell-and-reliably-renders-all-create-instance-proposals-returned-by-the-backend-in-a-clear-list-with-loading-empty-and-error-states-all-user-facing-text-in-english",
+      "title": "Implement/finish Step 8 by ensuring the Proposals list UI is reachable from the existing app shell and reliably renders all Create Instance proposals returned by the backend in a clear list with loading, empty, and error states (all user-facing text in English).",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-finish-step-8-by-providing-a-proposal-detail-view-that-lets-a-user-inspect-a-single-proposal-in-full-using-the-backend-query-capability-either-from-list-data-or-by-fetching-by-instance-name-with-clear-loading-error-handling-and-english-user-facing-text",
+      "title": "Implement/finish Step 8 by providing a proposal detail view that lets a user inspect a single proposal in full, using the backend query capability (either from list data or by fetching by instance name), with clear loading/error handling and English user-facing text.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-finish-step-9-by-adding-a-minimal-approve-reject-moderation-action-for-proposals-provide-frontend-controls-to-update-status-e-g-pending-approved-rejected-and-add-corresponding-backend-validation-so-updates-are-restricted-to-supported-statuses-and-are-only-allowed-from-pending-ui-must-show-clear-english-success-failure-feedback-and-reflect-updated-status-after-mutation",
+      "title": "Implement/finish Step 9 by adding a minimal approve/reject moderation action for proposals: provide frontend controls to update status (e.g., Pending → Approved/Rejected) and add corresponding backend validation so updates are restricted to supported statuses and are only allowed from Pending. UI must show clear English success/failure feedback and reflect updated status after mutation.",
+      "reqIds": [
+        "REQ-22"
       ],
       "version": 1
     }
@@ -134,6 +206,54 @@
     {
       "id": "AR-12",
       "summary": "Citizen-led sub-site instance creation flow (incremental slices): start with Step 1 adding a “Create Instance” button on the WhisperDavenport-IA shell (no backend yet), then expand to form, registry canister duplicate check, and admin moderation",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Next build: implement steps 2 and 10 (as referenced in current build plan/checklist)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add backend support for \"Create Instance\" proposals so that submitting the form creates a stored proposal record (not a new canister). Include a backend method to check whether an instance name is already taken (duplicate check) and persist proposals across upgrades using stable memory patterns.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Next build: proceed with steps 3 and 4 (per current build plan/checklist)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Update the backend Create Instance proposal storage so proposals persist across canister upgrades using stable memory patterns (preupgrade/postupgrade). The proposals must survive redeploy/upgrade without data loss.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Enforce backend duplicate-name rejection for Create Instance proposals: submitProposal must fail when instanceName is already taken, and isInstanceNameTaken must reliably reflect the taken state. The backend must not silently overwrite an existing proposal with the same instanceName.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Next build: proceed with steps 5, 6, and 7 (per current build plan/checklist)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Next build: complete steps 8 and 9 together (per current build plan/checklist)",
       "reqIds": [],
       "status": "in_progress"
     }

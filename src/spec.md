@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add a discoverable “Create Instance” entry point to the existing WhisperDavenport-IA frontend shell, with a UI-only placeholder explanation (no backend integration).
+**Goal:** Complete Steps 8–9 by adding a reachable proposals list, proposal detail view, and a minimal approve/reject moderation flow with clear English loading/empty/error/success feedback.
 
 **Planned changes:**
-- Add a visible button/link labeled exactly “Create Instance” in the primary app shell UI (e.g., near the existing “Connect” button and/or prominently on the main page).
-- On click, open a lightweight dismissible placeholder UI (modal/dialog/sheet or inline panel) that explains instance creation is coming next step and briefly defines an “instance” as a city/county/state Whisper site.
-- Ensure the new entry point and placeholder use the existing Tailwind + shadcn styling and do not navigate away or call any backend.
+- Add navigation from the main app shell to a Proposals section/view that lists all Create Instance proposals from the backend with loading, empty, and error states.
+- Add a proposal detail view accessible from each list item, showing instance name, proposer, description, and status with in-view loading/error handling.
+- Add approve/reject controls in the proposal detail view for Pending proposals, including success/failure messages and UI updates without full page reload.
+- Add backend validation for proposal status updates: only allow Pending → Approved/Rejected and reject unsupported statuses.
+- Ensure the proposals list reflects updated statuses after a successful moderation action (via refetch/query invalidation).
 
-**User-visible outcome:** Users see a “Create Instance” button immediately on the main shell; clicking it opens a dismissible placeholder explaining what an instance is (city/county/state) and that creation will be implemented in the next step.
+**User-visible outcome:** Users can open a Proposals view from the app shell, browse proposals, open a proposal’s details, and (for Pending proposals) approve or reject them with immediate status updates and clear English feedback.

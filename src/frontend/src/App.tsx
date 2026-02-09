@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Clock, ArrowUpRight, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, ArrowUpRight, Plus, FileText } from 'lucide-react';
 import { CreateInstancePlaceholderCard } from '@/components/create-instance/CreateInstancePlaceholderCard';
+import { ProposalsSection } from '@/components/proposals/ProposalsSection';
 
 function App() {
   const [isCreateInstanceOpen, setIsCreateInstanceOpen] = useState(false);
+  const [showProposals, setShowProposals] = useState(false);
   const currentYear = new Date().getFullYear();
   const appIdentifier = encodeURIComponent(
     typeof window !== 'undefined' ? window.location.hostname : 'whisper-icp'
@@ -29,6 +31,14 @@ function App() {
             </div>
             <div className="flex items-center gap-3">
               <Button
+                variant={showProposals ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowProposals(!showProposals)}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {showProposals ? 'Hide' : 'View'} Proposals
+              </Button>
+              <Button
                 variant="default"
                 size="sm"
                 onClick={() => setIsCreateInstanceOpen(true)}
@@ -47,6 +57,14 @@ function App() {
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-12">
+          {/* Proposals Section (conditionally shown) */}
+          {showProposals && (
+            <>
+              <ProposalsSection />
+              <Separator className="my-8" />
+            </>
+          )}
+
           {/* Hero Section */}
           <section className="text-center space-y-4">
             <h2 className="text-4xl font-semibold tracking-tight text-balance">

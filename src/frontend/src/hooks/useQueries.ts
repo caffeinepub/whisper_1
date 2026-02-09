@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { Principal } from '@icp-sdk/core/principal';
+import type { Proposal } from '@/backend';
 
 /**
  * Example query hook for checking parent-child installation relationships.
@@ -26,4 +27,57 @@ export function useIsParent(childId: string, parentId: string) {
   });
 }
 
-// Additional query hooks will be added here as features are implemented in future phases
+/**
+ * Hook to fetch all proposals from the backend.
+ * Returns an empty array while actor is initializing to prevent undefined states.
+ */
+export function useGetAllProposals() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Array<[string, Proposal]>>({
+    queryKey: ['proposals'],
+    queryFn: async () => {
+      if (!actor) {
+        throw new Error('Backend connection not available');
+      }
+      try {
+        const result = await actor.getAllProposals();
+        return result;
+      } catch (error) {
+        console.error('Error fetching proposals:', error);
+        throw new Error('Failed to load proposals. Please try again.');
+      }
+    },
+    enabled: !!actor && !isFetching,
+    retry: 2,
+  });
+}
+
+/**
+ * Hook to fetch a single proposal by instance name.
+ * Returns null if proposal doesn't exist, throws error on fetch failure.
+ */
+export function useGetProposal(instanceName: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Proposal | null>({
+    queryKey: ['proposal', instanceName],
+    queryFn: async () => {
+      if (!actor) {
+        throw new Error('Backend connection not available');
+      }
+      if (!instanceName) {
+        return null;
+      }
+      try {
+        const result = await actor.getProposal(instanceName);
+        return result;
+      } catch (error) {
+        console.error('Error fetching proposal:', error);
+        throw new Error('Failed to load proposal details. Please try again.');
+      }
+    },
+    enabled: !!actor && !isFetching && !!instanceName,
+    retry: 2,
+  });
+}
