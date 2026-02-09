@@ -1,69 +1,83 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import type { USHierarchyLevel } from '@/backend';
 
 /**
  * Hook to check if an instance name is already taken.
- * Uses debounced input to avoid excessive backend calls.
+ * Returns true if taken, false if available.
+ * Throws error if check fails to prevent submission with unknown state.
  */
 export function useCheckInstanceName(instanceName: string) {
   const { actor, isFetching } = useActor();
 
   return useQuery<boolean>({
-    queryKey: ['instanceNameTaken', instanceName],
+    queryKey: ['instanceNameCheck', instanceName],
     queryFn: async () => {
-      if (!actor || !instanceName.trim()) return false;
+      if (!actor || !instanceName) return false;
       try {
-        return await actor.isInstanceNameTaken(instanceName.trim());
+        const result = await actor.isInstanceNameTaken(instanceName);
+        return result;
       } catch (error) {
         console.error('Error checking instance name:', error);
-        return false;
+        // Throw error instead of returning false to prevent submission
+        // when we can't verify availability
+        throw new Error('Unable to verify name availability');
       }
     },
-    enabled: !!actor && !isFetching && instanceName.trim().length > 0,
-    staleTime: 30000, // Cache for 30 seconds
+    enabled: !!actor && !isFetching && !!instanceName && instanceName.length > 0,
+    staleTime: 1000 * 10, // Cache for 10 seconds
+    retry: 1, // Only retry once for availability checks
   });
 }
 
+interface SubmitProposalParams {
+  description: string;
+  instanceName: string;
+  status: string;
+  state: string;
+  county: string;
+  geographyLevel: USHierarchyLevel;
+  censusBoundaryId: string;
+  squareMeters: bigint;
+  population2020: string;
+}
+
 /**
- * Hook to submit a new instance creation proposal.
- * Handles duplicate name rejection with specific error messages.
+ * Hook to submit a new instance creation proposal with full geography metadata.
  */
 export function useSubmitProposal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      description,
-      instanceName,
-      status,
-    }: {
-      description: string;
-      instanceName: string;
-      status: string;
-    }) => {
+    mutationFn: async (params: SubmitProposalParams) => {
       if (!actor) {
-        throw new Error('Backend connection not available. Please try again.');
+        throw new Error('Backend connection not available');
       }
 
-      const result = await actor.submitProposal(description, instanceName, status);
-      
-      // If submission failed, check if it's due to duplicate name
-      if (!result) {
-        // Perform follow-up check to determine the specific error
-        const isTaken = await actor.isInstanceNameTaken(instanceName);
-        if (isTaken) {
-          throw new Error(`The instance name "${instanceName}" is already taken. Please choose a different name.`);
-        }
-        throw new Error('Failed to submit proposal. Please try again.');
+      const success = await actor.submitProposal(
+        params.description,
+        params.instanceName,
+        params.status,
+        params.state,
+        params.county,
+        params.geographyLevel,
+        params.censusBoundaryId,
+        params.squareMeters,
+        params.population2020
+      );
+
+      if (!success) {
+        throw new Error('Instance name is already taken or proposal submission failed');
       }
-      
-      return result;
+
+      return success;
     },
     onSuccess: () => {
-      // Invalidate relevant queries after successful submission
-      queryClient.invalidateQueries({ queryKey: ['instanceNameTaken'] });
+      // Invalidate proposals list to show the new proposal
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      // Invalidate name checks to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck'] });
     },
   });
 }

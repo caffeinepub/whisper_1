@@ -1,77 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Complete Steps 8–9: Proposal Details + Approve/Reject Moderation Flow",
+  "title": "Add front-page greeting/tooltip to improve Secretary widget discoverability",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-20",
-      "text": "Implement/finish Step 8 by ensuring the Proposals list UI is reachable from the existing app shell and reliably renders all Create Instance proposals returned by the backend in a clear list with loading, empty, and error states (all user-facing text in English).",
+      "id": "REQ-46",
+      "text": "Add a small, non-intrusive front-page greeting/tooltip that helps users notice the existing Secretary widget and provides an obvious action to open it.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-3"
         ],
         "quotes": [
-          "now complete steps 8 and 9 together"
+          "yes"
         ]
       },
       "acceptanceCriteria": [
-        "From the main app shell, a user can navigate to a Proposals view/section without needing a page reload.",
-        "While proposals are loading, a visible loading state is shown.",
-        "If the backend returns zero proposals, an English empty-state message is shown.",
-        "If the backend call fails, an English error message is shown.",
-        "When proposals exist, the list shows at least: instance name, proposer, and current status for each proposal."
-      ]
-    },
-    {
-      "id": "REQ-21",
-      "text": "Implement/finish Step 8 by providing a proposal detail view that lets a user inspect a single proposal in full, using the backend query capability (either from list data or by fetching by instance name), with clear loading/error handling and English user-facing text.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "now complete steps 8 and 9 together"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each proposal in the list has a clear action (e.g., a button) to open a detail view for that proposal.",
-        "The detail view displays, at minimum: instance name, proposer, description, and status.",
-        "If the detail fetch is in progress, a loading state is shown inside the detail view.",
-        "If the detail fetch fails, an English error message is shown inside the detail view."
-      ]
-    },
-    {
-      "id": "REQ-22",
-      "text": "Implement/finish Step 9 by adding a minimal approve/reject moderation action for proposals: provide frontend controls to update status (e.g., Pending → Approved/Rejected) and add corresponding backend validation so updates are restricted to supported statuses and are only allowed from Pending. UI must show clear English success/failure feedback and reflect updated status after mutation.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "now complete steps 8 and 9 together"
-        ]
-      },
-      "acceptanceCriteria": [
-        "In the proposal detail view, when a proposal is Pending, the user can choose Approve or Reject.",
-        "When the status update succeeds, the UI shows an English success message and the updated status is visible without a full page reload.",
-        "When the status update fails (e.g., proposal not found, invalid status, or trying to update a non-Pending proposal), the UI shows an English error message.",
-        "Backend rejects unsupported statuses (anything other than Pending/Approved/Rejected) and rejects transitions from non-Pending statuses (returns failure).",
-        "After a successful status update, the proposals list reflects the updated status (via query invalidation/refetch)."
+        "A small greeting/tooltip is visible somewhere in the main app shell (e.g., near the header actions area and/or near the floating Secretary button) when the user first visits or until dismissed.",
+        "The greeting/tooltip includes an explicit, English call-to-action that references the existing Secretary feature (e.g., \"Need help? Click Secretary to get started.\") and provides a clickable control that opens the Secretary widget.",
+        "The greeting/tooltip can be dismissed by the user and stays dismissed for that user across page reloads (client-side persistence is acceptable).",
+        "All user-facing text in the greeting/tooltip is in English.",
+        "The greeting/tooltip styling uses existing Tailwind + shadcn components/tokens and matches the established civic theme (no new color palette).",
+        "The greeting/tooltip is accessible: keyboard-operable controls, visible focus states, and appropriate aria-labels for icon-only dismiss/close controls (if used)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
-    "Do not modify files under frontend/src/components/ui or other frontend immutablePaths listed in SYSTEM_CONTEXT; compose existing UI components instead.",
-    "All user-facing text must be in English."
+    "Frontend must remain React + TypeScript with Tailwind, shadcn components, and React Query patterns.",
+    "Do not edit files under frontend/src/components/ui (read-only); compose existing components instead.",
+    "Keep all user-facing text in English."
   ],
   "nonGoals": [
-    "Do not implement real governance, role-based access control, or Internet Identity gating for approving/rejecting (demo-only controls are sufficient).",
-    "Do not implement canister creation or installation deployment as part of approving a proposal.",
-    "Do not add notifications, real-time updates, or external integrations."
+    "Do not change the Secretary widget conversation flows, option routing behavior, or backend logic.",
+    "Do not introduce AI/LLM integrations or any external services.",
+    "Do not add new authentication or authorization behavior."
   ],
   "imageRequirements": {
     "required": [],

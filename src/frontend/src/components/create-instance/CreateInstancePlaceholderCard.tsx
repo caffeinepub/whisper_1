@@ -1,41 +1,89 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import { useCheckInstanceName, useSubmitProposal } from '@/hooks/useCreateInstanceProposal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useGetAllStates, useGetCountiesForState, useGetPlacesForCounty } from '@/hooks/useUSGeography';
+import type { GeoId, USState, USCounty, USPlace } from '@/backend';
+import { USHierarchyLevel } from '@/backend';
 
 interface CreateInstancePlaceholderCardProps {
   onClose: () => void;
 }
 
-type Scope = 'city' | 'county' | 'state' | 'national';
+type Scope = 'place' | 'county' | 'state';
 
 export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceholderCardProps) {
-  const [scope, setScope] = useState<Scope>('city');
+  const [scope, setScope] = useState<Scope>('place');
+  const [selectedState, setSelectedState] = useState<USState | null>(null);
+  const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
   const [instanceName, setInstanceName] = useState('');
-  const [parentReference, setParentReference] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Fetch geography data
+  const { data: states = [], isLoading: isLoadingStates, error: statesError } = useGetAllStates();
+  const { data: counties = [], isLoading: isLoadingCounties, error: countiesError } = useGetCountiesForState(
+    selectedState?.hierarchicalId || null
+  );
+  const { data: places = [], isLoading: isLoadingPlaces, error: placesError } = useGetPlacesForCounty(
+    selectedCounty?.hierarchicalId || null
+  );
+
+  // Auto-generate instance name based on selections
+  useEffect(() => {
+    let generatedName = '';
+
+    if (scope === 'place' && selectedPlace) {
+      // Format: WhisperDavenport-IA
+      const statePart = selectedState?.shortName || '';
+      generatedName = `Whisper${selectedPlace.shortName.replace(/\s+/g, '')}-${statePart}`;
+    } else if (scope === 'county' && selectedCounty) {
+      // Format: WhisperScottCounty-IA
+      const statePart = selectedState?.shortName || '';
+      const countyName = selectedCounty.shortName.replace(/\s+/g, '');
+      generatedName = `Whisper${countyName}-${statePart}`;
+    } else if (scope === 'state' && selectedState) {
+      // Format: WhisperIowa
+      generatedName = `Whisper${selectedState.longName.replace(/\s+/g, '')}`;
+    }
+
+    setInstanceName(generatedName);
+  }, [scope, selectedState, selectedCounty, selectedPlace]);
 
   // Debounce the instance name to avoid excessive backend calls
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
-  // Check if instance name is taken
-  const { data: isNameTaken, isLoading: isCheckingName } = useCheckInstanceName(debouncedInstanceName);
+  // Check if instance name is taken (only when we have a valid debounced name)
+  const { 
+    data: isNameTaken, 
+    isLoading: isCheckingName,
+    error: nameCheckError 
+  } = useCheckInstanceName(debouncedInstanceName);
 
   // Submit proposal mutation
   const submitProposal = useSubmitProposal();
 
-  // Clear submission error when instance name changes
+  // Clear submission error when selections change
   useEffect(() => {
     if (submitProposal.isError) {
       submitProposal.reset();
     }
-  }, [instanceName]);
+  }, [selectedState, selectedCounty, selectedPlace, scope]);
+
+  // Reset dependent selections when parent changes
+  useEffect(() => {
+    setSelectedCounty(null);
+    setSelectedPlace(null);
+  }, [selectedState]);
+
+  useEffect(() => {
+    setSelectedPlace(null);
+  }, [selectedCounty]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,14 +97,65 @@ export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceho
       return;
     }
 
+    // Validate required selections based on scope
+    if (scope === 'place' && (!selectedState || !selectedCounty || !selectedPlace)) {
+      return;
+    }
+    if (scope === 'county' && (!selectedState || !selectedCounty)) {
+      return;
+    }
+    if (scope === 'state' && !selectedState) {
+      return;
+    }
+
     try {
       // Build description from form data
-      const description = `Create ${scope} instance: ${instanceName}${parentReference ? ` (parent: ${parentReference})` : ''}`;
+      let description = '';
+      let geographyLevel: USHierarchyLevel;
+      let censusBoundaryId = '';
+      let squareMeters = BigInt(0);
+      let population2020 = '';
+      let stateName = '';
+      let countyName = '';
+
+      if (scope === 'place' && selectedPlace && selectedCounty && selectedState) {
+        description = `Create city/town instance: ${selectedPlace.fullName}, ${selectedCounty.shortName}, ${selectedState.shortName}`;
+        geographyLevel = USHierarchyLevel.place;
+        censusBoundaryId = selectedPlace.censusCensusFipsCode;
+        squareMeters = BigInt(selectedPlace.censusLandKm2) * BigInt(1000000); // Convert km² to m²
+        population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'N/A';
+        stateName = selectedState.longName;
+        countyName = selectedCounty.fullName;
+      } else if (scope === 'county' && selectedCounty && selectedState) {
+        description = `Create county instance: ${selectedCounty.fullName}, ${selectedState.shortName}`;
+        geographyLevel = USHierarchyLevel.county;
+        censusBoundaryId = selectedCounty.fipsCode;
+        squareMeters = BigInt(selectedCounty.censusLandAreaSqMeters || '0');
+        population2020 = selectedCounty.population2010 || 'N/A';
+        stateName = selectedState.longName;
+        countyName = selectedCounty.fullName;
+      } else if (scope === 'state' && selectedState) {
+        description = `Create state instance: ${selectedState.longName}`;
+        geographyLevel = USHierarchyLevel.state;
+        censusBoundaryId = selectedState.fipsCode;
+        squareMeters = selectedState.censusLandAreaSqMeters;
+        population2020 = 'N/A'; // State population not in current data model
+        stateName = selectedState.longName;
+        countyName = '';
+      } else {
+        return; // Should not reach here due to validation
+      }
 
       await submitProposal.mutateAsync({
         description,
         instanceName: instanceName.trim(),
-        status: 'pending',
+        status: 'Pending',
+        state: stateName,
+        county: countyName,
+        geographyLevel,
+        censusBoundaryId,
+        squareMeters,
+        population2020,
       });
 
       setShowSuccess(true);
@@ -122,9 +221,12 @@ export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceho
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-xl">Create Instance</CardTitle>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-accent" />
+              Create New Instance
+            </CardTitle>
             <CardDescription>
-              Start a new Whisper instance for your community
+              Select a geographic location to propose a new Whisper installation
             </CardDescription>
           </div>
           <Button
@@ -142,98 +244,226 @@ export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceho
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Scope Selection */}
           <div className="space-y-2">
-            <Label htmlFor="scope">Scope *</Label>
+            <Label htmlFor="scope">Geographic Scope</Label>
             <Select value={scope} onValueChange={(value) => setScope(value as Scope)}>
               <SelectTrigger id="scope">
                 <SelectValue placeholder="Select scope" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="city">City</SelectItem>
+                <SelectItem value="place">City/Town</SelectItem>
                 <SelectItem value="county">County</SelectItem>
                 <SelectItem value="state">State</SelectItem>
-                <SelectItem value="national">National</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Choose the jurisdiction level for your instance
+            <p className="text-sm text-muted-foreground">
+              Choose the level of government for this Whisper instance
             </p>
           </div>
 
-          {/* Instance Name */}
+          {/* State Selection */}
           <div className="space-y-2">
-            <Label htmlFor="instanceName">Instance Name *</Label>
-            <Input
-              id="instanceName"
-              type="text"
-              placeholder="e.g., WhisperDavenport-IA"
-              value={instanceName}
-              onChange={(e) => setInstanceName(e.target.value)}
-              required
-            />
-            {/* Name availability indicator */}
-            {debouncedInstanceName.trim() && (
-              <div className="flex items-center gap-2 text-xs">
-                {isCheckingName ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                    <span className="text-muted-foreground">Checking availability...</span>
-                  </>
-                ) : isNameTaken ? (
-                  <>
-                    <AlertCircle className="h-3 w-3 text-destructive" />
-                    <span className="text-destructive">This name is already taken</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 text-success" />
-                    <span className="text-success">Name is available</span>
-                  </>
+            <Label htmlFor="state">State</Label>
+            {statesError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load states. Please refresh the page and try again.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <Select
+                  value={selectedState?.hierarchicalId || ''}
+                  onValueChange={(value) => {
+                    const state = states.find((s) => s.hierarchicalId === value);
+                    setSelectedState(state || null);
+                  }}
+                  disabled={isLoadingStates || states.length === 0}
+                >
+                  <SelectTrigger id="state">
+                    <SelectValue 
+                      placeholder={
+                        isLoadingStates 
+                          ? 'Loading states...' 
+                          : states.length === 0 
+                            ? 'No states available' 
+                            : 'Select a state'
+                      } 
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {states.map((state) => (
+                      <SelectItem key={state.hierarchicalId} value={state.hierarchicalId}>
+                        {state.longName} ({state.shortName})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isLoadingStates && states.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No states found. Geography data may need to be loaded by an administrator.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* County Selection (for place and county scopes) */}
+          {(scope === 'place' || scope === 'county') && (
+            <div className="space-y-2">
+              <Label htmlFor="county">County</Label>
+              {countiesError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Failed to load counties for the selected state. Please try selecting a different state.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <Select
+                    value={selectedCounty?.hierarchicalId || ''}
+                    onValueChange={(value) => {
+                      const county = counties.find((c) => c.hierarchicalId === value);
+                      setSelectedCounty(county || null);
+                    }}
+                    disabled={!selectedState || isLoadingCounties}
+                  >
+                    <SelectTrigger id="county">
+                      <SelectValue
+                        placeholder={
+                          !selectedState
+                            ? 'Select a state first'
+                            : isLoadingCounties
+                              ? 'Loading counties...'
+                              : counties.length === 0
+                                ? 'No counties available'
+                                : 'Select a county'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {counties.map((county) => (
+                        <SelectItem key={county.hierarchicalId} value={county.hierarchicalId}>
+                          {county.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedState && !isLoadingCounties && counties.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No counties found for the selected state.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Place Selection (for place scope only) */}
+          {scope === 'place' && (
+            <div className="space-y-2">
+              <Label htmlFor="place">City/Town</Label>
+              {placesError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Failed to load places for the selected county. Please try selecting a different county.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <Select
+                    value={selectedPlace?.hierarchicalId || ''}
+                    onValueChange={(value) => {
+                      const place = places.find((p) => p.hierarchicalId === value);
+                      setSelectedPlace(place || null);
+                    }}
+                    disabled={!selectedCounty || isLoadingPlaces}
+                  >
+                    <SelectTrigger id="place">
+                      <SelectValue
+                        placeholder={
+                          !selectedCounty
+                            ? 'Select a county first'
+                            : isLoadingPlaces
+                              ? 'Loading cities and towns...'
+                              : places.length === 0
+                                ? 'No places available'
+                                : 'Select a city or town'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {places.map((place) => (
+                        <SelectItem key={place.hierarchicalId} value={place.hierarchicalId}>
+                          {place.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedCounty && !isLoadingPlaces && places.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No cities or towns found for the selected county.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Generated Instance Name Preview */}
+          {instanceName && (
+            <div className="space-y-2">
+              <Label>Generated Instance Name</Label>
+              <div className="flex items-center gap-2 p-3 rounded-md bg-muted border border-border">
+                <span className="font-mono text-sm flex-1">{instanceName}</span>
+                {isCheckingName && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                {!isCheckingName && nameCheckError && (
+                  <AlertCircle className="h-4 w-4 text-warning" />
+                )}
+                {!isCheckingName && !nameCheckError && isNameTaken && (
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                )}
+                {!isCheckingName && !nameCheckError && !isNameTaken && debouncedInstanceName && (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 )}
               </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Choose a unique name for your instance
-            </p>
-          </div>
+              {isCheckingName && (
+                <p className="text-sm text-muted-foreground">Checking availability...</p>
+              )}
+              {!isCheckingName && nameCheckError && (
+                <p className="text-sm text-warning">
+                  Unable to verify name availability. Please try again.
+                </p>
+              )}
+              {!isCheckingName && !nameCheckError && isNameTaken && (
+                <p className="text-sm text-destructive">
+                  This instance name is already taken. Please select a different location.
+                </p>
+              )}
+              {!isCheckingName && !nameCheckError && !isNameTaken && debouncedInstanceName && (
+                <p className="text-sm text-success">Name is available</p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                This name is automatically generated from your geographic selection
+              </p>
+            </div>
+          )}
 
-          {/* Parent Reference (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="parentReference">Parent Installation Reference (Optional)</Label>
-            <Input
-              id="parentReference"
-              type="text"
-              placeholder="e.g., WhisperScottCounty-IA"
-              value={parentReference}
-              onChange={(e) => setParentReference(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Reference the parent jurisdiction if applicable (e.g., city → county)
-            </p>
-          </div>
-
-          {/* Submission Error Alert */}
+          {/* Submission Error */}
           {submitProposal.isError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {submitProposal.error instanceof Error 
-                  ? submitProposal.error.message 
+                {submitProposal.error instanceof Error
+                  ? submitProposal.error.message
                   : 'Failed to submit proposal. Please try again.'}
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Duplicate Name Error (pre-check) */}
-          {isNameTaken && instanceName.trim() && !isCheckingName && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                The instance name "{instanceName}" is already in use. Please choose a different name.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Form Actions */}
+          {/* Submit Button */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
@@ -241,15 +471,19 @@ export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceho
             <Button
               type="submit"
               disabled={
-                !instanceName.trim() ||
-                isNameTaken ||
+                !instanceName ||
                 isCheckingName ||
-                submitProposal.isPending
+                isNameTaken ||
+                !!nameCheckError ||
+                submitProposal.isPending ||
+                (scope === 'place' && (!selectedState || !selectedCounty || !selectedPlace)) ||
+                (scope === 'county' && (!selectedState || !selectedCounty)) ||
+                (scope === 'state' && !selectedState)
               }
             >
               {submitProposal.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting...
                 </>
               ) : (

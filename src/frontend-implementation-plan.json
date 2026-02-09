@@ -1,88 +1,34 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Steps 8–9: Proposals List, Details, and Approve/Reject UI Flow",
+  "title": "Front-page Secretary discoverability greeting/tooltip",
   "requirements": [
     {
-      "id": "REQ-20",
-      "summary": "Ensure the Proposals list is reachable from the app shell and renders all proposals with loading, empty, and error states (English text).",
+      "id": "REQ-46",
+      "summary": "Add a small, dismissible greeting/tooltip in the main app shell that highlights the Secretary feature and provides a CTA to open the existing Secretary widget, with client-side persistence.",
       "acceptanceCriteria": [
-        "From the main app shell, a user can navigate to a Proposals view/section without needing a page reload.",
-        "While proposals are loading, a visible loading state is shown.",
-        "If the backend returns zero proposals, an English empty-state message is shown.",
-        "If the backend call fails, an English error message is shown.",
-        "When proposals exist, the list shows at least: instance name, proposer, and current status for each proposal."
+        "A small greeting/tooltip is visible somewhere in the main app shell (e.g., near the header actions area and/or near the floating Secretary button) when the user first visits or until dismissed.",
+        "The greeting/tooltip includes an explicit, English call-to-action that references the existing Secretary feature (e.g., \"Need help? Click Secretary to get started.\") and provides a clickable control that opens the Secretary widget.",
+        "The greeting/tooltip can be dismissed by the user and stays dismissed for that user across page reloads (client-side persistence is acceptable).",
+        "All user-facing text in the greeting/tooltip is in English.",
+        "The greeting/tooltip styling uses existing Tailwind + shadcn components/tokens and matches the established civic theme (no new color palette).",
+        "The greeting/tooltip is accessible: keyboard-operable controls, visible focus states, and appropriate aria-labels for icon-only dismiss/close controls (if used)."
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
+          "operation": "create",
+          "description": "Create a small, non-intrusive greeting/tooltip component that uses existing shadcn/ui components (e.g., Card, Button) and Tailwind tokens to match the civic theme; includes English copy referencing Secretary, an explicit CTA button that triggers an onOpenSecretary callback, and an icon-only dismiss control with aria-label and keyboard support. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalStorageState.ts",
+          "operation": "create",
+          "description": "Add a lightweight React + TypeScript hook to read/write a dismissed flag in localStorage (with safe defaults and SSR guards) so the greeting/tooltip stays dismissed across reloads."
+        },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Tighten wiring from the app shell to the proposals area to make navigation unambiguous and reliable (still no reload). Keep using existing shadcn-ui Button (from the shadcn-ui component library) for the header toggle; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
-          "operation": "modify",
-          "description": "Harden list rendering so it always shows an appropriate UI state (loading vs empty vs error vs list), including when the backend actor is still initializing. Keep English-only user-facing strings. Continue composing existing shadcn-ui components (Card, Badge, Alert, Skeleton, Button, Separator); verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Adjust proposals query behavior to better support reliable loading/empty/error states in the UI (e.g., consistent thrown errors and avoiding silent 'undefined' UI states while the actor initializes)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-21",
-      "summary": "Provide a proposal detail view reachable from each list item with full details plus loading/error handling (English text).",
-      "acceptanceCriteria": [
-        "Each proposal in the list has a clear action (e.g., a button) to open a detail view for that proposal.",
-        "The detail view displays, at minimum: instance name, proposer, description, and status.",
-        "If the detail fetch is in progress, a loading state is shown inside the detail view.",
-        "If the detail fetch fails, an English error message is shown inside the detail view."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
-          "operation": "modify",
-          "description": "Ensure each proposal list item’s 'View Details' action clearly opens the detail UI and passes the correct instance identifier for lookup. Continue using shadcn-ui Button and Card compositions; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
-          "operation": "modify",
-          "description": "Ensure the detail dialog reliably handles all states: loading, fetch error, and 'proposal not found' (null) with explicit English messaging, while displaying required fields (instance name, proposer, description, status). Continue using shadcn-ui Dialog, Alert, Skeleton, Badge, Button, Separator compositions; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Refine the single-proposal query to provide consistent UI-friendly behavior (clear errors for failures and a predictable null/not-found path) to support the detail view’s loading/error states."
-        }
-      ]
-    },
-    {
-      "id": "REQ-22",
-      "summary": "Add approve/reject controls for Pending proposals in the detail view with success/error feedback and status refresh (frontend-only plan).",
-      "acceptanceCriteria": [
-        "In the proposal detail view, when a proposal is Pending, the user can choose Approve or Reject.",
-        "When the status update succeeds, the UI shows an English success message and the updated status is visible without a full page reload.",
-        "When the status update fails (e.g., proposal not found, invalid status, or trying to update a non-Pending proposal), the UI shows an English error message.",
-        "Backend rejects unsupported statuses (anything other than Pending/Approved/Rejected) and rejects transitions from non-Pending statuses (returns failure).",
-        "After a successful status update, the proposals list reflects the updated status (via query invalidation/refetch)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
-          "operation": "modify",
-          "description": "Implement/finish the moderation controls UI: only show Approve/Reject when status is Pending; show clear English success and failure feedback; ensure the updated status is reflected immediately in the dialog after mutation (via refetch/invalidation). Continue composing shadcn-ui Button, Alert, Dialog, Badge; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useUpdateProposalStatus.ts",
-          "operation": "modify",
-          "description": "Strengthen mutation error handling and user-facing error messages (English) when the backend rejects the update, and ensure proposal list + proposal detail queries are invalidated/refetched after success so the list reflects updated status."
-        },
-        {
-          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
-          "operation": "modify",
-          "description": "Ensure the proposals list reliably reflects updated statuses after approve/reject actions (e.g., by relying on existing React Query invalidation/refetch and ensuring list state is not cached in a way that prevents rerender). Continue using shadcn-ui components; verify the component's usage instructions before implementing."
+          "description": "Wire the new SecretaryDiscoverabilityNudge into the main app shell (e.g., positioned near the Secretary button area and/or near the floating widget region). Connect the CTA to setIsSecretaryOpen(true), hide the nudge when dismissed (persisted via the localStorage hook) and optionally when the Secretary widget is already open. Ensure all new user-facing text is English and uses existing Tailwind + shadcn tokens. Verify the component's usage instructions before implementing."
         }
       ]
     }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 27,
   "summary": "Whisper: a decentralized, community-empowered civic accountability platform on Internet Computer (ICP), designed as a hierarchy of hyper-local to national “installations” with modular canisters, stable-memory persistence, cycle-efficient operation, and developer-controlled deployment/upgrades (no unilateral canister creation/shutdown by the platform).",
   "architectural_notes": [
     "Platform runs on Internet Computer (ICP) with modular, upgradeable canisters; persistence must survive upgrades via stable memory patterns.",
@@ -8,9 +8,15 @@
     "Hierarchy of installations (City → County → State → National) with explicit escalation/linking interfaces from day one.",
     "Design for cycle efficiency: prefer query calls for reads, batch work/notifications, and include low-cycle monitoring/alerts.",
     "Resilience plan: periodic snapshots/exports for recovery (e.g., to IPFS/Arweave via oracles) plus migration/import hooks if a canister runs out of cycles.",
-    "Draft/dev builds may rely on heap memory for ephemeral/working state only; production/live data that must persist across upgrades must be stored in stable memory (source of truth), following ICP stable memory upgrade patterns."
+    "Draft/dev builds may rely on heap memory for ephemeral/working state only; production/live data that must persist across upgrades must be stored in stable memory (source of truth), following ICP stable memory upgrade patterns.",
+    "Geography dataset source: U.S. Census Bureau Gazetteer Files (states/counties/places); ingest/build-time import into stable-memory structures to drive instance naming and hierarchy resolution.",
+    "Backup/redundancy approach: developer-triggered periodic state export plus manual restore/migration via restricted import hook (no multi-canister “backup canister” syncing).",
+    "Add explicit preupgrade/postupgrade hooks to serialize/restore stable state to support safe upgrades and future data-type evolution (avoid relying solely on implicit stable variable retention).",
+    "Secretary widget: prioritize app-shell/front-page visibility and open/close integration now; defer refinement of unclear/ambiguous free-text handling until later clarification."
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Build for subtask 2 failed due to an overly vague instruction (“Move to subtask 2”); subtask requires a concrete spec for the ‘secretary widget’ AI chat UI and routing behavior."
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -140,6 +146,158 @@
         "REQ-22"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-whisper-phased-build-plan-documentation-to-incorporate-geography-driven-instance-creation-powered-by-the-u-s-census-bureau-gazetteer-files-as-the-authoritative-source-for-u-s-states-counties-and-places-cities-towns-cdps-and-relist-the-updated-plan-in-the-doc",
+      "title": "Update the Whisper phased build plan documentation to incorporate geography-driven instance creation powered by the U.S. Census Bureau Gazetteer Files as the authoritative source for U.S. states, counties, and places (cities/towns/CDPs), and relist the updated plan in the doc.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-create-instance-form-ui-to-be-geography-driven-replace-free-text-instance-naming-with-a-cascading-selector-state-county-place-and-auto-generate-the-proposed-instance-name-from-the-selected-geography-still-using-the-existing-name-availability-check-and-proposal-submission-flow",
+      "title": "Update the Create Instance form UI to be geography-driven: replace free-text instance naming with a cascading selector (state → county → place) and auto-generate the proposed instance name from the selected geography (still using the existing name-availability check and proposal submission flow).",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-backend-proposal-record-to-include-the-selected-geography-identifiers-state-county-place-and-scope-so-proposals-can-be-rendered-and-moderated-with-unambiguous-geographic-metadata",
+      "title": "Extend the backend proposal record to include the selected geography identifiers (state/county/place) and scope, so proposals can be rendered and moderated with unambiguous geographic metadata.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-the-create-instance-flow-and-remove-avoid-any-manual-free-text-instance-naming-so-that-instance-proposals-are-created-only-via-geography-driven-selection-state-county-place-with-an-auto-generated-instance-name-preview",
+      "title": "Audit the Create Instance flow and remove/avoid any manual/free-text instance naming so that instance proposals are created only via geography-driven selection (State → County → Place) with an auto-generated instance name preview.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-geography-driven-selectors-use-the-existing-backend-powered-react-query-hooks-and-provide-clear-english-loading-empty-error-states-for-each-selector-level-states-counties-places",
+      "title": "Ensure the geography-driven selectors use the existing backend-powered React Query hooks and provide clear English loading/empty/error states for each selector level (states, counties, places).",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-instance-name-availability-checking-behavior-consistent-with-the-geography-driven-flow-debounce-checks-show-clear-availability-taken-feedback-in-english-and-prevent-submission-when-the-name-is-taken",
+      "title": "Make instance-name availability checking behavior consistent with the geography-driven flow: debounce checks, show clear availability/taken feedback in English, and prevent submission when the name is taken.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-user-facing-text-in-the-geography-driven-create-instance-ui-is-in-english-and-does-not-refer-to-manual-naming-e-g-avoid-instructions-implying-the-user-should-type-an-instance-name",
+      "title": "Ensure all user-facing text in the geography-driven Create Instance UI is in English and does not refer to manual naming (e.g., avoid instructions implying the user should type an instance name).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-secretary-chat-widget-to-the-whisper-frontend-shell-that-can-be-opened-closed-by-the-user-and-is-visible-from-the-main-app-shell-frontend-src-app-tsx-the-widget-must-greet-first-time-openers-with-the-exact-provided-welcome-script-text-and-present-the-listed-options-in-a-numbered-readable-format",
+      "title": "Add an in-app “Secretary” chat widget to the Whisper frontend shell that can be opened/closed by the user and is visible from the main app shell (frontend/src/App.tsx). The widget must greet first-time openers with the exact provided welcome/script text and present the listed options in a numbered, readable format.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-minimal-non-ai-chat-interaction-inside-the-secretary-widget-allow-the-user-to-respond-by-clicking-an-option-1-6-and-or-entering-a-free-text-reply-then-show-an-immediate-on-screen-confirmation-message-that-summarizes-what-the-user-selected-typed",
+      "title": "Implement a minimal, non-AI chat interaction inside the Secretary widget: allow the user to respond by clicking an option (1–6) and/or entering a free-text reply, then show an immediate on-screen confirmation message that summarizes what the user selected/typed.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-basic-in-app-routing-behavior-for-secretary-selections-that-directs-users-to-currently-existing-sections-of-the-app-where-possible-and-otherwise-shows-a-clear-placeholder-message-at-minimum-a-browse-local-issues-or-see-what-s-happening-in-my-area-must-open-the-existing-proposals-view-toggle-the-existing-showproposals-ui-in-frontend-src-app-tsx-and-b-any-other-selection-that-does-not-map-to-an-existing-page-must-show-a-placeholder-message-inside-the-widget-stating-that-the-selected-flow-is-not-implemented-yet",
+      "title": "Add basic in-app “routing” behavior for Secretary selections that directs users to currently existing sections of the app where possible, and otherwise shows a clear placeholder message. At minimum: (a) “Browse local issues or see what’s happening in my area” must open the existing Proposals view (toggle the existing showProposals UI in frontend/src/App.tsx), and (b) any other selection that does not map to an existing page must show a placeholder message inside the widget stating that the selected flow is not implemented yet.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-secretary-widget-ui-using-the-existing-design-system-tailwind-shadcn-components-and-match-the-established-civic-theme-tokens-from-the-project-do-not-introduce-a-new-color-palette-the-widget-must-be-accessible-keyboard-operable-open-close-visible-focus-states-and-appropriate-aria-labels-for-icon-only-controls",
+      "title": "Implement the Secretary widget UI using the existing design system (Tailwind + shadcn components) and match the established civic theme tokens from the project (do not introduce a new color palette). The widget must be accessible: keyboard-operable open/close, visible focus states, and appropriate aria-labels for icon-only controls.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-secretary-welcome-onboarding-copy-to-incorporate-the-previously-suggested-guidance-a-short-capability-statement-a-short-limitation-transparency-statement-and-instructions-that-users-can-click-an-option-or-type-in-plain-words-all-user-facing-text-must-be-in-english",
+      "title": "Update the Secretary welcome/onboarding copy to incorporate the previously suggested guidance: a short capability statement, a short limitation/transparency statement, and instructions that users can click an option or type in plain words. All user-facing text must be in English.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-secretary-chat-message-roles-so-assistant-confirmations-and-placeholder-replies-are-rendered-as-assistant-messages-not-user-messages-while-user-inputs-and-option-selections-are-rendered-as-user-messages",
+      "title": "Fix the Secretary chat message roles so assistant confirmations and placeholder replies are rendered as assistant messages (not user messages), while user inputs and option selections are rendered as user messages.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-confirmation-before-routing-flow-for-secretary-option-clicks-after-an-option-is-selected-show-a-short-assistant-confirmation-message-and-then-perform-any-in-app-navigation-routing-behavior-e-g-opening-proposals-for-option-5",
+      "title": "Add a confirmation-before-routing flow for Secretary option clicks: after an option is selected, show a short assistant confirmation message and then perform any in-app navigation/routing behavior (e.g., opening Proposals for option 5).",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-return-to-menu-and-start-over-actions-inside-the-secretary-widget-so-users-can-quickly-re-display-the-six-options-and-or-reset-the-conversation-without-closing-the-widget",
+      "title": "Implement 'Return to menu' and 'Start over' actions inside the Secretary widget so users can quickly re-display the six options and/or reset the conversation without closing the widget.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-simple-fallback-for-unclear-free-text-input-when-the-user-types-something-that-does-not-match-a-supported-flow-respond-with-a-brief-assistant-message-and-re-present-the-six-main-options",
+      "title": "Add a simple fallback for unclear free-text input: when the user types something that does not match a supported flow, respond with a brief assistant message and re-present the six main options.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-existing-secretary-chat-widget-into-the-front-page-ui-so-it-is-clearly-visible-and-discoverable-without-relying-only-on-the-floating-bottom-right-icon-add-a-prominent-entry-point-in-the-primary-app-shell-header-actions-area-that-opens-the-secretary-widget-when-clicked-using-english-user-facing-text-e-g-button-label-secretary-or-ask-the-secretary",
+      "title": "Integrate the existing Secretary chat widget into the front page UI so it is clearly visible and discoverable without relying only on the floating bottom-right icon. Add a prominent entry point in the primary app shell (header actions area) that opens the Secretary widget when clicked, using English user-facing text (e.g., button label \"Secretary\" or \"Ask the Secretary\").",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-secretarywidget-component-api-as-needed-to-support-being-opened-from-the-front-page-header-entry-point-e-g-allow-app-tsx-to-control-open-close-state-via-props-or-expose-a-safe-callback-ref-pattern-without-changing-the-existing-secretary-conversation-flows-or-routing-behavior",
+      "title": "Update the SecretaryWidget component API as needed to support being opened from the front page/header entry point (e.g., allow App.tsx to control open/close state via props, or expose a safe callback/ref pattern), without changing the existing secretary conversation flows or routing behavior.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-small-non-intrusive-front-page-greeting-tooltip-that-helps-users-notice-the-existing-secretary-widget-and-provides-an-obvious-action-to-open-it",
+      "title": "Add a small, non-intrusive front-page greeting/tooltip that helps users notice the existing Secretary widget and provides an obvious action to open it.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -254,6 +412,94 @@
     {
       "id": "AR-20",
       "summary": "Next build: complete steps 8 and 9 together (per current build plan/checklist)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Populate and use a pre-defined US geography dataset (states → counties → places) for instance creation, sourced from U.S. Census Gazetteer files; replace manual naming with DB-driven selection and parent resolution",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Add developer-triggered state export/import for backup and draft-data recovery (export_state + restricted restore_from_export)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Extend the backend data model to support a US geography dataset (states → counties → places) stored in stable memory inside the existing single Motoko actor (no additional canisters).",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add backend query APIs to power a cascading geography selector for instance creation: list states; list counties by state; list places by county; and provide basic server-side filtering/pagination to avoid unbounded responses.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Add a developer-triggered, backend-supported ingestion workflow for the Census Gazetteer-derived dataset that does not require runtime HTTP calls: support uploading the processed dataset to the canister in chunks and finalizing it for use by queries.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Implement explicit Motoko upgrade hooks (preupgrade/postupgrade) to serialize/restore all persistent state safely across upgrades (supporting future type evolution)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Implement explicit Motoko canister upgrade hooks in `backend/main.mo` by adding `system func preupgrade()` and `system func postupgrade()` that serialize and restore all persistent application state so data survives upgrades reliably (and does not depend on implicit retention of in-memory structures like `Map`).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Ensure the upgrade hooks cover any additional persistent state that affects authorization or functionality (including access-control state, installations, and all geography-related maps/mappings) so behavior is unchanged after upgrade.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Step 14 (Frontend updates) — Substep 1: update the UI to use geography-driven data instead of manual naming",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Add an in-app “Secretary” AI chat widget to the frontend shell that greets users, asks what they’re trying to do, and routes them to the appropriate app section; include the provided welcome/script copy as the default prompt/options",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Integrate improved onboarding guidance + conversational flows into the Secretary chat widget (clear capabilities/limitations line, confirmation-before-routing, start-over/return-to-menu actions, fallbacks for unclear free-text, plain placeholder wording)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Implement Secretary widget front-page/app-shell integration so it is visible (open/close control available from main UI)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Add a small front-page greeting/tooltip to help users notice the Secretary widget (improve discoverability)",
       "reqIds": [],
       "status": "in_progress"
     }

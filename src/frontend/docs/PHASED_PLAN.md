@@ -168,42 +168,86 @@ This document outlines a phased approach to building Whisper, starting with a mi
 
 ---
 
-## Phase 4: AI Routing & Citizen-Led Founding
+## Phase 4: Geography-Driven Instance Creation & AI Routing
 
-**Goal**: Add AI assistant for jurisdiction routing and enable citizen-led installation creation.
+**Goal**: Enable citizen-led instance creation using authoritative U.S. geography data and add AI assistant for jurisdiction routing.
+
+### Geography-Driven Instance Creation
+
+**Data Source**: U.S. Census Bureau Gazetteer Files (https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html)
+
+The backend uses official U.S. Census Bureau geography data including:
+- All 50 U.S. states
+- All 3,143 counties and county-equivalent areas
+- All ~19,500 cities, towns, and places (incorporated + CDPs)
+
+**Important**: Data ingestion is developer-operated and offline. The application does not fetch Census data at runtime. Geography data is preprocessed by the developer and uploaded to the backend canister in chunks using admin-only ingestion methods.
+
+**Architecture**: Single backend canister stores all geography data in stable memory (no separate GeographyDB canister). This ensures data survives upgrades and avoids inter-canister call overhead.
 
 **Deliverables**:
+1. **Geography Data Storage**:
+   - Backend stable memory structures for states, counties, and places with hierarchical relationships
+   - Developer-triggered ingestion methods (admin-only) to upload preprocessed Census data in chunks
+   - Query methods with pagination/search to avoid unbounded response sizes:
+     - `getAllStates()` → returns all states
+     - `getCountiesForState(stateGeoId)` → returns counties for a state
+     - `getPlacesForCounty(countyGeoId)` → returns places for a county
+
+2. **Cascading Geography Selector**:
+   - Replace free-text instance naming with dropdown selectors
+   - User flow: Select state → Select county → Select place
+   - Auto-generate instance name from selection (e.g., "WhisperDavenport-IA")
+   - Existing debounced availability check continues to work
+
+3. **Enhanced Proposal Data Model**:
+   - Proposals now include geography metadata: scope, state, county, place names, Census boundary IDs, area, population
+   - Proposals list and detail views display geography information in readable English format
+
+4. **Citizen-Led Installation Founding**:
+   - Frontend form: "Found a new installation" using geography selectors
+   - Backend `submitProposal(...)` update call → status "Pending"
+   - Provisional activation milestones (future phase):
+     - Minimum 10 verified users join
+     - Minimum 5 issues reported
+     - Admin review (anti-troll filter)
+   - Once activated, installation becomes fully functional
+
+### AI Routing Assistant (Future)
+
+**Deliverables** (deferred to later in Phase 4):
 1. **AI Routing Assistant**:
    - Chatbot interface on issue creation: "Describe your issue"
    - AI analyzes description and suggests installation (city vs. county vs. state)
    - Uses jurisdiction blueprint DB (rules-based initially, ML later)
    - User can override AI suggestion
 
-2. **Citizen-Led Installation Founding**:
-   - Frontend form: "Found a new installation" (scope, name, location, parent)
-   - Backend `proposeInstallation(data)` update call → status "provisional"
-   - Provisional activation milestones:
-     - Minimum 10 verified users join
-     - Minimum 5 issues reported
-     - Admin review (anti-troll filter)
-   - Once activated, installation becomes fully functional
-
-3. **Jurisdiction Blueprint DB**:
+2. **Jurisdiction Blueprint DB**:
    - Expandable rules engine: issue type + location → installation
    - Examples: "pothole" + "Davenport" → WhisperDavenport-IA; "state highway" + "Iowa" → WhisperIowa
    - Admin interface to add/edit rules
 
 **Architectural Hooks for Scaling**:
+- Geography query methods support future client-side filtering and search
+- Proposal data model extensible for additional metadata
 - AI service interface (rules-based now, external ML API later)
 - Installation approval workflow (manual admin now, DAO governance later)
 
 **Explicit Non-Goals**:
-- No advanced ML models (rules-based AI only)
+- No runtime fetching of Census data (developer uploads preprocessed data)
+- No separate GeographyDB canister (single-canister architecture)
+- No advanced ML models (rules-based AI only, deferred)
 - No DAO governance for installation approval (admin-controlled)
 - No WSP rewards yet
+- No automated scheduled backups (manual export/restore only)
 
 **Success Criteria**:
-- AI correctly routes 80%+ of issues to appropriate installation
+- Users can select state/county/place from authoritative Census data
+- Instance names are auto-generated correctly (e.g., "WhisperDavenport-IA")
+- Duplicate detection prevents multiple proposals for same geography
+- Proposals display geography metadata in readable format
+- Geography data survives canister upgrades (stable memory persistence)
+- AI correctly routes 80%+ of issues to appropriate installation (future)
 - Citizens can propose new installations and see activation progress
 
 ---

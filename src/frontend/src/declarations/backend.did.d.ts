@@ -10,18 +10,102 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type CensusStateCode = string;
+export type GeoId = string;
+export type HierarchicalGeoId = string;
 export interface Proposal {
   'status' : string,
+  'geographyLevel' : USHierarchyLevel,
+  'squareMeters' : bigint,
   'description' : string,
+  'state' : string,
   'proposer' : Principal,
   'instanceName' : string,
+  'county' : string,
+  'censusBoundaryId' : string,
+  'population2020' : string,
 }
+export interface USCounty {
+  'censusLandAreaSqMeters' : string,
+  'fipsCode' : string,
+  'hierarchicalId' : HierarchicalGeoId,
+  'censusFipsStateCode' : string,
+  'censusAreaAcres' : string,
+  'fullName' : string,
+  'shortName' : string,
+  'censusWaterAreaSqMeters' : string,
+  'population2010' : string,
+}
+export interface USGeographyDataChunk {
+  'states' : Array<USState>,
+  'places' : Array<USPlace>,
+  'counties' : Array<USCounty>,
+}
+export type USHierarchyLevel = { 'country' : null } |
+  { 'state' : null } |
+  { 'place' : null } |
+  { 'county' : null };
+export interface USPlace {
+  'countyFullName' : string,
+  'hierarchicalId' : HierarchicalGeoId,
+  'fullName' : string,
+  'censusCensusFipsCode' : string,
+  'censusLandKm2' : bigint,
+  'shortName' : string,
+  'censusWaterKm2' : bigint,
+  'censusAcres' : bigint,
+  'uspsPlaceType' : string,
+  'population' : [] | [bigint],
+  'censusPlaceType' : string,
+  'censusStateCode' : CensusStateCode,
+}
+export interface USState {
+  'censusLandAreaSqMeters' : bigint,
+  'fipsCode' : CensusStateCode,
+  'hierarchicalId' : HierarchicalGeoId,
+  'shortName' : string,
+  'longName' : string,
+  'censusWaterAreaSqMeters' : bigint,
+  'censusAcreage' : bigint,
+  'termType' : string,
+}
+export interface UserProfile { 'name' : string }
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
 export interface _SERVICE {
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
+  'getAllStates' : ActorMethod<[], Array<USState>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
+  'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'ingestUSGeographyData' : ActorMethod<
+    [Array<USGeographyDataChunk>],
+    undefined
+  >,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
-  'submitProposal' : ActorMethod<[string, string, string], boolean>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'submitProposal' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      USHierarchyLevel,
+      string,
+      bigint,
+      string,
+    ],
+    boolean
+  >,
   'updateProposalStatus' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;

@@ -3,17 +3,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Clock, ArrowUpRight, Plus, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, ArrowUpRight, Plus, FileText, MessageCircle } from 'lucide-react';
 import { CreateInstancePlaceholderCard } from '@/components/create-instance/CreateInstancePlaceholderCard';
 import { ProposalsSection } from '@/components/proposals/ProposalsSection';
+import { SecretaryWidget } from '@/components/secretary/SecretaryWidget';
+import { SecretaryDiscoverabilityNudge } from '@/components/secretary/SecretaryDiscoverabilityNudge';
+import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 
 function App() {
   const [isCreateInstanceOpen, setIsCreateInstanceOpen] = useState(false);
   const [showProposals, setShowProposals] = useState(false);
+  const [isSecretaryOpen, setIsSecretaryOpen] = useState(false);
+  const [hasSeenSecretaryNudge, setHasSeenSecretaryNudge] = useLocalStorageState(
+    'whisper-secretary-nudge-dismissed',
+    false
+  );
   const currentYear = new Date().getFullYear();
   const appIdentifier = encodeURIComponent(
     typeof window !== 'undefined' ? window.location.hostname : 'whisper-icp'
   );
+
+  const handleSecretaryOptionSelect = (optionNumber: number) => {
+    if (optionNumber === 5) {
+      // Option 5: Browse local issues
+      setShowProposals(true);
+    }
+  };
+
+  const handleOpenSecretary = () => {
+    setIsSecretaryOpen(true);
+    setHasSeenSecretaryNudge(true);
+  };
+
+  const handleDismissNudge = () => {
+    setHasSeenSecretaryNudge(true);
+  };
+
+  // Show nudge if user hasn't seen it and Secretary is not currently open
+  const showSecretaryNudge = !hasSeenSecretaryNudge && !isSecretaryOpen;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,6 +57,15 @@ function App() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenSecretary}
+                aria-label="Open Secretary assistant"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Secretary
+              </Button>
               <Button
                 variant={showProposals ? 'default' : 'outline'}
                 size="sm"
@@ -57,6 +93,14 @@ function App() {
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-12">
+          {/* Secretary Discoverability Nudge */}
+          {showSecretaryNudge && (
+            <SecretaryDiscoverabilityNudge
+              onOpenSecretary={handleOpenSecretary}
+              onDismiss={handleDismissNudge}
+            />
+          )}
+
           {/* Proposals Section (conditionally shown) */}
           {showProposals && (
             <>
@@ -296,6 +340,13 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Secretary Widget */}
+      <SecretaryWidget
+        open={isSecretaryOpen}
+        onOpenChange={setIsSecretaryOpen}
+        onOptionSelect={handleSecretaryOptionSelect}
+      />
     </div>
   );
 }

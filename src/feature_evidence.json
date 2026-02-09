@@ -2,61 +2,23 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-finish-step-8-by-ensuring-the-proposals-list-ui-is-reachable-from-the-existing-app-shell-and-reliably-renders-all-create-instance-proposals-returned-by-the-backend-in-a-clear-list-with-loading-empty-and-error-states-all-user-facing-text-in-english",
-      "featureTitle": "Implement/finish Step 8 by ensuring the Proposals list UI is reachable from the existing app shell and reliably renders all Create Instance proposals returned by the backend in a clear list with loading, empty, and error states (all user-facing text in English).",
+      "featureId": "feature-add-a-small-non-intrusive-front-page-greeting-tooltip-that-helps-users-notice-the-existing-secretary-widget-and-provides-an-obvious-action-to-open-it",
+      "featureTitle": "Add a small, non-intrusive front-page greeting/tooltip that helps users notice the existing Secretary widget and provides an obvious action to open it.",
       "files": [
-        "frontend/src/components/proposals/ProposalsSection.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/App.tsx",
+        "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
+        "frontend/src/hooks/useLocalStorageState.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
         "shadcn-ui@1.0.0",
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-20"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-finish-step-8-by-providing-a-proposal-detail-view-that-lets-a-user-inspect-a-single-proposal-in-full-using-the-backend-query-capability-either-from-list-data-or-by-fetching-by-instance-name-with-clear-loading-error-handling-and-english-user-facing-text",
-      "featureTitle": "Implement/finish Step 8 by providing a proposal detail view that lets a user inspect a single proposal in full, using the backend query capability (either from list data or by fetching by instance name), with clear loading/error handling and English user-facing text.",
-      "files": [
-        "frontend/src/components/proposals/ProposalDetailDialog.tsx",
-        "frontend/src/components/proposals/ProposalsSection.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-21"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-finish-step-9-by-adding-a-minimal-approve-reject-moderation-action-for-proposals-provide-frontend-controls-to-update-status-e-g-pending-approved-rejected-and-add-corresponding-backend-validation-so-updates-are-restricted-to-supported-statuses-and-are-only-allowed-from-pending-ui-must-show-clear-english-success-failure-feedback-and-reflect-updated-status-after-mutation",
-      "featureTitle": "Implement/finish Step 9 by adding a minimal approve/reject moderation action for proposals: provide frontend controls to update status (e.g., Pending → Approved/Rejected) and add corresponding backend validation so updates are restricted to supported statuses and are only allowed from Pending. UI must show clear English success/failure feedback and reflect updated status after mutation.",
-      "files": [
-        "frontend/src/components/proposals/ProposalDetailDialog.tsx",
-        "frontend/src/components/proposals/ProposalsSection.tsx",
-        "frontend/src/hooks/useUpdateProposalStatus.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-22"
+        "REQ-46"
       ],
       "confidence": "high"
     }

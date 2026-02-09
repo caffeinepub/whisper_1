@@ -81,3 +81,25 @@ export function useGetProposal(instanceName: string) {
     retry: 2,
   });
 }
+
+/**
+ * Hook to check if the current caller is an admin.
+ */
+export function useIsCallerAdmin() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ['isCallerAdmin'],
+    queryFn: async () => {
+      if (!actor) return false;
+      try {
+        return await actor.isCallerAdmin();
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+}

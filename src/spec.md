@@ -1,13 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Complete Steps 8–9 by adding a reachable proposals list, proposal detail view, and a minimal approve/reject moderation flow with clear English loading/empty/error/success feedback.
+**Goal:** Improve discoverability of the existing Secretary widget by adding a small, non-intrusive greeting/tooltip with a clear action to open it.
 
 **Planned changes:**
-- Add navigation from the main app shell to a Proposals section/view that lists all Create Instance proposals from the backend with loading, empty, and error states.
-- Add a proposal detail view accessible from each list item, showing instance name, proposer, description, and status with in-view loading/error handling.
-- Add approve/reject controls in the proposal detail view for Pending proposals, including success/failure messages and UI updates without full page reload.
-- Add backend validation for proposal status updates: only allow Pending → Approved/Rejected and reject unsupported statuses.
-- Ensure the proposals list reflects updated statuses after a successful moderation action (via refetch/query invalidation).
+- Add a front-page greeting/tooltip in the main app shell (e.g., near header actions and/or near the floating Secretary button) that appears on first visit or until dismissed.
+- Include an explicit English call-to-action referencing the Secretary feature and a clickable control that opens the existing Secretary widget.
+- Add a user-dismissible close control with accessible labeling, keyboard operability, and visible focus states.
+- Persist the dismissed state client-side so the greeting/tooltip stays dismissed across page reloads.
+- Implement styling using existing Tailwind + shadcn components/tokens to match the established civic theme (no new color palette).
 
-**User-visible outcome:** Users can open a Proposals view from the app shell, browse proposals, open a proposal’s details, and (for Pending proposals) approve or reject them with immediate status updates and clear English feedback.
+**User-visible outcome:** First-time visitors see a subtle tip pointing them to the Secretary feature and can click it to open the widget; once dismissed, the tip will no longer appear for that user on reload.

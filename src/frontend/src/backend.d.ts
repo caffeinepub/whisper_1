@@ -7,17 +7,90 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export type GeoId = string;
+export interface USPlace {
+    countyFullName: string;
+    hierarchicalId: HierarchicalGeoId;
+    fullName: string;
+    censusCensusFipsCode: string;
+    censusLandKm2: bigint;
+    shortName: string;
+    censusWaterKm2: bigint;
+    censusAcres: bigint;
+    uspsPlaceType: string;
+    population?: bigint;
+    censusPlaceType: string;
+    censusStateCode: CensusStateCode;
+}
+export interface USGeographyDataChunk {
+    states: Array<USState>;
+    places: Array<USPlace>;
+    counties: Array<USCounty>;
+}
+export type CensusStateCode = string;
+export interface USCounty {
+    censusLandAreaSqMeters: string;
+    fipsCode: string;
+    hierarchicalId: HierarchicalGeoId;
+    censusFipsStateCode: string;
+    censusAreaAcres: string;
+    fullName: string;
+    shortName: string;
+    censusWaterAreaSqMeters: string;
+    population2010: string;
+}
+export interface USState {
+    censusLandAreaSqMeters: bigint;
+    fipsCode: CensusStateCode;
+    hierarchicalId: HierarchicalGeoId;
+    shortName: string;
+    longName: string;
+    censusWaterAreaSqMeters: bigint;
+    censusAcreage: bigint;
+    termType: string;
+}
+export type HierarchicalGeoId = string;
 export interface Proposal {
     status: string;
+    geographyLevel: USHierarchyLevel;
+    squareMeters: bigint;
     description: string;
+    state: string;
     proposer: Principal;
     instanceName: string;
+    county: string;
+    censusBoundaryId: string;
+    population2020: string;
+}
+export interface UserProfile {
+    name: string;
+}
+export enum USHierarchyLevel {
+    country = "country",
+    state = "state",
+    place = "place",
+    county = "county"
+}
+export enum UserRole {
+    admin = "admin",
+    user = "user",
+    guest = "guest"
 }
 export interface backendInterface {
+    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     getAllProposals(): Promise<Array<[string, Proposal]>>;
+    getAllStates(): Promise<Array<USState>>;
+    getCallerUserProfile(): Promise<UserProfile | null>;
+    getCallerUserRole(): Promise<UserRole>;
+    getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
+    getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
+    getUserProfile(user: Principal): Promise<UserProfile | null>;
+    ingestUSGeographyData(data: Array<USGeographyDataChunk>): Promise<void>;
+    isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
-    isParent(childId: Principal, parentId: Principal): Promise<boolean>;
-    submitProposal(description: string, instanceName: string, status: string): Promise<boolean>;
+    isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
+    saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<boolean>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
 }
