@@ -121,7 +121,7 @@ function App() {
             </nav>
             <Button
               onClick={() => setIsCreateInstanceOpen(true)}
-              className="bg-accent hover:bg-accent-hover text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all border border-accent/20"
+              className="cta-primary"
             >
               Get Started
             </Button>
@@ -131,18 +131,18 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1">
-        {/* Hero Section with Updated Real-Life Community Image and Refined Overlay */}
+        {/* Hero Section with Warm Community Image and Refined Overlay */}
         <section className="relative py-20 md:py-32 overflow-hidden">
-          {/* Hero Background Image with Refined Overlay */}
+          {/* Hero Background Image with Warm Tones */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png"
+              src="/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png"
               alt="Diverse community members collaborating and sharing ideas"
               className="w-full h-full object-cover object-center brightness-105 contrast-105"
               style={{ objectPosition: '50% 40%' }}
             />
-            {/* Refined gradient overlay - lighter for better image visibility while maintaining text readability */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-slate-800/75 to-teal-900/70"></div>
+            {/* Warm/neutral overlay gradient with reduced opacity for better photo visibility */}
+            <div className="hero-overlay"></div>
           </div>
 
           {/* Hero Content */}
@@ -158,7 +158,7 @@ function App() {
                 <Button
                   size="lg"
                   onClick={() => setIsCreateInstanceOpen(true)}
-                  className="bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl px-8 py-6 text-base shadow-glow hover:shadow-glow-lg transition-all hover-lift border border-accent/30"
+                  className="cta-primary text-base px-8 py-6"
                 >
                   Explore Whisper
                 </Button>
@@ -215,7 +215,7 @@ function App() {
                       <div className="flex flex-col sm:flex-row gap-4">
                         <Button
                           onClick={() => setIsCreateInstanceOpen(true)}
-                          className="bg-accent hover:bg-accent-hover text-white font-medium rounded-xl flex-1 border border-accent/20 shadow-md hover:shadow-lg transition-all"
+                          className="cta-primary flex-1"
                         >
                           Create New Instance
                         </Button>
@@ -288,14 +288,14 @@ function App() {
                   <CardContent className="space-y-3">
                     <Button
                       onClick={handleOpenSecretary}
-                      className="w-full bg-accent hover:bg-accent-hover text-white rounded-xl justify-start border border-accent/20 shadow-sm hover:shadow-md transition-all font-medium"
+                      className="cta-primary w-full justify-start"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Report Issue
                     </Button>
                     <Button
                       onClick={() => setIsCreateInstanceOpen(true)}
-                      className="w-full bg-success hover:bg-success-hover text-white rounded-xl justify-start border border-success/20 shadow-sm hover:shadow-md transition-all font-medium"
+                      className="cta-success w-full justify-start"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Join Campaign
@@ -304,7 +304,7 @@ function App() {
                       onClick={() => setShowProposals(!showProposals)}
                       variant={showProposals ? "default" : "outline"}
                       className={showProposals 
-                        ? "w-full rounded-xl justify-start bg-accent hover:bg-accent-hover text-white border border-accent/20 shadow-sm hover:shadow-md transition-all font-medium"
+                        ? "cta-primary w-full justify-start"
                         : "w-full rounded-xl justify-start border-accent/30 hover:bg-accent/10 shadow-sm hover:shadow-md transition-all font-medium"
                       }
                     >
@@ -397,33 +397,35 @@ function App() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Clock className="h-5 w-5 text-warning" />
-                      Next Steps
+                      Current Phase
                     </CardTitle>
-                    <CardDescription>Upcoming development phases</CardDescription>
+                    <CardDescription>
+                      Phase 4: Geography-driven instance creation
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Phase 1: Single Installation</span>
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                        Planned
+                      <span className="text-sm">U.S. Geography Data Model</span>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                        Complete
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Phase 2: Multi-Installation</span>
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                        Planned
+                      <span className="text-sm">Cascading Selector UI</span>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                        Complete
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Phase 3: Collaboration Tools</span>
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                        Planned
+                      <span className="text-sm">Proposal System</span>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                        Complete
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Phase 4: AI Routing</span>
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                        Planned
+                      <span className="text-sm">Secretary Navigation</span>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                        Complete
                       </Badge>
                     </div>
                   </CardContent>
@@ -435,7 +437,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border/50 py-8 mt-12">
+      <footer className="bg-card border-t border-border/50 py-8 mt-auto">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -444,7 +446,7 @@ function App() {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Built with</span>
-              <span className="text-red-500">♥</span>
+              <span className="text-destructive">♥</span>
               <span>using</span>
               <a
                 href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appIdentifier}`}

@@ -1,45 +1,57 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T00:44:11.066Z",
-  "summary": "Diff implements a Secretary navigation registry/deep-link mechanism (hook + parsing + docs) and refines Secretary widget styling. Hero/CTA polish appears partially addressed via global CSS utilities and App updates, but the actual new hero image asset under the required public assets path is not evidenced in the diff summary. Several unrelated UI/theme and feature-area styling changes also appear beyond the BuildRequest scope.",
+  "generatedAt": "2026-02-10T01:18:08.338Z",
+  "summary": "Diff implements new global theme tokens and adds a warm/neutral `.hero-overlay` utility plus new CTA utility classes, but it also introduces unrelated Secretary navigation/deep-link logic changes and does not provide clear evidence of the new hero image asset/caching changes required by REQ-1.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Hero section loads the updated photorealistic image asset from the static assets directory under frontend/public/assets/generated (whisper-hero-community-real-v2.dim_1600x900.png) and uses it as the homepage hero background.",
-      "reason": "The diff summary mentions App.tsx uses an updated hero image, but there is no evidence of the actual new image file being added under frontend/public/assets/generated (no added/modified files under frontend/public are shown). Without the asset change in the static directory, the acceptance criteria for loading the updated image from that location is not verified.",
+      "requirement": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
+      "reason": "The diff shows no new/changed image asset file (no files added) and the `App.tsx` change is truncated, so there is insufficient evidence that the hero background references the new warm image filename/version for cache-busting and that object-cover/full-bleed behavior is preserved.",
       "evidence": [
-        "frontend/src/App.tsx (mentions updated hero image in summary, but asset file change not shown)",
-        "File diff summary: ADDED files do not include any frontend/public/assets/generated image"
+        "<file-diff>: Added: 0 (no new image asset present)",
+        "frontend/src/App.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
+      "reason": "While new CTA utility classes are introduced in `index.css`, the `App.tsx` diff is truncated and does not provide direct evidence that the header \"Get Started\" button specifically uses these classes or otherwise has guaranteed contrast in both light/dark modes, including hover/active/focus-visible states.",
+      "evidence": [
+        "frontend/src/index.css (truncated): `.cta-primary` utility introduced",
+        "frontend/src/App.tsx (truncated): header/button usage not fully visible"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Global theme/token overhaul to a navy/teal civic-tech palette and addition of multiple new global utility styles (glow shadows, hover lift, hero gradient, etc.).",
-      "reason": "BuildRequest focuses on hero visual treatment, Secretary widget readability, and navigation hooks. A broad global color-token/theme shift is not explicitly requested and may affect unrelated UI across the app.",
+      "description": "Secretary navigation registry and deep-link handling logic added/modified in App component.",
+      "reason": "BuildRequest explicitly lists \"No changes to Secretary navigation/deep-linking logic\" as a non-goal, but `App.tsx` shows new imports and logic using `useSecretaryNavigationRegistry` and `parseDeepLink`, and registers navigation destinations and handles deep links on mount.",
       "evidence": [
-        "frontend/src/index.css"
+        "frontend/src/App.tsx (truncated): imports `useSecretaryNavigationRegistry`, `parseDeepLink`; registers destinations; handles deep links"
       ]
     },
     {
-      "description": "Restyling and feature-scope updates to Create Instance and proposals-related UI beyond the Secretary/hero requirements.",
-      "reason": "BuildRequest does not request redesign/restyling of instance creation placeholder cards or proposals list/detail components; these appear to be additional UI work outside the specified requirements.",
+      "description": "Global theme/token overhaul (OKLCH token values for many CSS variables) beyond hero/overlay/button refinements.",
+      "reason": "The request is narrowly scoped to hero image/overlay and CTA contrast fixes; `index.css` modifies a large set of global CSS variables (background, foreground, card, popover, secondary, muted, border, etc.) for both light and dark mode, which is broader than the requested visual refinements.",
       "evidence": [
-        "frontend-file-summaries.txt (entries for frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx, frontend/src/components/proposals/ProposalsSection.tsx, frontend/src/components/proposals/ProposalDetailDialog.tsx)"
+        "frontend/src/index.css (truncated): extensive `:root` and `.dark` variable changes"
+      ]
+    },
+    {
+      "description": "New Tailwind theme extensions (glow shadows, animations/keyframes, additional color variants) not explicitly requested.",
+      "reason": "The BuildRequest does not ask for new animation/glow utilities; `tailwind.config.js` adds glow shadows and keyframes/animations (fade-in-up/fade-in) and extends palette variants.",
+      "evidence": [
+        "frontend/tailwind.config.js: `boxShadow.glow`, `boxShadow.glow-lg`, `keyframes`, `animation` additions"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md",
     "frontend/src/App.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useSecretaryChat.ts",
-    "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
     "frontend/src/index.css",
-    "frontend/src/lib/secretaryNavigation.ts",
+    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

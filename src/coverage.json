@@ -1,86 +1,52 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T00:44:11.069Z",
+  "generatedAt": "2026-02-10T01:18:08.340Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the homepage hero background to use a real-life (photorealistic) image that clearly conveys community collaboration and efficiency, and ensure the hero section uses the updated asset.",
+        "summary": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png",
+          "frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png",
           "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/public/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png",
+          "frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png",
           "frontend/src/App.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Refine the hero overlay and overall hero tone so the hero image remains visibly recognizable while maintaining strong text readability (adjust gradient colors/opacities and/or add subtle image treatment if needed).",
+        "summary": "Refine the hero overlay gradient to shift tint toward warm or neutral tones and adjust overlay opacity so the new photo’s natural colors remain visible while maintaining strong text readability.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/index.css"
+          "frontend/src/index.css",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/index.css"
+          "frontend/src/index.css",
+          "frontend/src/App.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Apply the listed UI refinements across the hero and key interactive elements: hero headline contrast/pop, hero spacing/layout, and CTA button polish (hover, shadows, borders) while staying consistent with the existing style system.",
+        "summary": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/index.css"
+          "frontend/src/index.css",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/index.css"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Refine the Secretary widget and related UI for readability and hierarchy: background/blur level, assistant/user bubble contrast, and typographic hierarchy (title, quick actions label, message text).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/index.css"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/index.css"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Add an extensible navigation/deep-link hook system that current and future pages/features can register with, so the Secretary chatbot can direct the user to the correct page/feature when invoked (including from menu option selection and free-text routing).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
-          "frontend/src/lib/secretaryNavigation.ts",
-          "frontend/src/hooks/useSecretaryChat.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/App.tsx",
-          "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
-          "frontend/src/lib/secretaryNavigation.ts",
-          "frontend/src/hooks/useSecretaryChat.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/App.tsx",
-          "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md"
+          "frontend/src/index.css",
+          "frontend/src/App.tsx"
         ]
       }
     ]
@@ -90,14 +56,10 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md",
-    "frontend/public/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png",
+    "frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png",
     "frontend/src/App.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useSecretaryChat.ts",
-    "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
     "frontend/src/index.css",
-    "frontend/src/lib/secretaryNavigation.ts",
+    "frontend/tailwind.config.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

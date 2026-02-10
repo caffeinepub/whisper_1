@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Improve the homepage hero’s visual impact and readability, refine the Secretary widget UI for clearer hierarchy, and add an extensible navigation/deep-link hook system so the Secretary can route users to pages or in-page features.
+**Goal:** Update the homepage hero to use a warmer/neutral real-life community collaboration photo, tune the hero overlay for readability without over-darkening, and fix teal CTA contrast (including the header “Get Started” button).
 
 **Planned changes:**
-- Replace the homepage hero background with an updated photorealistic real-life community collaboration/efficiency image from `frontend/public/assets/generated`, ensuring responsive `object-cover` behavior without hiding key subjects.
-- Refine the hero overlay gradient and any subtle image treatment so the photo remains recognizable while preserving strong headline/subtext readability across breakpoints.
-- Apply hero/UI polish: improve headline contrast/pop, adjust hero spacing/layout, and refine CTA button styling (hover, shadows, borders) consistent with the existing style system.
-- Refine the Secretary widget’s readability and hierarchy: tune background/blur, improve assistant vs user bubble contrast, and adjust typographic hierarchy (header, quick actions label, message text).
-- Add a documented, extensible hook + registry pattern for navigation/deep-link destinations so the Secretary can trigger URL-based deep links and in-page section toggles, and demonstrate it end-to-end with at least one existing Secretary action.
+- Replace the current hero background with the updated warm/neutral community collaboration image and ensure the latest asset always loads reliably on refresh (avoid stale/cached hero image via versioned/updated asset reference).
+- Adjust the hero overlay gradient tint toward warm/neutral and tune opacity so the photo remains visible while keeping headline and description readable across mobile and desktop.
+- Update CTA/button styles to ensure the header “Get Started” button never renders white-on-white and align primary CTAs to the existing teal accent tokens with consistent hover/active/focus-visible states.
 
-**User-visible outcome:** The homepage hero looks more photorealistic and clear with readable text and polished CTAs; the Secretary widget is easier to read with clearer message hierarchy; and the Secretary can direct users to supported pages or in-page sections via a reusable navigation hook system.
+**User-visible outcome:** The homepage hero displays a warm/neutral real-life community collaboration photo consistently, the overlay looks more natural while preserving text readability, and the header/hero CTAs have clear teal-forward styling with proper contrast and interaction states.

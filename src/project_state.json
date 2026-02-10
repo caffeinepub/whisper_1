@@ -1,51 +1,35 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Website UI refinement focusing on hero section visuals (real-life community collaboration image, overlay/typography/button polish) and adding extensible hooks so the chatbot 'secretary' can deep-link/direct users to specific pages and features.",
-  "architectural_notes": [
-    "Introduce a standardized routing/deep-link registry (hooks) that maps chatbot intents/actions to site pages/features for current and future extensibility."
+  "summary": "Landing page hero and CTA styling refinement: update hero image, adjust warmth/color balance with overlays, and improve button design/contrast.",
+  "architectural_notes": [],
+  "known_issues": [
+    "Hero image not updating as expected (possibly caching/deploy asset issue)."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
-  "imageRequirements": "## Edit Images\n- Improve photorealism/clarity and better convey collaboration + efficiency; adjust exposure/contrast for visibility (whisper-hero-community-real.dim_1600x900.png > whisper-hero-community-real-v2.dim_1600x900.png)",
+  "isFixRequest": true,
+  "imageRequirements": "## Edit Images\n- Adjust white balance toward warm/neutral, improve natural warmth without oversaturation, and keep the scene clearly real-life community collaboration (whisper-hero-community-real-v2.dim_1600x900.png > whisper-hero-community-real-warm-v3.dim_1600x900.png)",
   "existing_features": [
     {
-      "id": "feature-update-the-homepage-hero-background-to-use-a-real-life-photorealistic-image-that-clearly-conveys-community-collaboration-and-efficiency-and-ensure-the-hero-section-uses-the-updated-asset",
-      "title": "Update the homepage hero background to use a real-life (photorealistic) image that clearly conveys community collaboration and efficiency, and ensure the hero section uses the updated asset.",
+      "id": "feature-update-the-homepage-hero-background-image-to-a-real-life-community-collaboration-photograph-with-a-warmer-neutral-overall-color-balance-and-ensure-the-hero-section-renders-the-updated-asset-reliably-no-stale-cached-image-on-refresh",
+      "title": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-refine-the-hero-overlay-and-overall-hero-tone-so-the-hero-image-remains-visibly-recognizable-while-maintaining-strong-text-readability-adjust-gradient-colors-opacities-and-or-add-subtle-image-treatment-if-needed",
-      "title": "Refine the hero overlay and overall hero tone so the hero image remains visibly recognizable while maintaining strong text readability (adjust gradient colors/opacities and/or add subtle image treatment if needed).",
+      "id": "feature-refine-the-hero-overlay-gradient-to-shift-tint-toward-warm-or-neutral-tones-and-adjust-overlay-opacity-so-the-new-photo-s-natural-colors-remain-visible-while-maintaining-strong-text-readability",
+      "title": "Refine the hero overlay gradient to shift tint toward warm or neutral tones and adjust overlay opacity so the new photo’s natural colors remain visible while maintaining strong text readability.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-apply-the-listed-ui-refinements-across-the-hero-and-key-interactive-elements-hero-headline-contrast-pop-hero-spacing-layout-and-cta-button-polish-hover-shadows-borders-while-staying-consistent-with-the-existing-style-system",
-      "title": "Apply the listed UI refinements across the hero and key interactive elements: hero headline contrast/pop, hero spacing/layout, and CTA button polish (hover, shadows, borders) while staying consistent with the existing style system.",
+      "id": "feature-fix-cta-button-styling-issues-so-the-header-get-started-button-is-never-white-text-on-a-white-or-near-white-background-and-refine-cta-buttons-to-a-colorful-teal-forward-palette-consistent-with-the-existing-accent-tokens-and-hover-focus-states",
+      "title": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-refine-the-secretary-widget-and-related-ui-for-readability-and-hierarchy-background-blur-level-assistant-user-bubble-contrast-and-typographic-hierarchy-title-quick-actions-label-message-text",
-      "title": "Refine the Secretary widget and related UI for readability and hierarchy: background/blur level, assistant/user bubble contrast, and typographic hierarchy (title, quick actions label, message text).",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-extensible-navigation-deep-link-hook-system-that-current-and-future-pages-features-can-register-with-so-the-secretary-chatbot-can-direct-the-user-to-the-correct-page-feature-when-invoked-including-from-menu-option-selection-and-free-text-routing",
-      "title": "Add an extensible navigation/deep-link hook system that current and future pages/features can register with, so the Secretary chatbot can direct the user to the correct page/feature when invoked (including from menu option selection and free-text routing).",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
@@ -53,18 +37,30 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update hero section with a real-life image representing community collaboration/efficiency and refine overlay for improved visibility/readability (including headline/layout/button polish).",
+      "summary": "Adjust hero section warmth and color balance (swap to warmer/cooler photo, update overlay tint toward warm/neutral, and tune overlay opacity to preserve natural colors).",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add extensible navigation/deep-link hooks across current and future pages/features so the chatbot secretary can direct users to the correct page/feature when invoked.",
+      "summary": "Update hero image to a real-life community collaboration photograph.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Fix \"Get Started\" button styling so text/background have sufficient contrast (currently white on white).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Refine button styles with a colorful, teal-forward palette that fits the overall design.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Refine hero visual treatment and add extensible navigation hooks for the Secretary chatbot",
+  "projectName": "Warm/neutral hero image + overlay tuning and teal CTA contrast fixes",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

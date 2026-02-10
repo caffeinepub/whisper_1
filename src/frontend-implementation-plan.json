@@ -1,131 +1,68 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Hero visual refinements + Secretary navigation hook registry",
+  "title": "Warm hero photo swap, warmer overlay gradient, and teal CTA contrast consistency",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Swap homepage hero background to the updated photorealistic collaboration/efficiency image and ensure the hero uses it responsively.",
+      "summary": "Swap hero background to the new warm/neutral real-life community collaboration photo and ensure cache-busted delivery.",
       "acceptanceCriteria": [
-        "Hero background image is a photorealistic real-life scene representing community collaboration and efficiency",
-        "Hero section loads the updated image from the static assets directory under frontend/public/assets/generated",
-        "Image remains responsive (object-cover) across mobile/desktop without obvious cropping issues that hide key subjects"
+        "Hero background image in the hero section uses the new generated asset (not the prior version) and the image clearly depicts a real-life community collaboration scene.",
+        "Refreshing the page (including hard refresh) consistently shows the latest hero image (implement cache-busting via filename change and/or versioned asset reference).",
+        "Hero image remains full-bleed and properly cropped (object-cover) across mobile and desktop without distortion."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png",
+          "path": "frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png",
           "operation": "create",
-          "description": "Add the updated generated hero image asset (v2) to static assets so the homepage can load it from the generated assets directory."
+          "description": "Add the edited/generated hero image asset with warmer/neutral white balance as specified (cache-busting via new filename)."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update the hero section to reference the new static asset at frontend/public/assets/generated/whisper-hero-community-real-v2.dim_1600x900.png and adjust image presentation (e.g., object-position choices at breakpoints) to minimize subject-cropping while keeping object-cover responsiveness."
+          "description": "Update the hero <img> source to use the new asset at frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png (ensuring cache-busted reference) while keeping full-bleed object-cover behavior and current cropping intent."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Refine the hero overlay gradient/treatment to keep the photo recognizable while maintaining strong text readability across breakpoints.",
+      "summary": "Warm/neutral-tune the hero overlay gradient and opacity to preserve photo visibility while keeping headline/body text readable.",
       "acceptanceCriteria": [
-        "Hero image details are visibly discernible behind the overlay on common viewport sizes",
-        "Hero headline and subtext remain clearly readable over the image",
-        "Overlay remains a gradient (not a flat color) and is applied consistently across breakpoints"
+        "Overlay gradient tint is adjusted away from overly cool/dark rendering and reads as warm/neutral while still fitting the existing civic-teal design language.",
+        "Overlay opacity is tuned so the hero photo remains clearly recognizable (not overly obscured), while the hero headline and paragraph remain readable against the full image.",
+        "Hero headline and description remain visually legible at common breakpoints (mobile + desktop) without relying on the image being unusually dark."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Tune the hero overlay gradient stops/opacities and (if needed) apply a subtle image treatment (e.g., brightness/contrast/saturation tweaks) so the photo remains recognizable while headline/subtext remain readable on mobile and desktop."
-        },
-        {
           "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Add/adjust reusable utility styles for hero overlay/treatment (e.g., a dedicated hero overlay gradient utility and/or image treatment utility) to keep the overlay consistent across breakpoints and avoid one-off duplicated class strings."
+          "description": "Add a dedicated hero overlay utility/class (Tailwind @apply-based) that uses warm/neutral-leaning gradient stops with teal continuity and tuned opacity for readability; keep within existing Tailwind + CSS variable token system (no raw hex)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Replace the current hero overlay gradient classes with the new warm/neutral overlay utility (or updated Tailwind classes) and adjust opacity levels so the updated photo remains recognizable while maintaining strong text readability."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Improve hero headline pop, hero spacing/layout, and CTA button polish (hover/focus/shadows/borders) consistent with the current style system.",
+      "summary": "Fix CTA styling so 'Get Started' never becomes white-on-white and standardize CTAs to a consistent teal-forward palette with proper hover/focus-visible states.",
       "acceptanceCriteria": [
-        "Hero headline has improved visual separation from background (e.g., tuned shadow/contrast) without reducing readability",
-        "Spacing between headline, description, and CTAs is visually balanced on mobile and desktop",
-        "Primary/secondary hero buttons have consistent hover/focus styling and feel cohesive with the rest of the page"
+        "The header \"Get Started\" button has sufficient contrast between text and background in both light and dark modes (no white-on-white).",
+        "Primary CTAs use the existing teal accent styling (accent + accent-hover) with clear hover, active, and focus-visible states.",
+        "Button styling remains consistent across the header and hero CTAs (radius, borders, shadows), without introducing ad-hoc raw colors (use existing Tailwind tokens/CSS variables)."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Refine hero typography/spacing (headline/subhead/CTA grouping) and standardize primary/secondary CTA styling (hover, focus-visible, shadow, border) to match existing tokens/utilities and improve cohesion across interactive elements."
-        },
         {
           "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Extend existing hero/button-related utilities (e.g., headline shadow tuning, glow/hover-lift, focus-visible ring helpers) to support the refined hero and CTA polish while staying consistent with the established style system."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Refine Secretary widget readability/hierarchy: background/blur, user vs assistant bubble contrast, and typography hierarchy for header/quick actions/messages.",
-      "acceptanceCriteria": [
-        "Secretary widget remains readable over both light and dark page areas",
-        "Assistant and user message bubbles have clearly distinguishable surfaces and consistent text contrast",
-        "Widget header, quick-actions label, and message text show clear hierarchy (size/weight/opacity)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "operation": "modify",
-          "description": "Adjust Secretary widget container backdrop (opacity/blur), refine message bubble surfaces for clearer assistant/user differentiation, and update typographic hierarchy (title, quick-actions label, message text) to improve readability and structure."
-        },
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Update theme tokens/utilities that impact Secretary surfaces (e.g., secretary bubble color/contrast) and add any small supporting utilities needed for consistent widget readability across light/dark areas."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Implement an extensible Secretary navigation/deep-link hook + registry so menu selections and basic free-text routing can direct users to pages/features or in-page sections, with a developer note for extending it.",
-      "acceptanceCriteria": [
-        "There is a clear, documented pattern (hook + registry) that pages/features can use to register a navigable destination/action for the Secretary",
-        "Existing Secretary option selection can trigger navigation/directing behavior using the new hook system (at minimum, one or more current actions demonstrate the mechanism end-to-end)",
-        "The system supports both (a) opening/toggling in-page sections (e.g., reveal an existing section) and (b) URL-based deep links (e.g., via query/hash parameters) without requiring edits to immutable hook files",
-        "A short developer note is added describing how to register new destinations for future pages/features"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
-          "operation": "create",
-          "description": "Create a Secretary navigation registry hook that lets features register destinations/actions (URL deep links and in-page section toggles) and exposes a stable API for the Secretary widget to invoke navigation without hardcoding per-feature logic in the widget."
-        },
-        {
-          "path": "frontend/src/lib/secretaryNavigation.ts",
-          "operation": "create",
-          "description": "Add shared types/helpers for Secretary navigation intents, deep-link serialization/parsing (query/hash), and a lightweight free-text matcher that can resolve user text to a registered destination/action."
-        },
-        {
-          "path": "frontend/src/hooks/useSecretaryChat.ts",
-          "operation": "modify",
-          "description": "Enhance free-text handling to attempt simple keyword-based routing into a navigation intent (or mapped option) before falling back to the menu prompt, enabling a basic end-to-end free-text directing flow."
-        },
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "operation": "modify",
-          "description": "Wire the widget’s option selection and free-text submit results into the new registry-driven navigation mechanism so choosing a quick action (and supported free-text) can trigger directing behavior."
+          "description": "Define reusable CTA utility classes for primary teal CTAs (bg-accent, text using accent foreground, hover:bg-accent-hover, and focus-visible ring using existing tokens) to ensure consistent contrast and interaction states across the app."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Register current destinations (at minimum: proposals/issues browsing and one in-page toggle such as opening Create Instance) with the new registry; wire Secretary option selection to registry navigation; add section anchors/refs + optional scroll-into-view; and support URL-based deep links (query/hash) on load for direct navigation to registered destinations."
-        },
-        {
-          "path": "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md",
-          "operation": "create",
-          "description": "Add a short developer note documenting how to register new Secretary destinations/actions (registry pattern, deep-link IDs/params, and in-page toggle guidance) so future pages/features can extend navigation without touching immutable files."
+          "description": "Apply the shared CTA utilities to the header 'Get Started' button and hero primary CTA (and any other primary-accent CTAs in this file) using the existing shadcn-ui Button component for consistent radius/border/shadow/focus behavior. Verify the component's usage instructions before implementing."
         }
       ]
     }
