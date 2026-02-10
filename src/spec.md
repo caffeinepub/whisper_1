@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Improve the header membership/login experience and refine the Secretary lookup flow so outcomes require explicit user action, while updating navbar branding colors.
+**Goal:** Add profile routes and UI screens for viewing and editing the authenticated user’s profile using the existing popstate-based navigation.
 
 **Planned changes:**
-- Update header/nav styling so the existing teal logo remains unchanged, while the “Whisper” wordmark and all nav menu labels render white by default and use teal on hover/focus/active (desktop + mobile).
-- Change the header “Get Started” CTA so, when unauthenticated, it initiates Internet Identity login (with a loading/disabled state during login) and does not trigger scrolling or any instance/chat/Secretary flows.
-- When authenticated, replace “Get Started” with a profile control (avatar with fallback + label) that opens a submenu with “Profile” (routes to `/profile`) and “Logout” (logs out and clears cached queries), including equivalent access on mobile.
-- Refine the Secretary lookup/discovery flow to stop any timeout-based auto-navigation; after state + county/city selection, show an explicit result message and present next-action buttons (view existing instance when found, or create an instance proposal when not found) while keeping the widget open until the user acts or closes it.
+- Add two navigable routes using the existing pathname + popstate approach: `/profile` (read-only) and `/profile/edit` (edit form), reachable from the existing header/user menu.
+- Implement `/profile` view in a clean, mobile-first layout showing: avatar (with fallback), display name, handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary; use placeholders/empty states for fields not available from the backend.
+- Implement `/profile/edit` form UI to update: display name, bio, avatar upload/removal (keeping existing validations), 1–3 external links, and preferences controls (UI-only if persistence isn’t supported yet); provide Save/Cancel with return to `/profile`, and refresh/reflect updated name/avatar after save.
+- Show an authentication-required state (with login action) when unauthenticated users visit `/profile` or `/profile/edit`.
 
-**User-visible outcome:** The navbar uses the updated white/teal behavior, “Get Started” logs visitors in via Internet Identity, logged-in users access Profile/Logout from a profile menu, and the Secretary lookup clearly presents results with explicit buttons rather than auto-navigating.
+**User-visible outcome:** Signed-in users can navigate to a profile page to view their details and to an edit page to update their name and avatar (and edit additional fields in the UI), while signed-out users are prompted to log in when accessing these routes.

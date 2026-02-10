@@ -1,68 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T19:48:30.570Z",
-  "summary": "Diff adds a new authenticated user dropdown menu component and introduces a current-path tracking hook. HomeHeader styling appears updated to white labels with teal (secondary) hover/active, and HomeHeader now includes login handling. SecretaryWidget shows new discovery step state including a 'result' step, but the diff is truncated so key acceptance criteria (CTA behavior, mobile parity, and removal of auto-navigation) cannot be fully verified from the provided evidence.",
+  "generatedAt": "2026-02-10T20:22:39.419Z",
+  "summary": "Diff adds new /profile view and /profile/edit pages, localStorage-backed placeholders for unsupported profile fields, a pushState+popstate navigation helper, and wires routing via existing popstate approach. It also adds profile navigation from the user menu. However, several REQ-2 and REQ-3 acceptance details are not evidenced in the truncated diffs, and there appear to be unrelated changes referenced in the file summaries that go beyond steps 1–3.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Mobile menu items match the same white default / teal hover-active behavior.",
-      "reason": "HomeHeader desktop nav buttons show white default and teal (secondary) hover/active styling, but the diff is truncated before the mobile menu item rendering, so mobile styling parity cannot be confirmed.",
-      "evidence": [
-        "frontend/src/components/common/HomeHeader.tsx (truncated)"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "When not authenticated, clicking “Get Started” initiates the Internet Identity login flow and does not scroll/navigate to other flows; if login is in progress, the CTA is disabled and shows a loading state.",
-      "reason": "HomeHeader defines login handlers (handleLogin, isLoggingIn), but the diff is truncated before showing the actual “Get Started” CTA rendering/wiring, so it cannot be verified that the CTA triggers login, avoids scrolling/navigation, and properly disables/shows loading while logging in.",
+      "requirement": "Profile view UI must include sections for handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary with placeholders/empty states, plus mobile-first responsive + basic a11y.",
+      "reason": "ProfileViewPage.tsx is truncated before showing the actual body content/sections; the visible excerpt only shows auth-required state, loading state, and header actions. No evidence in the excerpt confirms the required sections, placeholders, or accessibility labeling.",
       "evidence": [
-        "frontend/src/components/common/HomeHeader.tsx (truncated)"
+        "frontend/src/pages/profile/ProfileViewPage.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "After authentication, replace the header “Get Started” CTA with a profile control (avatar + label) that opens a submenu with Profile (/profile) and Logout (clears identity + React Query cache), including mobile equivalent access.",
-      "reason": "A UserProfileMenu component exists with avatar fallback, Profile navigation callback, and Logout clearing identity and query cache, but the diff is truncated before confirming HomeHeader actually replaces the CTA with this control when authenticated and provides equivalent mobile access.",
+      "requirement": "/profile/edit must include UI controls for preferences (at minimum) even if persistence is deferred.",
+      "reason": "ProfileEditPage.tsx excerpt shows controls/state for name, bio, avatar upload/removal, and three external links, but no evidence of any preferences UI controls in the visible portion; file truncation prevents confirmation.",
       "evidence": [
-        "frontend/src/components/common/UserProfileMenu.tsx",
-        "frontend/src/components/common/HomeHeader.tsx (truncated)"
+        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
       ]
     },
     {
-      "id": "REQ-4",
-      "requirement": "Refine Secretary discovery flow to show explicit result messaging with explicit next-action buttons and no auto-navigation timeout; remain open until user acts/closes; support county/city selection; English text.",
-      "reason": "SecretaryWidget introduces a 'result' step for discovery, but the diff is truncated before the result UI and any prior auto-navigation logic, so it cannot be confirmed that auto-navigation after a delay was removed and explicit action buttons/messages are present while keeping the widget open.",
+      "id": "REQ-3",
+      "requirement": "Save/Cancel behavior: Cancel routes back to /profile without saving; Save persists backend-supported fields (display name + avatar) via existing save hook; unsupported fields must not break save and should be non-blocking; after successful save, /profile reflects updated name/avatar (query invalidation/refetch).",
+      "reason": "Cancel navigation to /profile is evidenced, but the save handler is truncated right after declaration (\"const handleSave = async ()\"); no evidence shows calling the existing save hook, handling unsupported fields non-blockingly, or invalidating/refetching so /profile updates after save.",
       "evidence": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx (truncated)"
+        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Unauthenticated users visiting /profile/edit see an authentication-required state with a login action.",
+      "reason": "Unauthenticated/login-required UI is clearly shown for /profile view, but ProfileEditPage.tsx is truncated before any auth gating render; cannot confirm a login-required state exists for /profile/edit.",
+      "evidence": [
+        "frontend/src/pages/profile/ProfileViewPage.tsx (truncated)",
+        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Custom SPA navigation implementation in HomeHeader using window.history.pushState and dispatching PopStateEvent, plus a new useCurrentPath hook to track active route via popstate events.",
-      "reason": "The BuildRequest focuses on styling changes and CTA/authenticated profile behavior, not introducing a new navigation mechanism. This may be an implementation detail, but it is additional behavior not explicitly requested.",
+      "description": "Unrelated changes outside steps 1–3 (e.g., React Query admin check behavior, Create Instance/geography proposal workflow enhancements, additional hooks/components/docs)",
+      "reason": "BuildRequest explicitly constrains scope to steps 1–3 (profile routes + profile view/edit UI) and calls out not modifying unrelated subsystems. The diff summary file indicates multiple non-profile files were changed beyond this scope.",
       "evidence": [
-        "frontend/src/components/common/HomeHeader.tsx (truncated)",
-        "frontend/src/hooks/useCurrentPath.ts"
-      ]
-    },
-    {
-      "description": "Logo load retry/error handling with a fallback 'W' badge.",
-      "reason": "The BuildRequest requires keeping the existing logo asset unchanged; it does not request adding retry logic or a fallback logo UI.",
-      "evidence": [
-        "frontend/src/components/common/HomeHeader.tsx (truncated)"
+        "frontend-file-summaries.txt (truncated)"
       ]
     }
   ],
-  "confidence": 0.55,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/common/HomeHeader.tsx",
+    "frontend/src/App.tsx",
     "frontend/src/components/common/UserProfileMenu.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useCurrentPath.ts",
-    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/profile/ProfileEditPage.tsx",
+    "frontend/src/pages/profile/ProfileViewPage.tsx",
+    "frontend/src/pages/profile/profileLocalState.ts",
+    "frontend/src/utils/spaNavigate.ts",
     "project_state.json"
   ]
 }

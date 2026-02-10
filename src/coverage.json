@@ -1,63 +1,63 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T19:48:30.573Z",
+  "generatedAt": "2026-02-10T20:22:39.423Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the top navigation bar branding colors: keep using the existing teal logo SVG, render the “Whisper” wordmark text in white, and render all menu item labels in white by default with teal styling on hover/rollover and when selected/active.",
+        "summary": "Support two profile routes: /profile (read-only profile view) and /profile/edit (edit form). Routing must work with the current popstate-based navigation (no new router dependency) and must be reachable from the existing header/user menu navigation.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/common/HomeHeader.tsx",
-          "frontend/src/hooks/useCurrentPath.ts"
+          "frontend/src/App.tsx",
+          "frontend/src/components/common/UserProfileMenu.tsx",
+          "frontend/src/pages/profile/ProfileViewPage.tsx",
+          "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/utils/spaNavigate.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/common/HomeHeader.tsx",
-          "frontend/src/hooks/useCurrentPath.ts"
+          "frontend/src/App.tsx",
+          "frontend/src/components/common/UserProfileMenu.tsx",
+          "frontend/src/pages/profile/ProfileViewPage.tsx",
+          "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/utils/spaNavigate.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Change the header “Get Started” CTA behavior so that when the user is not authenticated it triggers Internet Identity login (becoming a site member) rather than scrolling to a page section or initiating instance creation/chat flows.",
+        "summary": "Implement the /profile UI to display the core profile fields in a clean, mobile-first layout using existing Tailwind + shadcn components and Whisper styling. The view must include: avatar, display name, username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. For any fields not yet available from the backend, render sensible placeholders/empty states without breaking existing functionality.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/common/HomeHeader.tsx"
+          "frontend/src/pages/profile/ProfileViewPage.tsx",
+          "frontend/src/hooks/useCallerUserProfile.ts",
+          "frontend/src/lib/uiCopy.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/common/HomeHeader.tsx"
+          "frontend/src/pages/profile/ProfileViewPage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "When the user is authenticated, replace the header “Get Started” CTA with a user profile entry that shows the user’s profile image (fallback if none) and label, and opens a submenu with at least: “Profile” (navigates to /profile) and “Logout” (logs out and clears cached queries).",
+        "summary": "Implement the /profile/edit UI as an edit form that lets the authenticated user update: display name, bio, avatar upload/removal, external links (1–3), and preferences (at minimum provide UI controls for preferences even if persistence is deferred). The edit page must provide Save/Cancel behavior and route back to /profile on cancel and on successful save.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/common/UserProfileMenu.tsx",
-          "frontend/src/components/common/HomeHeader.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/common/UserProfileMenu.tsx",
-          "frontend/src/components/common/HomeHeader.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Refine the Secretary “lookup/discovery” flow to avoid auto-navigation side effects and make the outcome explicit: after the user selects state + county or city, show a clear result message and present explicit next-action buttons (e.g., “View existing instance” when found, or “Create an instance proposal” when not found), without automatically navigating after a timeout.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "frontend/src/pages/profile/profileLocalState.ts",
+          "frontend/src/pages/profile/ProfileViewPage.tsx",
           "frontend/src/lib/uiCopy.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/lib/uiCopy.ts"
+          "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "frontend/src/pages/profile/profileLocalState.ts",
+          "frontend/src/pages/profile/ProfileViewPage.tsx"
         ]
       }
     ]
@@ -67,11 +67,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/common/HomeHeader.tsx",
+    "frontend/src/App.tsx",
     "frontend/src/components/common/UserProfileMenu.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useCurrentPath.ts",
-    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/profile/ProfileEditPage.tsx",
+    "frontend/src/pages/profile/ProfileViewPage.tsx",
+    "frontend/src/pages/profile/profileLocalState.ts",
+    "frontend/src/utils/spaNavigate.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,40 +1,36 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Website/app UI and membership flow: refine Secretary lookup flow, adjust navbar branding colors/hover states, and change \"Get Started\" to trigger member login then switch to a user profile menu when authenticated.",
-  "architectural_notes": [],
+  "summary": "Whisper: implement user profile UI (profile view + edit flow) using existing React + Tailwind frontend and minimal profile-specific integration; user requested executing steps 1–3 of the 5-step plan.",
+  "architectural_notes": [
+    "Frontend stack: React + Tailwind.",
+    "Backend context: single Motoko canister; stable memory for persistent profile data (backend work not requested yet in steps 1–3).",
+    "Scope constraint: implement steps 1–3 only (UI routes, profile view, edit form); avoid unrelated systems."
+  ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-top-navigation-bar-branding-colors-keep-using-the-existing-teal-logo-svg-render-the-whisper-wordmark-text-in-white-and-render-all-menu-item-labels-in-white-by-default-with-teal-styling-on-hover-rollover-and-when-selected-active",
-      "title": "Update the top navigation bar branding colors: keep using the existing teal logo SVG, render the “Whisper” wordmark text in white, and render all menu item labels in white by default with teal styling on hover/rollover and when selected/active.",
+      "id": "feature-support-two-profile-routes-profile-read-only-profile-view-and-profile-edit-edit-form-routing-must-work-with-the-current-popstate-based-navigation-no-new-router-dependency-and-must-be-reachable-from-the-existing-header-user-menu-navigation",
+      "title": "Support two profile routes: /profile (read-only profile view) and /profile/edit (edit form). Routing must work with the current popstate-based navigation (no new router dependency) and must be reachable from the existing header/user menu navigation.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-change-the-header-get-started-cta-behavior-so-that-when-the-user-is-not-authenticated-it-triggers-internet-identity-login-becoming-a-site-member-rather-than-scrolling-to-a-page-section-or-initiating-instance-creation-chat-flows",
-      "title": "Change the header “Get Started” CTA behavior so that when the user is not authenticated it triggers Internet Identity login (becoming a site member) rather than scrolling to a page section or initiating instance creation/chat flows.",
+      "id": "feature-implement-the-profile-ui-to-display-the-core-profile-fields-in-a-clean-mobile-first-layout-using-existing-tailwind-shadcn-components-and-whisper-styling-the-view-must-include-avatar-display-name-username-handle-bio-role-badges-location-join-date-contribution-stats-external-links-and-recent-activity-summary-for-any-fields-not-yet-available-from-the-backend-render-sensible-placeholders-empty-states-without-breaking-existing-functionality",
+      "title": "Implement the /profile UI to display the core profile fields in a clean, mobile-first layout using existing Tailwind + shadcn components and Whisper styling. The view must include: avatar, display name, username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. For any fields not yet available from the backend, render sensible placeholders/empty states without breaking existing functionality.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-when-the-user-is-authenticated-replace-the-header-get-started-cta-with-a-user-profile-entry-that-shows-the-user-s-profile-image-fallback-if-none-and-label-and-opens-a-submenu-with-at-least-profile-navigates-to-profile-and-logout-logs-out-and-clears-cached-queries",
-      "title": "When the user is authenticated, replace the header “Get Started” CTA with a user profile entry that shows the user’s profile image (fallback if none) and label, and opens a submenu with at least: “Profile” (navigates to /profile) and “Logout” (logs out and clears cached queries).",
+      "id": "feature-implement-the-profile-edit-ui-as-an-edit-form-that-lets-the-authenticated-user-update-display-name-bio-avatar-upload-removal-external-links-1-3-and-preferences-at-minimum-provide-ui-controls-for-preferences-even-if-persistence-is-deferred-the-edit-page-must-provide-save-cancel-behavior-and-route-back-to-profile-on-cancel-and-on-successful-save",
+      "title": "Implement the /profile/edit UI as an edit form that lets the authenticated user update: display name, bio, avatar upload/removal, external links (1–3), and preferences (at minimum provide UI controls for preferences even if persistence is deferred). The edit page must provide Save/Cancel behavior and route back to /profile on cancel and on successful save.",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-refine-the-secretary-lookup-discovery-flow-to-avoid-auto-navigation-side-effects-and-make-the-outcome-explicit-after-the-user-selects-state-county-or-city-show-a-clear-result-message-and-present-explicit-next-action-buttons-e-g-view-existing-instance-when-found-or-create-an-instance-proposal-when-not-found-without-automatically-navigating-after-a-timeout",
-      "title": "Refine the Secretary “lookup/discovery” flow to avoid auto-navigation side effects and make the outcome explicit: after the user selects state + county or city, show a clear result message and present explicit next-action buttons (e.g., “View existing instance” when found, or “Create an instance proposal” when not found), without automatically navigating after a timeout.",
-      "reqIds": [
-        "REQ-4"
       ],
       "version": 1
     }
@@ -42,30 +38,25 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Refine the Secretary’s lookup flow",
+      "summary": "Add basic profile routes/pages: /profile (view) and /profile/edit (edit)",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Navbar branding styling: keep logo teal; set Whisper text and menu items white; teal on hover/selected",
+      "summary": "Implement Profile page UI showing core fields (avatar, display name, username, bio, role/badges, location, join date, stats, links, activity)",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Change \"Get Started\" to open member login (not instance activation/chat)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "After login, replace \"Get Started\" with user profile image/name and submenu",
+      "summary": "Implement Edit Profile form to update name, bio, avatar, links, and preferences (frontend flow)",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Refine Secretary lookup flow and update navbar membership CTA + branding colors",
+  "gameProjectType": "none",
+  "projectName": "Whisper",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

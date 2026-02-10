@@ -45,7 +45,6 @@ export function UserProfileMenu({ onNavigate }: UserProfileMenuProps) {
     if (!imageBytes) return undefined;
     try {
       const bytes = imageBytes instanceof Uint8Array ? imageBytes : new Uint8Array(imageBytes);
-      // Create a new Uint8Array to ensure we have a proper ArrayBuffer
       const properBytes = new Uint8Array(bytes);
       const blob = new Blob([properBytes], { type: 'image/jpeg' });
       return URL.createObjectURL(blob);

@@ -1,91 +1,108 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Refine header branding/auth CTA and Secretary discovery results",
+  "title": "Profile routing + profile view + profile edit form UI (steps 1–3)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update header branding colors so wordmark and nav labels are white by default and teal on hover/active while keeping the existing teal logo SVG unchanged.",
+      "summary": "Add popstate-based routes for /profile (read-only) and /profile/edit (edit form), reachable from existing header/user menu navigation, with auth-required gating.",
       "acceptanceCriteria": [
-        "The header continues to use the existing asset at frontend/public/whisper-logo-teal.svg with no color modifications to the SVG.",
-        "The “Whisper” text next to the logo renders white in the header.",
-        "Desktop nav menu labels (e.g., Geography, Admin when present) render white by default.",
-        "On hover, focused, or active route, nav menu labels render in teal (consistent with the app’s existing teal accent token).",
-        "Mobile menu items match the same white default / teal hover-active behavior."
+        "Navigating to /profile renders a profile view screen for the authenticated user.",
+        "Navigating to /profile/edit renders an edit form screen for the authenticated user.",
+        "Navigation to /profile and /profile/edit works via window.history.pushState + PopStateEvent (consistent with existing HomeHeader navigation).",
+        "Unauthenticated users visiting either /profile or /profile/edit see an authentication-required state with a login action."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/common/HomeHeader.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Adjust header styling classes to render the “Whisper” wordmark and all nav labels in white by default, with teal styling on hover/focus and for the active route; keep using frontend/public/whisper-logo-teal.svg as-is without modifying the SVG; ensure the same color behavior applies in the mobile Sheet menu. Use composed shadcn-ui primitives already in use (e.g., Button, Sheet) and verify the component's usage instructions before implementing."
+          "description": "Extend existing popstate + pathname handling to distinguish /profile vs /profile/edit and render the correct page component (no new routing dependency). Wire both routes into the current lazy-loading/page switching logic."
         },
         {
-          "path": "frontend/src/hooks/useCurrentPath.ts",
+          "path": "frontend/src/components/common/UserProfileMenu.tsx",
+          "operation": "modify",
+          "description": "Add a menu item to navigate to /profile/edit (in addition to existing /profile link) using the provided onNavigate pushState+popstate navigation, keeping profile routes reachable from the header/user menu. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
           "operation": "create",
-          "description": "Add a small hook to track the current route (listening to popstate) so HomeHeader can reliably apply an active/selected style to matching nav items (desktop + mobile) without editing any files in frontend/src/components/ui. Verify the component's usage instructions before implementing."
+          "description": "Create a dedicated /profile read-only page component with auth-required gating and a login action, using existing Tailwind + shadcn composed components (do not edit frontend/src/components/ui). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "operation": "create",
+          "description": "Create a dedicated /profile/edit page component with auth-required gating and a login action, using existing Tailwind + shadcn composed components (do not edit frontend/src/components/ui). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Refactor the existing ProfilePage to avoid being the sole handler for both read-only and edit experiences (e.g., convert to a thin wrapper/re-export, or keep as legacy but route App.tsx to the new ProfileViewPage/ProfileEditPage). Ensure no broken imports from App.tsx lazy loading."
+        },
+        {
+          "path": "frontend/src/utils/spaNavigate.ts",
+          "operation": "create",
+          "description": "Add a small helper to perform SPA navigation via window.history.pushState + PopStateEvent with BASE_URL normalization, so profile pages can navigate back to /profile (and other locations) consistently with HomeHeader."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Change the header “Get Started” CTA so unauthenticated users start Internet Identity login (with disabled/loading state during login).",
+      "summary": "Implement /profile read-only UI showing core profile sections (with placeholders/empty states for unavailable fields) in a clean, mobile-first layout using Tailwind + shadcn + Whisper styling.",
       "acceptanceCriteria": [
-        "When not authenticated, clicking “Get Started” initiates the Internet Identity login flow.",
-        "When not authenticated, clicking “Get Started” does not scroll to the “get-started” section and does not navigate to create-instance, proposals, or open the Secretary widget.",
-        "If login is already in progress, the CTA is disabled (or otherwise prevents duplicate login attempts) and shows an appropriate loading state consistent with existing auth UI copy."
+        "The /profile page displays an avatar with fallback when no image is set.",
+        "The /profile page displays the saved display name from the existing profile data source when available.",
+        "The /profile page includes UI sections for: handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary.",
+        "If a field is missing/unavailable, the UI shows an empty/placeholder state (no crashes, no console errors from undefined access).",
+        "The page remains responsive on mobile and meets basic accessibility expectations (labels for key fields, accessible button text)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/common/HomeHeader.tsx",
+          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
           "operation": "modify",
-          "description": "Update the unauthenticated header CTA so the “Get Started” button calls useInternetIdentity().login(), is disabled when loginStatus is 'logging-in', and shows the existing uiCopy.auth.loggingIn label; remove/disable the previous scroll-to-section behavior for this CTA when unauthenticated. Use composed shadcn-ui Button and verify the component's usage instructions before implementing."
+          "description": "Build the read-only profile layout: avatar + name (from useGetCallerUserProfile), plus sections for username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. Use composed shadcn components (e.g., Card, Avatar, Badge, Separator, Button) and Tailwind for a mobile-first responsive layout; render placeholders/empty states for fields not in the backend. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useCallerUserProfile.ts",
+          "operation": "modify",
+          "description": "Add any small non-breaking ergonomics needed by the new /profile view (e.g., exported helper for identity-scoped query key or a shared type guard) while keeping existing behavior intact (no changes to immutable hooks). Ensure missing data is handled safely without undefined access."
+        },
+        {
+          "path": "frontend/src/lib/uiCopy.ts",
+          "operation": "modify",
+          "description": "Add/adjust profile-related UI copy strings needed for the new read-only profile sections (labels like handle, bio, location, join date, stats, links, recent activity; empty-state copy), reusing the existing uiCopy.profile namespace."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "When authenticated, replace the “Get Started” CTA with a profile control (avatar + label) that opens a submenu with Profile and Logout actions (including clearing React Query cache).",
+      "summary": "Implement /profile/edit UI with form controls for display name, bio, avatar upload/removal, external links (1–3), and preferences UI; provide Save/Cancel, persist supported fields via existing save hook, and navigate back to /profile with updated data.",
       "acceptanceCriteria": [
-        "After successful authentication, the “Get Started” CTA is no longer shown in the header.",
-        "A profile control is shown instead, including an avatar image when available; if no image is available, a deterministic fallback (e.g., initials or generic icon) is shown.",
-        "Opening the profile control shows a submenu that includes “Profile” and “Logout”.",
-        "Clicking “Profile” navigates to the existing profile page route and closes the submenu.",
-        "Clicking “Logout” logs out (clears identity) and clears React Query cache, matching existing logout behavior.",
-        "Mobile header/menu provides equivalent authenticated profile access and logout."
+        "The /profile/edit page includes form controls for display name, bio, avatar upload/removal, and 1–3 external links.",
+        "The existing avatar upload validations (image type and max size) remain enforced.",
+        "Cancel returns the user to /profile without saving changes.",
+        "Save persists at least the fields currently supported by the backend (display name + avatar) via the existing save hook; fields not yet supported by the backend must not break save and should have clear non-blocking behavior (e.g., remain local-only or show as 'not yet supported' without failing the save).",
+        "After a successful save, the /profile view reflects the updated name/avatar (via React Query invalidation or refetch)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/common/UserProfileMenu.tsx",
-          "operation": "create",
-          "description": "Create a reusable authenticated header control that uses the existing useGetCallerUserProfile hook for display name and optional profileImage, renders an Avatar with deterministic fallback (e.g., initials), and provides a dropdown submenu with “Profile” (navigates to /profile) and “Logout” (calls clear() and queryClient.clear()). Compose existing shadcn-ui components (e.g., DropdownMenu, Avatar, Button) rather than editing files under frontend/src/components/ui. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/profile/ProfileEditPage.tsx",
+          "operation": "modify",
+          "description": "Implement the edit form UI using composed shadcn components (Card, Input, Textarea (if available), Label, Button, Avatar, etc.) and Tailwind. Include controls for display name, bio, avatar upload/removal, 1–3 external links, and preferences (UI controls even if persistence is deferred). Enforce the same avatar validations as the current ProfilePage (image type + max size). Provide Cancel (navigate to /profile without saving) and Save (call useSaveCallerUserProfile for name+avatar; treat other fields as local-only or clearly marked not-yet-supported without blocking save). On successful save, navigate back to /profile. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/common/HomeHeader.tsx",
-          "operation": "modify",
-          "description": "Wire UserProfileMenu into the header for authenticated users (desktop and mobile), replacing the “Get Started” CTA when authenticated; ensure mobile Sheet shows equivalent Profile + Logout access and that selecting actions closes the mobile menu where appropriate. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Refine the Secretary lookup/discovery flow to show an explicit result step with clear messaging and explicit next-action buttons, removing any auto-navigation timeouts.",
-      "acceptanceCriteria": [
-        "When an existing instance is detected, the Secretary shows a result state with an explicit action button to navigate to the relevant destination; it does not auto-navigate after a delay.",
-        "When no instance is detected, the Secretary shows the “founding citizen” result message and an explicit action button to proceed to instance proposal creation; it does not auto-navigate after a delay.",
-        "The Secretary remains open on the result step until the user chooses an action or closes the widget.",
-        "The refined flow continues to support both county and city selection and continues to use the existing geography data sources and typeahead UI.",
-        "All user-facing text in the refined flow is in English."
-      ],
-      "file_operations": [
+          "path": "frontend/src/pages/profile/profileLocalState.ts",
+          "operation": "create",
+          "description": "Add a small local-only state helper for non-backend fields (bio, external links, preferences) using localStorage (via existing patterns) so fields can be edited without breaking save; include clear defaults/empty states."
+        },
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
           "operation": "modify",
-          "description": "Replace the current discovery auto-navigation timeouts with an explicit 'result' step state that persists until user action: (1) if an existing instance is detected, show a clear found message plus a button such as “View existing instance” that navigates via the existing secretary navigation registry; (2) if not found, show the appropriate founding-citizen message plus a button such as “Create an instance proposal” that navigates to the create-instance destination. Keep the widget open on the result step and do not auto-close unless the user chooses an action or closes the widget. Retain existing county/city selection and typeahead behavior (SecretaryLocationTypeahead) and existing geography/proposals data sources. Use composed shadcn-ui components (Card/Button/etc.) already imported and verify the component's usage instructions before implementing."
+          "description": "Wire an \"Edit profile\" action in the /profile view to navigate to /profile/edit via the SPA navigation helper, and optionally display local-only fields (bio, links, preferences summary) from the local state helper with safe placeholders when absent. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/lib/uiCopy.ts",
           "operation": "modify",
-          "description": "Add/adjust English UI copy strings needed for the refined discovery result step (e.g., explicit result titles/messages and action button labels for found/not-found outcomes), ensuring all newly user-facing text is in English."
+          "description": "Add/adjust edit-form UI copy (Save, Cancel, avatar help text, external link labels, preferences labels, and any 'not yet supported' helper text), keeping wording accessible and concise."
         }
       ]
     }

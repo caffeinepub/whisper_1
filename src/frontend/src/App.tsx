@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 
 const GeographyPage = lazy(() => import('@/pages/GeographyPage'));
 const AdminModerationPage = lazy(() => import('@/pages/admin/AdminModerationPage'));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const ProfileViewPage = lazy(() => import('@/pages/profile/ProfileViewPage'));
+const ProfileEditPage = lazy(() => import('@/pages/profile/ProfileEditPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +28,7 @@ const queryClient = new QueryClient({
 function AppContent() {
   const [secretaryOpen, setSecretaryOpen] = useState(false);
   const [secretaryInitialFlow, setSecretaryInitialFlow] = useState<'discovery' | null>(null);
-  const [currentPage, setCurrentPage] = useState<'home' | 'geography' | 'admin' | 'profile'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'geography' | 'admin' | 'profile' | 'profile-edit'>('home');
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const { register, unregister } = useSecretaryNavigationRegistry();
 
@@ -38,12 +39,14 @@ function AppContent() {
       const basePath = import.meta.env.BASE_URL || '/';
       const relativePath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
       
-      if (relativePath.includes('geography')) {
+      if (relativePath.includes('profile/edit')) {
+        setCurrentPage('profile-edit');
+      } else if (relativePath.includes('profile')) {
+        setCurrentPage('profile');
+      } else if (relativePath.includes('geography')) {
         setCurrentPage('geography');
       } else if (relativePath.includes('admin')) {
         setCurrentPage('admin');
-      } else if (relativePath.includes('profile')) {
-        setCurrentPage('profile');
       } else {
         setCurrentPage('home');
       }
@@ -128,7 +131,15 @@ function AppContent() {
   if (currentPage === 'profile') {
     return (
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-        <ProfilePage />
+        <ProfileViewPage />
+      </Suspense>
+    );
+  }
+
+  if (currentPage === 'profile-edit') {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <ProfileEditPage />
       </Suspense>
     );
   }
