@@ -2,8 +2,67 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-revert-the-current-draft-codebase-back-to-the-exact-state-of-draft-38-frontend-backend-replacing-any-changes-introduced-after-draft-38",
-      "featureTitle": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
+      "featureId": "feature-prevent-form-progression-submission-in-the-create-instance-proposal-flow-when-the-required-geography-selections-are-missing-state-always-required-county-required-when-a-county-place-selection-is-in-progress-place-required-when-a-place-selection-is-in-progress-and-ensure-the-user-can-trigger-validation-feedback-even-if-the-form-is-otherwise-incomplete",
+      "featureTitle": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
+      "files": [
+        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+        "frontend/src/components/create-instance/SelectCounty.tsx",
+        "frontend/src/components/create-instance/SelectPlace.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-display-a-clear-simple-english-validation-message-telling-the-user-what-geography-selection-s-they-must-make-before-continuing-and-visually-indicate-which-geography-field-is-missing",
+      "featureTitle": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
+      "files": [
+        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-change-the-static-fixed-top-menu-logo-bar-homeheader-background-color-to-solid-black-while-keeping-existing-layout-and-ensuring-readable-contrast-for-the-logo-and-button",
+      "featureTitle": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+      "files": [
+        "frontend/src/components/common/HomeHeader.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-use-the-provided-direct-image-url-as-the-homepage-hero-background-image-and-bottom-justify-the-image-align-to-bottom-within-the-hero-section",
+      "featureTitle": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
       "files": [
         "frontend/src/App.tsx"
       ],
@@ -16,7 +75,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "confidence": "high"
     }

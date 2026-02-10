@@ -1,25 +1,58 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T06:30:40.636Z",
+  "generatedAt": "2026-02-10T07:26:26.820Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
+        "summary": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/components/common/HomeHeader.tsx",
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js",
-          "frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png"
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+          "frontend/src/components/create-instance/SelectCounty.tsx",
+          "frontend/src/components/create-instance/SelectPlace.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+          "frontend/src/components/create-instance/SelectCounty.tsx",
+          "frontend/src/components/create-instance/SelectPlace.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/common/HomeHeader.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/common/HomeHeader.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
           "frontend/src/App.tsx"
@@ -28,12 +61,15 @@
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
+    "frontend/src/components/common/HomeHeader.tsx",
+    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+    "frontend/src/components/create-instance/SelectCounty.tsx",
+    "frontend/src/components/create-instance/SelectPlace.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

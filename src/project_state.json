@@ -2,21 +2,72 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [],
+  "architectural_notes": [
+    "Add front-end validation gating to prevent progression until required geography fields are selected, with user-facing error messaging."
+  ],
   "known_issues": [],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-revert-the-current-draft-codebase-back-to-the-exact-state-of-draft-38-frontend-backend-replacing-any-changes-introduced-after-draft-38",
-      "title": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
+      "id": "feature-prevent-form-progression-submission-in-the-create-instance-proposal-flow-when-the-required-geography-selections-are-missing-state-always-required-county-required-when-a-county-place-selection-is-in-progress-place-required-when-a-place-selection-is-in-progress-and-ensure-the-user-can-trigger-validation-feedback-even-if-the-form-is-otherwise-incomplete",
+      "title": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-display-a-clear-simple-english-validation-message-telling-the-user-what-geography-selection-s-they-must-make-before-continuing-and-visually-indicate-which-geography-field-is-missing",
+      "title": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-change-the-static-fixed-top-menu-logo-bar-homeheader-background-color-to-solid-black-while-keeping-existing-layout-and-ensuring-readable-contrast-for-the-logo-and-button",
+      "title": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-use-the-provided-direct-image-url-as-the-homepage-hero-background-image-and-bottom-justify-the-image-align-to-bottom-within-the-hero-section",
+      "title": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Revert application code to Draft 38",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Block user progression when required geography fields are not selected",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Display a clear message telling the user which geography selections are required",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Set static menu and logo bar background color to black",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Use provided direct image URL as the hero image and bottom-justify it",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Geography validation guard + header styling + bottom-justified hero image",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

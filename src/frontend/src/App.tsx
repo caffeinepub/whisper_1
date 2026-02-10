@@ -16,6 +16,7 @@ import { HomeHeader } from '@/components/common/HomeHeader';
 import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
+import { usePreloadedImage } from '@/hooks/usePreloadedImage';
 
 function App() {
   const [isCreateInstanceOpen, setIsCreateInstanceOpen] = useState(false);
@@ -39,6 +40,10 @@ function App() {
   const appIdentifier = encodeURIComponent(
     typeof window !== 'undefined' ? window.location.hostname : 'whisper-icp'
   );
+
+  // Preload hero image
+  const heroImageUrl = 'https://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T042856Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=15d679d2bc5a687e8aa935235f8610a85ac00ee395a9c4736db993b144122a97';
+  const { isReady: heroImageReady } = usePreloadedImage(heroImageUrl);
 
   // Register navigation destinations
   useEffect(() => {
@@ -137,26 +142,29 @@ function App() {
       <HomeHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden pt-20">
-        {/* Background Image with static asset */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(/assets/generated/whisper-hero-provided.dim_1600x900.png)`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center bottom',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
+      <section className="hero relative min-h-[70vh] flex items-center justify-center overflow-hidden pt-20">
+        {/* Background Image with external URL - bottom justified */}
+        {heroImageReady && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${heroImageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center bottom',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+        )}
         
-        {/* Dark blue overlay at 30% opacity */}
-        <div 
-          className="absolute inset-0" 
-          style={{
-            backgroundColor: 'oklch(0.20 0.08 230)',
-            opacity: 0.3,
-          }}
-        />
+        {/* Fallback background color when image is loading or fails */}
+        {!heroImageReady && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              backgroundColor: 'oklch(0.30 0.05 230)',
+            }}
+          />
+        )}
         
         {/* Content */}
         <div className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center">
@@ -184,7 +192,7 @@ function App() {
               size="lg"
               variant="outline"
               onClick={() => setIsSecretaryOpen(true)}
-              className="border-2 border-white/80 text-white hover:bg-white/20 hover:text-white font-semibold text-lg px-8 py-6 shadow-lg backdrop-blur-sm"
+              className="border-2 border-white/80 bg-white/10 text-white hover:bg-white/20 hover:text-white hover:border-white font-semibold text-lg px-8 py-6 shadow-lg backdrop-blur-sm"
             >
               <MessageCircle className="h-5 w-5 mr-2" />
               Talk to Secretary
@@ -212,6 +220,33 @@ function App() {
             <ProposalsSection proposalToOpen={proposalToOpen} />
           </section>
         )}
+
+        {/* CTA Section - Ready to Get Started */}
+        <section className="space-y-8 text-center py-12">
+          <div className="space-y-4">
+            <h2 className="text-5xl font-bold text-foreground">Ready to Get Started?</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Join the movement for transparent, accountable, and community-driven governance.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button
+              size="lg"
+              onClick={handleGetStarted}
+              className="bg-secondary hover:bg-secondary/90 text-white font-semibold text-lg px-8 py-6 shadow-lg w-full sm:w-auto"
+            >
+              Create Your Instance
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setIsSecretaryOpen(true)}
+              className="border-2 border-secondary text-secondary hover:bg-secondary hover:text-white font-semibold text-lg px-8 py-6 shadow-lg w-full sm:w-auto"
+            >
+              Talk to Secretary
+            </Button>
+          </div>
+        </section>
 
         {/* Features Grid */}
         <section className="space-y-12">
@@ -365,47 +400,37 @@ function App() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowComplaint(false)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
                 <CardDescription>
-                  Submit a complaint about police misconduct. Your report will be securely recorded on the blockchain.
+                  Report police misconduct securely and anonymously. Your complaint will be recorded on the blockchain.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="complaint-type">Type of Complaint</Label>
                   <Input id="complaint-type" placeholder="e.g., Excessive Force, Misconduct" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="complaint-date">Date of Incident</Label>
-                  <Input id="complaint-date" type="date" />
+                  <Label htmlFor="complaint-details">Details</Label>
+                  <Textarea
+                    id="complaint-details"
+                    placeholder="Describe the incident in detail..."
+                    rows={6}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="complaint-location">Location</Label>
                   <Input id="complaint-location" placeholder="Where did this occur?" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="complaint-description">Description</Label>
-                  <Textarea
-                    id="complaint-description"
-                    placeholder="Provide detailed information about the incident..."
-                    rows={6}
-                  />
+                  <Label htmlFor="complaint-date">Date & Time</Label>
+                  <Input id="complaint-date" type="datetime-local" />
                 </div>
-                <div className="bg-muted/50 p-4 rounded-lg border border-border">
-                  <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Your Privacy is Protected</p>
-                      <p className="text-sm text-muted-foreground">
-                        This complaint will be recorded on the blockchain with cryptographic security. You can choose to remain anonymous.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <Button className="w-full bg-accent hover:bg-accent-hover text-white font-semibold">
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold">
                   Submit Complaint
                 </Button>
               </CardContent>
@@ -429,15 +454,16 @@ function App() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowFOIA(false)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
                 <CardDescription>
-                  Request public information through the Freedom of Information Act.
+                  Request public information from government agencies through the Freedom of Information Act.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="foia-agency">Government Agency</Label>
                   <Input id="foia-agency" placeholder="Which agency are you requesting from?" />
@@ -447,29 +473,14 @@ function App() {
                   <Input id="foia-subject" placeholder="What information are you seeking?" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="foia-description">Detailed Description</Label>
+                  <Label htmlFor="foia-details">Request Details</Label>
                   <Textarea
-                    id="foia-description"
+                    id="foia-details"
                     placeholder="Provide specific details about the information you're requesting..."
                     rows={6}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="foia-contact">Contact Information</Label>
-                  <Input id="foia-contact" placeholder="Email or phone number for response" />
-                </div>
-                <div className="bg-muted/50 p-4 rounded-lg border border-border">
-                  <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">FOIA Request Guidelines</p>
-                      <p className="text-sm text-muted-foreground">
-                        Be as specific as possible about the records you're seeking. Agencies typically respond within 20 business days.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <Button className="w-full bg-accent hover:bg-accent-hover text-white font-semibold">
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold">
                   Submit FOIA Request
                 </Button>
               </CardContent>
@@ -493,6 +504,7 @@ function App() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowSupport(false)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -501,7 +513,7 @@ function App() {
                   Need help? We're here to assist you with any questions or issues.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="support-name">Your Name</Label>
                   <Input id="support-name" placeholder="Enter your name" />
@@ -518,11 +530,11 @@ function App() {
                   <Label htmlFor="support-message">Message</Label>
                   <Textarea
                     id="support-message"
-                    placeholder="Describe your question or issue in detail..."
+                    placeholder="Describe your question or issue..."
                     rows={6}
                   />
                 </div>
-                <Button className="w-full bg-accent hover:bg-accent-hover text-white font-semibold">
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold">
                   Send Message
                 </Button>
               </CardContent>
@@ -530,7 +542,7 @@ function App() {
           </section>
         )}
 
-        {/* Secretary Discoverability Nudge */}
+        {/* Secretary Nudge */}
         {showSecretaryNudge && (
           <SecretaryDiscoverabilityNudge
             onDismiss={() => setShowSecretaryNudge(false)}
@@ -540,23 +552,35 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 backdrop-blur-sm mt-20">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Whisper. All rights reserved.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Built with <Heart className="inline h-4 w-4 text-accent" /> using{' '}
-              <a
-                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appIdentifier}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:text-accent-hover underline"
-              >
-                caffeine.ai
-              </a>
-            </p>
+      <footer className="border-t border-border bg-muted/30 py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>© {new Date().getFullYear()} Whisper</span>
+              <Separator orientation="vertical" className="h-4" />
+              <span className="flex items-center gap-1">
+                Built with <Heart className="h-4 w-4 text-secondary fill-secondary" /> using{' '}
+                <a
+                  href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appIdentifier}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary hover:text-secondary/80 font-medium"
+                >
+                  caffeine.ai
+                </a>
+              </span>
+            </div>
+            <div className="flex gap-4">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Privacy Policy
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Terms of Service
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Contact
+              </Button>
+            </div>
           </div>
         </div>
       </footer>

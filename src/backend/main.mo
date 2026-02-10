@@ -237,6 +237,23 @@ actor {
       });
     };
 
+    // Geography validation - all required fields must be non-empty
+    if (state.size() == 0) {
+      return #error({ message = "Proposal must contain valid state"; });
+    };
+    if (county.size() == 0) {
+      return #error({ message = "Proposal must contain valid county"; });
+    };
+    if (censusBoundaryId.size() == 0) {
+      return #error({ message = "Proposal must contain valid census boundary id"; });
+    };
+    if (population2020.size() == 0) {
+      return #error({ message = "Proposal must contain valid population2020"; });
+    };
+    if (squareMeters == 0) {
+      return #error({ message = "Proposal must contain valid squareMeters (greater than 0)"; });
+    };
+
     switch (proposals.get(instanceName)) {
       case (null) {
         let newProposal = {
@@ -445,5 +462,3 @@ actor {
     };
   };
 };
-
-

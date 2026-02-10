@@ -33,7 +33,8 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedInstanceName, setSubmittedInstanceName] = useState('');
   const [geographyError, setGeographyError] = useState<string | null>(null);
-  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [countyInteracted, setCountyInteracted] = useState(false);
+  const [placeInteracted, setPlaceInteracted] = useState(false);
 
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
@@ -51,31 +52,32 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     if (selectedState) {
       setSelectedCounty(null);
       setSelectedPlace(null);
+      setCountyInteracted(false);
+      setPlaceInteracted(false);
     }
   }, [selectedState]);
 
   useEffect(() => {
     if (selectedCounty) {
       setSelectedPlace(null);
+      setPlaceInteracted(false);
     }
   }, [selectedCounty]);
 
   // Clear geography error when selections change
   useEffect(() => {
     setGeographyError(null);
-    setAttemptedSubmit(false);
   }, [selectedState, selectedCounty, selectedPlace]);
 
   const isNameAvailable = debouncedInstanceName.length > 0 && !isNameTaken && !isCheckingName && !nameCheckError;
   const showNameTaken = debouncedInstanceName.length > 0 && isNameTaken && !isCheckingName;
   const showNameCheckError = debouncedInstanceName.length > 0 && nameCheckError && !isCheckingName;
 
-  // Geography validation: State always required; County required for county/place levels; Place required for place level
+  // Geography validation: State always required; County required when county or place is interacted; Place required when place is interacted
   const isGeographyValid = 
     selectedState !== null &&
-    (geographyLevel === 'state' || 
-     (geographyLevel === 'county' && selectedCounty !== null) ||
-     (geographyLevel === 'place' && selectedCounty !== null && selectedPlace !== null));
+    (!countyInteracted || selectedCounty !== null) &&
+    (!placeInteracted || selectedPlace !== null);
 
   const canSubmit =
     instanceName.trim().length > 0 &&
@@ -89,16 +91,11 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     if (!selectedState) {
       return 'Please select a state.';
     }
-    if (geographyLevel === 'county' && !selectedCounty) {
+    if (countyInteracted && !selectedCounty) {
       return 'Please select a county.';
     }
-    if (geographyLevel === 'place') {
-      if (!selectedCounty) {
-        return 'Please select a county.';
-      }
-      if (!selectedPlace) {
-        return 'Please select a place.';
-      }
+    if (placeInteracted && !selectedPlace) {
+      return 'Please select a place.';
     }
     return null;
   };
@@ -106,16 +103,12 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
   // Determine which field is missing for highlighting
   const getMissingField = (): 'state' | 'county' | 'place' | null => {
     if (!selectedState) return 'state';
-    if (geographyLevel === 'county' && !selectedCounty) return 'county';
-    if (geographyLevel === 'place') {
-      if (!selectedCounty) return 'county';
-      if (!selectedPlace) return 'place';
-    }
+    if (countyInteracted && !selectedCounty) return 'county';
+    if (placeInteracted && !selectedPlace) return 'place';
     return null;
   };
 
   const handleSubmitAttempt = () => {
-    setAttemptedSubmit(true);
     // Check if geography is valid
     const missingMessage = getMissingGeographyMessage();
     if (missingMessage) {
@@ -132,14 +125,15 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
 
     let censusBoundaryId = '';
     let squareMeters = BigInt(0);
-    let population2020 = 'N/A';
-    let countyName = 'N/A';
+    let population2020 = '';
+    let countyName = '';
     let hierarchyLevel: USHierarchyLevel = USHierarchyLevel.state;
 
     if (geographyLevel === 'state' && selectedState) {
       censusBoundaryId = selectedState.fipsCode;
       squareMeters = selectedState.censusLandAreaSqMeters;
-      population2020 = 'N/A';
+      population2020 = 'State-level data';
+      countyName = 'N/A';
       hierarchyLevel = USHierarchyLevel.state;
     } else if (geographyLevel === 'county' && selectedCounty) {
       censusBoundaryId = selectedCounty.fipsCode;
@@ -150,7 +144,7 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     } else if (geographyLevel === 'place' && selectedPlace) {
       censusBoundaryId = selectedPlace.censusCensusFipsCode;
       squareMeters = BigInt(selectedPlace.censusLandKm2) * BigInt(1_000_000);
-      population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'N/A';
+      population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'Data unavailable';
       countyName = selectedPlace.countyFullName;
       hierarchyLevel = USHierarchyLevel.place;
     }
@@ -160,7 +154,7 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
         description,
         instanceName,
         status: 'Pending',
-        state: selectedState?.shortName || 'N/A',
+        state: selectedState?.shortName || '',
         county: countyName,
         geographyLevel: hierarchyLevel,
         censusBoundaryId,
@@ -183,7 +177,7 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     onClose();
   };
 
-  const missingField = attemptedSubmit ? getMissingField() : null;
+  const missingField = getMissingField();
 
   if (showSuccess) {
     return (
@@ -353,14 +347,21 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
           {selectedState && (
             <div className={`space-y-2 ${missingField === 'county' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
               <Label htmlFor="county" className="text-white">
-                County {(geographyLevel === 'county' || geographyLevel === 'place') && <span className="text-destructive">*</span>}
+                County {countyInteracted && <span className="text-destructive">*</span>}
               </Label>
               <SelectCounty
                 stateGeoId={selectedState.hierarchicalId}
                 value={selectedCounty}
                 onChange={(county) => {
                   setSelectedCounty(county);
-                  setGeographyLevel('county');
+                  if (county) {
+                    setGeographyLevel('county');
+                  }
+                }}
+                onOpenChange={(open) => {
+                  if (open) {
+                    setCountyInteracted(true);
+                  }
                 }}
                 disabled={isSubmitting}
               />
@@ -371,14 +372,21 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
           {selectedCounty && (
             <div className={`space-y-2 ${missingField === 'place' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
               <Label htmlFor="place" className="text-white">
-                Place {geographyLevel === 'place' && <span className="text-destructive">*</span>}
+                Place {placeInteracted && <span className="text-destructive">*</span>}
               </Label>
               <SelectPlace
                 countyGeoId={selectedCounty.hierarchicalId}
                 value={selectedPlace}
                 onChange={(place) => {
                   setSelectedPlace(place);
-                  setGeographyLevel('place');
+                  if (place) {
+                    setGeographyLevel('place');
+                  }
+                }}
+                onOpenChange={(open) => {
+                  if (open) {
+                    setPlaceInteracted(true);
+                  }
                 }}
                 disabled={isSubmitting}
               />
@@ -405,7 +413,7 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
         {/* Submit Button */}
         <Button
           onClick={handleSubmitAttempt}
-          disabled={!canSubmit}
+          disabled={isSubmitting}
           className="w-full bg-accent hover:bg-accent-hover text-white font-semibold"
         >
           {isSubmitting ? (

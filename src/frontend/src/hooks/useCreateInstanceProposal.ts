@@ -53,22 +53,39 @@ interface SubmissionSuccess {
 }
 
 /**
- * Hook to submit a new instance creation proposal with full geography metadata.
- * On success, persists the submission metadata to localStorage.
- * Provides user-friendly error messages while logging technical details.
+ * Hook to submit a new instance creation proposal with full geography metadata and required field validation.
+ * On success, persists the submission metadata to localStorage and invalidates relevant queries.
  */
 export function useSubmitProposal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
-  const [, setLastSubmission] = useLocalStorageState<SubmissionSuccess | null>(
-    'whisper-last-proposal-submission',
-    null
-  );
+  const [, setLastSubmission] = useLocalStorageState<SubmissionSuccess | null>('whisper-last-submission', null);
 
   return useMutation({
     mutationFn: async (params: SubmitProposalParams) => {
       if (!actor) {
-        throw new Error('Backend connection not available');
+        throw new Error('Backend connection not available. Please try again.');
+      }
+
+      // Frontend validation: ensure all required geography fields are present
+      if (!params.state || params.state.trim().length === 0) {
+        throw new Error('State is required. Please select a state.');
+      }
+
+      if (!params.county || params.county.trim().length === 0) {
+        throw new Error('County is required. Please select a county.');
+      }
+
+      if (!params.censusBoundaryId || params.censusBoundaryId.trim().length === 0) {
+        throw new Error('Census boundary ID is required. Please ensure a valid geography selection.');
+      }
+
+      if (!params.population2020 || params.population2020.trim().length === 0) {
+        throw new Error('Population data is required. Please ensure a valid geography selection.');
+      }
+
+      if (params.squareMeters === BigInt(0)) {
+        throw new Error('Area data is required. Please ensure a valid geography selection.');
       }
 
       try {
@@ -84,36 +101,32 @@ export function useSubmitProposal() {
           params.population2020
         );
 
-        // Handle discriminated union result
         if (result.__kind__ === 'error') {
           throw new Error(result.error.message);
         }
 
-        // Return the proposal from the success result
-        return {
-          proposal: result.success.proposal,
-          params,
-        };
+        return result.success.proposal;
       } catch (error) {
         const { userMessage, originalError } = getUserFacingError(error);
         console.error('Error submitting proposal:', originalError);
         throw new Error(userMessage);
       }
     },
-    onSuccess: (data) => {
-      // Persist submission metadata to localStorage
-      const submissionRecord: SubmissionSuccess = {
-        instanceName: data.params.instanceName,
-        timestamp: Date.now(),
-        state: data.params.state,
-        county: data.params.county || undefined,
-        geographyLevel: data.params.geographyLevel,
-      };
-      setLastSubmission(submissionRecord);
-
-      // Invalidate queries to refresh the proposals list
+    onSuccess: (proposal, params) => {
+      // Invalidate proposals list to show the new proposal
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck', data.params.instanceName] });
+      
+      // Invalidate the specific instance name check
+      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck', params.instanceName] });
+
+      // Store submission metadata in localStorage
+      setLastSubmission({
+        instanceName: params.instanceName,
+        timestamp: Date.now(),
+        state: params.state,
+        county: params.county,
+        geographyLevel: params.geographyLevel,
+      });
     },
   });
 }

@@ -1,46 +1,93 @@
 {
   "kind": "build_request",
-  "title": "Revert application code to Draft 38",
+  "title": "Geography validation guard + header styling + bottom-justified hero image",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
-      "target": "both",
+      "text": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "Please revert back to Draft 38 now"
+          "Prevent the user from continuing when none of the required geography fields are selected"
         ]
       },
       "acceptanceCriteria": [
-        "The generated code in this draft matches Draft 38 behavior and UI as previously deployed/reviewed.",
-        "No post–Draft 38 changes remain in the frontend or backend after the revert.",
-        "The app builds successfully (frontend + backend) after reverting to Draft 38."
+        "If the user attempts to submit the Create Instance Proposal form without selecting the required geography fields for the current geography depth, the proposal is not submitted.",
+        "The submit/proceed action is not permanently blocked in a way that prevents showing validation feedback (i.e., the UI must allow an attempt that results in an error message instead of a disabled-only dead end).",
+        "Geography requirements are enforced as: state required always; county required when the user has selected a county or place; place required when the user has selected a place."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Show a clear, simple message explaining what the user must select."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When required geography is missing on submit attempt, an inline error is shown in the Create Instance Proposal card.",
+        "The message text is simple and in English (e.g., \"Please select a state.\", \"Please select a county.\", \"Please select a place.\").",
+        "The missing geography input section (state/county/place) is visually highlighted when validation fails.",
+        "The error message clears when the user changes any geography selection."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "make the background color of  the staic menu and logo bar black"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The fixed header bar background renders as solid black across the homepage.",
+        "Header contents (logo text/icon and Get Started button) remain readable and visually consistent on the black background.",
+        "No changes are made to any files under frontend/src/components/ui (shadcn components)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Use the below direct image URL as the hero image and bottom‑justify the image\nhttps://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T042856Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=15d679d2bc5a687e8aa935235f8610a85ac00ee395a9c4736db993b144122a97"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The hero background uses the exact provided URL (no modification).",
+        "The hero background image is bottom-justified (CSS background-position aligned to bottom, e.g., \"center bottom\").",
+        "Hero image continues to be preloaded via the existing preload logic before display, and a fallback background color is shown while loading."
       ]
     }
   ],
   "constraints": [
-    "Do not modify the read-only frontend paths listed in SYSTEM_CONTEXT. (If Draft 38 included changes in those paths, achieve the revert by adjusting surrounding/composing code instead of editing those files.)"
+    "Do not edit files listed as immutable in SYSTEM_CONTEXT (including frontend/src/components/ui/* and the Internet Identity/actor hooks).",
+    "Backend remains single-actor; no backend changes are required for these UI/UX updates."
   ],
   "nonGoals": [
-    "Do not introduce new features or bug fixes beyond restoring the Draft 38 state.",
-    "Do not perform any additional redesign or content changes not present in Draft 38."
+    "Do not add new geography datasets or change backend geography schemas.",
+    "Do not introduce new authentication methods or third-party integrations.",
+    "Do not redesign unrelated homepage sections beyond the requested header background color and hero image alignment."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

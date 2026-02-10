@@ -115,14 +115,14 @@ export function SecretaryWidget({ open, onOpenChange, onOptionSelect }: Secretar
           {isMenuVisible ? (
             <ScrollArea className="h-full p-4">
               <div className="space-y-3">
-                <p className="text-white/80 text-sm mb-4">How can I help you today?</p>
+                <p className="text-foreground text-sm mb-4">How can I help you today?</p>
                 {SECRETARY_OPTIONS.map((option) => (
                   <button
                     key={option.number}
                     onClick={() => handleOptionClick(option.number)}
-                    className="w-full text-left p-3 rounded-lg bg-white/5 hover:bg-secondary/20 border border-white/10 hover:border-secondary/50 transition-all text-white text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                    className="w-full text-left p-3 rounded-lg bg-white hover:bg-secondary/10 border border-border hover:border-secondary/50 transition-all text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
                   >
-                    <span className="font-medium text-secondary">{option.number}.</span> {option.label}
+                    <span className="font-medium text-foreground">{option.number}.</span> {option.label}
                   </button>
                 ))}
               </div>
@@ -139,7 +139,7 @@ export function SecretaryWidget({ open, onOpenChange, onOptionSelect }: Secretar
                       className={`max-w-[80%] rounded-lg p-3 ${
                         message.role === 'user'
                           ? 'bg-secondary text-white'
-                          : 'bg-white/10 text-white'
+                          : 'bg-muted text-foreground'
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
@@ -148,7 +148,7 @@ export function SecretaryWidget({ open, onOpenChange, onOptionSelect }: Secretar
                 ))}
                 {isProcessing && (
                   <div className="flex justify-start">
-                    <div className="bg-white/10 text-white rounded-lg p-3">
+                    <div className="bg-muted text-foreground rounded-lg p-3">
                       <Loader2 className="h-4 w-4 animate-spin text-secondary" />
                     </div>
                   </div>

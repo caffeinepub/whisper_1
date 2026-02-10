@@ -9,10 +9,11 @@ interface SelectPlaceProps {
   countyGeoId: string | null;
   value: USPlace | null;
   onChange: (place: USPlace | null) => void;
+  onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
 }
 
-export function SelectPlace({ countyGeoId, value, onChange, disabled = false }: SelectPlaceProps) {
+export function SelectPlace({ countyGeoId, value, onChange, onOpenChange, disabled = false }: SelectPlaceProps) {
   const { data: places = [], isLoading, error } = useGetPlacesForCounty(countyGeoId);
 
   const handleValueChange = (hierarchicalId: string) => {
@@ -45,10 +46,11 @@ export function SelectPlace({ countyGeoId, value, onChange, disabled = false }: 
     <Select
       value={value?.hierarchicalId || ''}
       onValueChange={handleValueChange}
+      onOpenChange={onOpenChange}
       disabled={isLoading || disabled}
     >
       <SelectTrigger className="bg-[oklch(0.15_0.05_230)] border-white/20 text-white rounded-xl h-12 text-base focus:border-accent focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed">
-        <SelectValue placeholder={isLoading ? 'Loading places...' : 'Select a city/town'} />
+        <SelectValue placeholder={isLoading ? 'Loading places...' : 'Select a city/town (optional)'} />
       </SelectTrigger>
       <SelectContent className="bg-[oklch(0.18_0.05_230)] border-white/20 text-white max-h-[300px]">
         {places.map((place) => (

@@ -1,41 +1,80 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend revert to Draft 38 state",
+  "title": "Geography guard validation, header styling, and bottom-aligned hero image",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Restore the frontend UI/behavior to match Draft 38 exactly, removing any post–Draft 38 changes.",
+      "summary": "Enforce geography-required rules in Create Instance Proposal while allowing submit attempts to trigger validation feedback (not a disabled-only dead end).",
       "acceptanceCriteria": [
-        "The generated code in this draft matches Draft 38 behavior and UI as previously deployed/reviewed.",
-        "No post–Draft 38 changes remain in the frontend or backend after the revert.",
-        "The app builds successfully (frontend + backend) after reverting to Draft 38."
+        "If the user attempts to submit the Create Instance Proposal form without selecting the required geography fields for the current geography depth, the proposal is not submitted.",
+        "The submit/proceed action is not permanently blocked in a way that prevents showing validation feedback (i.e., the UI must allow an attempt that results in an error message instead of a disabled-only dead end).",
+        "Geography requirements are enforced as: state required always; county required when the user has selected a county or place; place required when the user has selected a place."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+          "operation": "modify",
+          "description": "Adjust submit/proceed behavior so users can always attempt submission (even when other fields are incomplete) to trigger validation feedback; prevent proposal submission when required geography is missing. Update geography-required logic to follow the specified rules (state always required; county required when county/place selection is in-progress; place required when place selection is in-progress), including tracking “in-progress” based on user interaction with the county/place selectors."
+        },
+        {
+          "path": "frontend/src/components/create-instance/SelectCounty.tsx",
+          "operation": "modify",
+          "description": "Add a lightweight interaction signal (e.g., forward Select open-state changes) so the parent Create Instance Proposal flow can treat county selection as “in-progress” even before a county value is chosen."
+        },
+        {
+          "path": "frontend/src/components/create-instance/SelectPlace.tsx",
+          "operation": "modify",
+          "description": "Add a lightweight interaction signal (e.g., forward Select open-state changes) so the parent Create Instance Proposal flow can treat place selection as “in-progress” even before a place value is chosen."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Show simple English inline geography validation messages and visually highlight the missing geography field, clearing errors on selection changes.",
+      "acceptanceCriteria": [
+        "When required geography is missing on submit attempt, an inline error is shown in the Create Instance Proposal card.",
+        "The message text is simple and in English (e.g., \"Please select a state.\", \"Please select a county.\", \"Please select a place.\").",
+        "The missing geography input section (state/county/place) is visually highlighted when validation fails.",
+        "The error message clears when the user changes any geography selection."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+          "operation": "modify",
+          "description": "Ensure an attempted submit reliably produces an inline, simple English message for the missing geography selection(s), and that the corresponding geography section is visually highlighted. Ensure the error clears immediately when the user changes any geography selection (state/county/place) after a failed attempt."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Update HomeHeader fixed top bar to solid black while preserving layout and readable contrast, without changing shadcn/ui components.",
+      "acceptanceCriteria": [
+        "The fixed header bar background renders as solid black across the homepage.",
+        "Header contents (logo text/icon and Get Started button) remain readable and visually consistent on the black background.",
+        "No changes are made to any files under frontend/src/components/ui (shadcn components)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/common/HomeHeader.tsx",
+          "operation": "modify",
+          "description": "Change the fixed header’s background styling to render as solid black (no translucent background), keeping the existing layout and ensuring logo/button contrast remains readable on black; do not modify any shadcn/ui component files."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Use the provided hero image URL and bottom-justify the background image while preserving existing preload + fallback behavior.",
+      "acceptanceCriteria": [
+        "The hero background uses the exact provided URL (no modification).",
+        "The hero background image is bottom-justified (CSS background-position aligned to bottom, e.g., \"center bottom\").",
+        "Hero image continues to be preloaded via the existing preload logic before display, and a fallback background color is shown while loading."
       ],
       "file_operations": [
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Revert the main application UI composition back to Draft 38, removing any post–Draft 38 sections/flows and restoring Draft 38 layout, interactions, and Secretary/navigation wiring. Ensure the hero uses the Draft 38 static asset at frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png (no remote URL dependency), with Draft 38 overlay styling (dark blue oklch(0.20 0.08 230) at 30% opacity) and Draft 38 CTA/button styles. Use existing shadcn-ui components already in the codebase (e.g., Card/Button/Input/Textarea) as per Draft 38 composition; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/common/HomeHeader.tsx",
-          "operation": "modify",
-          "description": "Revert the fixed header (branding + primary CTA) to the exact Draft 38 structure, copy, and styling, ensuring it matches Draft 38 behavior when interacting with the App’s 'Get Started' flow. If this file is listed as read-only in SYSTEM_CONTEXT, do not edit it; instead, achieve Draft 38 parity by adjusting composition/props usage in frontend/src/App.tsx."
-        },
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Restore global theme tokens, utility classes, and any Draft 38-specific styling (including overlay root behavior and hero/widget contrast rules) to match Draft 38. Do not modify any read-only frontend paths listed in SYSTEM_CONTEXT; if this file is read-only, revert styling by adjusting Tailwind config usage and/or component class usage in composing files instead."
-        },
-        {
-          "path": "frontend/tailwind.config.js",
-          "operation": "modify",
-          "description": "Revert Tailwind theme extensions (colors, shadows, animations, typography) back to the Draft 38 configuration so the UI renders identically to Draft 38. Do not modify any read-only frontend paths listed in SYSTEM_CONTEXT; if this file is read-only, achieve Draft 38 parity by reverting class usage in composing components instead."
-        },
-        {
-          "path": "frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png",
-          "operation": "create",
-          "description": "Ensure the Draft 38 hero image asset exists at this exact path so the homepage hero can load it as a static asset without remote dependencies. If the asset already exists, replace it with the Draft 38 version and remove any post–Draft 38 asset substitutions in the UI wiring."
+          "description": "Update the hero background styling to bottom-justify the existing preloaded background image by changing background positioning to align to bottom (e.g., center bottom), while keeping the heroImageUrl exactly as provided, maintaining the existing usePreloadedImage preload logic, and preserving the fallback background color while loading."
         }
       ]
     }
