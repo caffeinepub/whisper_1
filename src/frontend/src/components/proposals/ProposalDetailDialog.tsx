@@ -1,247 +1,152 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { MapPin, Users, CheckCircle2, AlertCircle, Loader2, FolderKanban } from 'lucide-react';
-import { IconBubble } from '@/components/common/IconBubble';
-import { useUpdateProposalStatus } from '@/hooks/useUpdateProposalStatus';
-import { useIsCallerAdmin } from '@/hooks/useQueries';
+import { Loader2, FolderKanban } from 'lucide-react';
 import { IssueProjectDetailDialog } from '@/components/issue-project/IssueProjectDetailDialog';
+import { useGetProposal } from '@/hooks/useQueries';
+import { formatProposalGeography } from '@/lib/formatProposalGeography';
+import { uiCopy } from '@/lib/uiCopy';
 import type { Proposal } from '@/backend';
-import { formatProposalGeography, getGeographyLevelLabel } from '@/lib/formatProposalGeography';
 
 interface ProposalDetailDialogProps {
-  proposalName: string;
-  proposal: Proposal;
+  proposal: Proposal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  autoOpenIssueProject?: boolean;
 }
 
-export function ProposalDetailDialog({ proposalName, proposal, open, onOpenChange }: ProposalDetailDialogProps) {
-  const { data: isAdmin, isLoading: isAdminLoading } = useIsCallerAdmin();
-  const { mutate: updateStatus, isPending } = useUpdateProposalStatus();
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+export function ProposalDetailDialog({ 
+  proposal, 
+  open, 
+  onOpenChange,
+  autoOpenIssueProject = false 
+}: ProposalDetailDialogProps) {
   const [showIssueProject, setShowIssueProject] = useState(false);
 
-  const handleApprove = () => {
-    setActionType('approve');
-    updateStatus(
-      { instanceName: proposalName, newStatus: 'Approved' },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setActionType(null);
-        },
-        onError: () => {
-          setActionType(null);
-        },
-      }
-    );
-  };
+  // Fetch live proposal data when dialog is open
+  const { data: liveProposal, isLoading } = useGetProposal(proposal?.instanceName || '');
 
-  const handleReject = () => {
-    setActionType('reject');
-    updateStatus(
-      { instanceName: proposalName, newStatus: 'Rejected' },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setActionType(null);
-        },
-        onError: () => {
-          setActionType(null);
-        },
-      }
-    );
-  };
+  // Use live data if available, fallback to passed proposal
+  const displayProposal = liveProposal || proposal;
+
+  // Auto-open Issue Project if requested
+  useEffect(() => {
+    if (autoOpenIssueProject && displayProposal && open) {
+      // Small delay to ensure dialog is mounted
+      setTimeout(() => {
+        setShowIssueProject(true);
+      }, 100);
+    }
+  }, [autoOpenIssueProject, displayProposal, open]);
+
+  if (!displayProposal) return null;
+
+  const geography = formatProposalGeography(displayProposal);
 
   const handleOpenIssueProject = () => {
     setShowIssueProject(true);
   };
 
-  const canModerate = isAdmin && proposal.status === 'Pending';
-  const isApproving = isPending && actionType === 'approve';
-  const isRejecting = isPending && actionType === 'reject';
+  const handleCloseIssueProject = () => {
+    setShowIssueProject(false);
+  };
+
+  const handleDialogOpenChange = (newOpen: boolean) => {
+    // When closing the main dialog, also close the Issue Project dialog
+    if (!newOpen) {
+      setShowIssueProject(false);
+    }
+    onOpenChange(newOpen);
+  };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white max-w-2xl">
+      <Dialog open={open && !showIssueProject} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <IconBubble size="lg" variant="secondary">
-                <MapPin className="h-6 w-6" />
-              </IconBubble>
-              <DialogTitle className="text-2xl">{proposal.instanceName}</DialogTitle>
-            </div>
-            <DialogDescription className="text-white/70">
-              {formatProposalGeography(proposal)}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Status Badge */}
-            <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">Status:</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl mb-2">{displayProposal.instanceName}</DialogTitle>
+                <DialogDescription className="text-base">
+                  {displayProposal.description}
+                </DialogDescription>
+              </div>
               <Badge
                 variant={
-                  proposal.status === 'Approved'
+                  displayProposal.status === 'Approved'
                     ? 'default'
-                    : proposal.status === 'Rejected'
+                    : displayProposal.status === 'Rejected'
                       ? 'destructive'
                       : 'secondary'
                 }
-                className={
-                  proposal.status === 'Pending'
-                    ? 'bg-secondary/20 text-secondary border-secondary/30'
-                    : ''
-                }
               >
-                {proposal.status}
+                {displayProposal.status}
               </Badge>
             </div>
+          </DialogHeader>
 
-            <Separator className="bg-white/10" />
-
-            {/* Description */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <AlertCircle className="h-4 w-4" />
-                </IconBubble>
-                Description
-              </h4>
-              <p className="text-white/80 leading-relaxed">{proposal.description}</p>
+          {isLoading ? (
+            <div className="py-8 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-
-            <Separator className="bg-white/10" />
-
-            {/* Geography Details */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <MapPin className="h-4 w-4" />
-                </IconBubble>
-                Geography Details
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-white/60">Level:</span>
-                  <p className="text-white">{getGeographyLevelLabel(proposal.geographyLevel)}</p>
-                </div>
-                <div>
-                  <span className="text-white/60">State:</span>
-                  <p className="text-white">{proposal.state}</p>
-                </div>
-                {proposal.county && proposal.county !== 'N/A' && (
+          ) : (
+            <div className="space-y-6 mt-4">
+              {/* Geography Information */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">{uiCopy.proposals.geographyLabel}</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-white/60">County:</span>
-                    <p className="text-white">{proposal.county}</p>
+                    <span className="text-muted-foreground">{uiCopy.proposals.levelLabel}:</span>
+                    <p className="font-medium">{geography.levelLabel}</p>
                   </div>
-                )}
-                <div>
-                  <span className="text-white/60">Census ID:</span>
-                  <p className="text-white font-mono text-xs">{proposal.censusBoundaryId}</p>
+                  <div>
+                    <span className="text-muted-foreground">{uiCopy.proposals.stateLabel}:</span>
+                    <p className="font-medium">{geography.state}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{uiCopy.proposals.countyLabel}:</span>
+                    <p className="font-medium">{geography.county}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{uiCopy.proposals.populationLabel}:</span>
+                    <p className="font-medium">{geography.population}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Separator className="bg-white/10" />
-
-            {/* Demographics */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <Users className="h-4 w-4" />
-                </IconBubble>
-                Demographics
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-white/60">Population (2020):</span>
-                  <p className="text-white">{proposal.population2020}</p>
+              {/* Issue Project Button */}
+              {displayProposal.status === 'Approved' && (
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={handleOpenIssueProject}
+                    className="w-full bg-secondary hover:bg-secondary/90"
+                  >
+                    <FolderKanban className="h-4 w-4 mr-2" />
+                    {uiCopy.proposals.openIssueProjectButton}
+                  </Button>
                 </div>
-                <div>
-                  <span className="text-white/60">Area:</span>
-                  <p className="text-white">{(Number(proposal.squareMeters) / 1_000_000).toFixed(2)} km²</p>
-                </div>
-              </div>
+              )}
             </div>
-
-            <Separator className="bg-white/10" />
-
-            {/* Issue Project Action */}
-            <div className="flex items-center justify-center">
-              <Button
-                onClick={handleOpenIssueProject}
-                className="bg-secondary hover:bg-secondary/90 text-white font-semibold"
-              >
-                <FolderKanban className="h-4 w-4 mr-2" />
-                Open Issue Project
-              </Button>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            {canModerate ? (
-              <>
-                <Button
-                  onClick={handleApprove}
-                  disabled={isPending}
-                  className="bg-success hover:bg-success/90 text-white font-semibold"
-                >
-                  {isApproving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Approving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleReject}
-                  disabled={isPending}
-                  className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-                >
-                  {isRejecting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Rejecting...
-                    </>
-                  ) : (
-                    'Reject'
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Button variant="outline" onClick={() => onOpenChange(false)} className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2">
-                Close
-              </Button>
-            )}
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Issue Project Detail Dialog */}
-      <IssueProjectDetailDialog
-        proposalName={proposalName}
-        proposal={proposal}
-        open={showIssueProject}
-        onOpenChange={setShowIssueProject}
-      />
+      {/* Issue Project Dialog */}
+      {showIssueProject && (
+        <IssueProjectDetailDialog
+          proposalName={displayProposal.instanceName}
+          proposal={displayProposal}
+          open={showIssueProject}
+          onOpenChange={handleCloseIssueProject}
+        />
+      )}
     </>
   );
 }

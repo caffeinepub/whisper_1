@@ -1,41 +1,46 @@
-import { MessageCircle, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MessageCircle, X } from 'lucide-react';
 import { IconBubble } from '@/components/common/IconBubble';
+import { uiCopy } from '@/lib/uiCopy';
 
 interface SecretaryDiscoverabilityNudgeProps {
-  onOpenSecretary: () => void;
   onDismiss: () => void;
+  onOpen: () => void;
 }
 
-export function SecretaryDiscoverabilityNudge({ onOpenSecretary, onDismiss }: SecretaryDiscoverabilityNudgeProps) {
+export function SecretaryDiscoverabilityNudge({ onDismiss, onOpen }: SecretaryDiscoverabilityNudgeProps) {
   return (
-    <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow rounded-2xl relative">
+    <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow relative">
       <button
         onClick={onDismiss}
-        className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-full p-1"
+        className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
         aria-label="Dismiss"
       >
         <X className="h-5 w-5" />
       </button>
+      
       <CardHeader>
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <IconBubble size="lg" variant="secondary">
             <MessageCircle className="h-6 w-6" />
           </IconBubble>
-          <CardTitle className="text-2xl text-white">Meet Secretary</CardTitle>
+          <div>
+            <CardTitle className="text-white">{uiCopy.secretary.nudgeTitle}</CardTitle>
+            <CardDescription className="text-white/70">
+              {uiCopy.secretary.nudgeDescription}
+            </CardDescription>
+          </div>
         </div>
-        <CardDescription className="text-white/70">
-          Your AI assistant for navigating Whisper. Ask questions, get help, or jump to any feature instantly.
-        </CardDescription>
       </CardHeader>
+      
       <CardContent>
         <Button
-          onClick={onOpenSecretary}
-          className="bg-secondary hover:bg-secondary/90 text-white font-semibold"
+          onClick={onOpen}
+          className="bg-secondary hover:bg-secondary/90 text-white font-semibold border-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
         >
           <MessageCircle className="h-4 w-4 mr-2" />
-          Try Secretary Now
+          {uiCopy.secretary.nudgeButton}
         </Button>
       </CardContent>
     </Card>

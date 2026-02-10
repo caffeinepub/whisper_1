@@ -1,42 +1,33 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
-export type ChatMessage = {
+interface Message {
   role: 'user' | 'assistant';
   content: string;
-};
+}
 
 export function useSecretaryChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content: 'Hello! I\'m your Secretary assistant. I can help you navigate Whisper and get things done.',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isMenuVisible, setIsMenuVisible] = useState(true);
 
-  const addUserMessage = useCallback((content: string) => {
+  const addUserMessage = (content: string) => {
     setMessages((prev) => [...prev, { role: 'user', content }]);
     setIsMenuVisible(false);
-  }, []);
+  };
 
-  const addAssistantMessage = useCallback((content: string) => {
+  const addAssistantMessage = (content: string) => {
     setMessages((prev) => [...prev, { role: 'assistant', content }]);
-  }, []);
+    setIsMenuVisible(false);
+  };
 
-  const returnToMenu = useCallback(() => {
+  const returnToMenu = () => {
+    setMessages([]);
     setIsMenuVisible(true);
-    addAssistantMessage('What else can I help you with?');
-  }, [addAssistantMessage]);
+  };
 
-  const resetChat = useCallback(() => {
-    setMessages([
-      {
-        role: 'assistant',
-        content: 'Hello! I\'m your Secretary assistant. I can help you navigate Whisper and get things done.',
-      },
-    ]);
+  const resetChat = () => {
+    setMessages([]);
     setIsMenuVisible(true);
-  }, []);
+  };
 
   return {
     messages,

@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-prevent-form-progression-submission-in-the-create-instance-proposal-flow-when-the-required-geography-selections-are-missing-state-always-required-county-required-when-a-county-place-selection-is-in-progress-place-required-when-a-place-selection-is-in-progress-and-ensure-the-user-can-trigger-validation-feedback-even-if-the-form-is-otherwise-incomplete",
-      "featureTitle": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
+      "featureId": "feature-update-the-top-navigation-bar-branding-colors-keep-using-the-existing-teal-logo-svg-render-the-whisper-wordmark-text-in-white-and-render-all-menu-item-labels-in-white-by-default-with-teal-styling-on-hover-rollover-and-when-selected-active",
+      "featureTitle": "Update the top navigation bar branding colors: keep using the existing teal logo SVG, render the “Whisper” wordmark text in white, and render all menu item labels in white by default with teal styling on hover/rollover and when selected/active.",
       "files": [
-        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-        "frontend/src/components/create-instance/SelectCounty.tsx",
-        "frontend/src/components/create-instance/SelectPlace.tsx"
+        "frontend/src/components/common/HomeHeader.tsx",
+        "frontend/src/hooks/useCurrentPath.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -15,7 +14,8 @@
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
         "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
       ],
       "testIds": [
         "REQ-1"
@@ -23,27 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-display-a-clear-simple-english-validation-message-telling-the-user-what-geography-selection-s-they-must-make-before-continuing-and-visually-indicate-which-geography-field-is-missing",
-      "featureTitle": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
-      "files": [
-        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-change-the-static-fixed-top-menu-logo-bar-homeheader-background-color-to-solid-black-while-keeping-existing-layout-and-ensuring-readable-contrast-for-the-logo-and-button",
-      "featureTitle": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+      "featureId": "feature-change-the-header-get-started-cta-behavior-so-that-when-the-user-is-not-authenticated-it-triggers-internet-identity-login-becoming-a-site-member-rather-than-scrolling-to-a-page-section-or-initiating-instance-creation-chat-flows",
+      "featureTitle": "Change the header “Get Started” CTA behavior so that when the user is not authenticated it triggers Internet Identity login (becoming a site member) rather than scrolling to a page section or initiating instance creation/chat flows.",
       "files": [
         "frontend/src/components/common/HomeHeader.tsx"
       ],
@@ -53,18 +34,20 @@
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
         "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-use-the-provided-direct-image-url-as-the-homepage-hero-background-image-and-bottom-justify-the-image-align-to-bottom-within-the-hero-section",
-      "featureTitle": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
+      "featureId": "feature-when-the-user-is-authenticated-replace-the-header-get-started-cta-with-a-user-profile-entry-that-shows-the-user-s-profile-image-fallback-if-none-and-label-and-opens-a-submenu-with-at-least-profile-navigates-to-profile-and-logout-logs-out-and-clears-cached-queries",
+      "featureTitle": "When the user is authenticated, replace the header “Get Started” CTA with a user profile entry that shows the user’s profile image (fallback if none) and label, and opens a submenu with at least: “Profile” (navigates to /profile) and “Logout” (logs out and clears cached queries).",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/src/components/common/HomeHeader.tsx",
+        "frontend/src/components/common/UserProfileMenu.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -72,7 +55,29 @@
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
         "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refine-the-secretary-lookup-discovery-flow-to-avoid-auto-navigation-side-effects-and-make-the-outcome-explicit-after-the-user-selects-state-county-or-city-show-a-clear-result-message-and-present-explicit-next-action-buttons-e-g-view-existing-instance-when-found-or-create-an-instance-proposal-when-not-found-without-automatically-navigating-after-a-timeout",
+      "featureTitle": "Refine the Secretary “lookup/discovery” flow to avoid auto-navigation side effects and make the outcome explicit: after the user selects state + county or city, show a clear result message and present explicit next-action buttons (e.g., “View existing instance” when found, or “Create an instance proposal” when not found), without automatically navigating after a timeout.",
+      "files": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/lib/uiCopy.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
       ],
       "testIds": [
         "REQ-4"

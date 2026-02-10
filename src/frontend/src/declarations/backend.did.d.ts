@@ -13,6 +13,7 @@ import type { Principal } from '@icp-sdk/core/principal';
 export type CensusStateCode = string;
 export type GeoId = string;
 export type HierarchicalGeoId = string;
+export type ProfileImage = Uint8Array;
 export interface Proposal {
   'status' : string,
   'geographyLevel' : USHierarchyLevel,
@@ -24,6 +25,12 @@ export interface Proposal {
   'county' : string,
   'censusBoundaryId' : string,
   'population2020' : string,
+}
+export interface SecretaryCategorySuggestion {
+  'statesByGeoId' : Array<USState>,
+  'searchTerm' : string,
+  'locationLevel' : USHierarchyLevel,
+  'proposedCategories' : Array<string>,
 }
 export type SubmitProposalResult = { 'error' : { 'message' : string } } |
   { 'success' : { 'proposal' : Proposal } };
@@ -76,23 +83,66 @@ export interface USState {
   'censusAcreage' : bigint,
   'termType' : string,
 }
-export interface UserProfile { 'name' : string }
+export interface UserProfile {
+  'profileImage' : [] | [ProfileImage],
+  'name' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface _CaffeineStorageCreateCertificateResult {
+  'method' : string,
+  'blob_hash' : string,
+}
+export interface _CaffeineStorageRefillInformation {
+  'proposed_top_up_amount' : [] | [bigint],
+}
+export interface _CaffeineStorageRefillResult {
+  'success' : [] | [boolean],
+  'topped_up_amount' : [] | [bigint],
+}
 export interface _SERVICE {
+  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
+  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+    [Array<Uint8Array>],
+    undefined
+  >,
+  '_caffeineStorageCreateCertificate' : ActorMethod<
+    [string],
+    _CaffeineStorageCreateCertificateResult
+  >,
+  '_caffeineStorageRefillCashier' : ActorMethod<
+    [[] | [_CaffeineStorageRefillInformation]],
+    _CaffeineStorageRefillResult
+  >,
+  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createTask' : ActorMethod<[string, string], bigint>,
+  'deleteProposal' : ActorMethod<[string], boolean>,
+  'getAdminModerationQueue' : ActorMethod<[], Array<[string, Proposal]>>,
+  'getAllCityComplaintCategories' : ActorMethod<[], Array<string>>,
+  'getAllCountyComplaintCategories' : ActorMethod<[], Array<string>>,
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
+  'getAllStateComplaintCategories' : ActorMethod<[], Array<string>>,
   'getAllStates' : ActorMethod<[], Array<USState>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCityComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
+  'getCountyComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
+  'getPlacesForState' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
+  'getSecretaryCategorySuggestion' : ActorMethod<
+    [string, USHierarchyLevel],
+    SecretaryCategorySuggestion
+  >,
+  'getStateComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'hideProposal' : ActorMethod<[string], boolean>,
   'ingestUSGeographyData' : ActorMethod<
     [Array<USGeographyDataChunk>],
     undefined

@@ -8,10 +8,14 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 ## Hero Section
 
 ### Hero Image
-- **Current Asset**: `/frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png`
-- **Description**: User-provided hero image for community collaboration theme
+- **Current Asset**: `/frontend/public/assets/generated/second-best-hero-image.dim_2400x1350.jpg`
+- **Description**: Static bundled hero image for community collaboration theme
 - **Implementation**: Full-width background image with `cover` sizing and `center bottom` positioning
-- **Reference**: Static asset loaded directly from `/assets/generated/whisper-hero-provided.dim_1600x900.png`
+- **Reference**: Static asset loaded directly from `/assets/generated/second-best-hero-image.dim_2400x1350.jpg`
+- **Previous External URL** (preserved for reference):
+  ```
+  https://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T042856Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=15d679d2bc5a687e8aa935235f8610a85ac00ee395a9c4736db993b144122a97
+  ```
 
 ### Hero Overlay
 - **Color**: Dark blue `oklch(0.20 0.08 230)`
@@ -222,3 +226,10 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 - **Hero Image**: Replaced with user-provided static asset (`whisper-hero-provided.dim_1600x900.png`)
 - **Hero Overlay**: Changed to dark blue `oklch(0.20 0.08 230)` at exactly 30% opacity (0.3) for improved image visibility while maintaining text contrast
 - **Hero Implementation**: Confirmed static asset loading (no backend calls) with `center bottom` positioning
+
+### Draft Version 46
+- **Hero Image**: Updated to use bundled static asset (`second-best-hero-image.dim_2400x1350.jpg`) instead of expiring external signed URL
+- **Hero Implementation**: Removed preload hook and external URL dependency; now uses direct static path for reliable loading
+- **Proposal Submission Flow**: Enhanced React Query cache invalidation to ensure proposals list refreshes immediately after submission
+- **ProposalsSection**: Improved auto-open logic to wait for fresh data (`isFetched` check) before opening Proposal Detail Dialog
+- **Smoke Test Steps 5-6**: Fixed SPA flow so Proposal Detail and Issue Project dialogs open with correct data without requiring manual page refresh

@@ -98,3 +98,38 @@ export function useGetPlacesForCounty(countyGeoId: GeoId | null) {
     staleTime: 1000 * 60 * 30, // Places data is stable, cache for 30 minutes
   });
 }
+
+/**
+ * Hook to fetch places (cities/towns) for a specific state.
+ * Only enabled when a valid stateGeoId is provided.
+ * Returns empty array instead of throwing when no places found.
+ */
+export function useGetPlacesForState(stateGeoId: GeoId | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USPlace[]>({
+    queryKey: ['geography', 'places-by-state', stateGeoId],
+    queryFn: async () => {
+      if (!actor || !stateGeoId) {
+        return [];
+      }
+      try {
+        const result = await actor.getPlacesForState(stateGeoId);
+        return result;
+      } catch (error) {
+        // Check if this is a "no places found" error from backend
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('No places found')) {
+          // Return empty array for legitimate empty results
+          return [];
+        }
+        // Re-throw actual errors
+        console.error('Error fetching places for state:', error);
+        throw new Error('Failed to load places. Please try again.');
+      }
+    },
+    enabled: !!actor && !isFetching && !!stateGeoId,
+    retry: 1, // Only retry once since empty results are valid
+    staleTime: 1000 * 60 * 30, // Places data is stable, cache for 30 minutes
+  });
+}

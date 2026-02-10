@@ -46,46 +46,38 @@ interface SubmitProposalParams {
 
 interface SubmissionSuccess {
   instanceName: string;
-  timestamp: number;
-  state: string;
-  county?: string;
-  geographyLevel: string;
 }
 
 /**
- * Hook to submit a new instance creation proposal with full geography metadata and required field validation.
- * On success, persists the submission metadata to localStorage and invalidates relevant queries.
+ * Hook to submit a new instance proposal.
+ * Validates all required geography fields before submission.
+ * Invalidates proposals cache on success to ensure fresh data.
  */
 export function useSubmitProposal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
-  const [, setLastSubmission] = useLocalStorageState<SubmissionSuccess | null>('whisper-last-submission', null);
 
-  return useMutation({
-    mutationFn: async (params: SubmitProposalParams) => {
+  return useMutation<SubmissionSuccess, Error, SubmitProposalParams>({
+    mutationFn: async (params) => {
       if (!actor) {
         throw new Error('Backend connection not available. Please try again.');
       }
 
-      // Frontend validation: ensure all required geography fields are present
+      // Frontend validation: Ensure all required geography fields are non-empty
       if (!params.state || params.state.trim().length === 0) {
         throw new Error('State is required. Please select a state.');
       }
-
       if (!params.county || params.county.trim().length === 0) {
         throw new Error('County is required. Please select a county.');
       }
-
       if (!params.censusBoundaryId || params.censusBoundaryId.trim().length === 0) {
-        throw new Error('Census boundary ID is required. Please ensure a valid geography selection.');
+        throw new Error('Census boundary ID is required. Please complete your geography selection.');
       }
-
       if (!params.population2020 || params.population2020.trim().length === 0) {
-        throw new Error('Population data is required. Please ensure a valid geography selection.');
+        throw new Error('Population data is required. Please complete your geography selection.');
       }
-
       if (params.squareMeters === BigInt(0)) {
-        throw new Error('Area data is required. Please ensure a valid geography selection.');
+        throw new Error('Area data is required. Please complete your geography selection.');
       }
 
       try {
@@ -105,28 +97,18 @@ export function useSubmitProposal() {
           throw new Error(result.error.message);
         }
 
-        return result.success.proposal;
+        return { instanceName: params.instanceName };
       } catch (error) {
         const { userMessage, originalError } = getUserFacingError(error);
         console.error('Error submitting proposal:', originalError);
         throw new Error(userMessage);
       }
     },
-    onSuccess: (proposal, params) => {
-      // Invalidate proposals list to show the new proposal
+    onSuccess: (data) => {
+      // Invalidate proposals list to fetch fresh data including the new proposal
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      
-      // Invalidate the specific instance name check
-      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck', params.instanceName] });
-
-      // Store submission metadata in localStorage
-      setLastSubmission({
-        instanceName: params.instanceName,
-        timestamp: Date.now(),
-        state: params.state,
-        county: params.county,
-        geographyLevel: params.geographyLevel,
-      });
+      // Also invalidate the specific proposal query for the newly created proposal
+      queryClient.invalidateQueries({ queryKey: ['proposal', data.instanceName] });
     },
   });
 }

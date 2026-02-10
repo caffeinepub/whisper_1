@@ -8,6 +8,17 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const _CaffeineStorageCreateCertificateResult = IDL.Record({
+  'method' : IDL.Text,
+  'blob_hash' : IDL.Text,
+});
+export const _CaffeineStorageRefillInformation = IDL.Record({
+  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const _CaffeineStorageRefillResult = IDL.Record({
+  'success' : IDL.Opt(IDL.Bool),
+  'topped_up_amount' : IDL.Opt(IDL.Nat),
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -43,7 +54,11 @@ export const USState = IDL.Record({
   'censusAcreage' : IDL.Nat,
   'termType' : IDL.Text,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const ProfileImage = IDL.Vec(IDL.Nat8);
+export const UserProfile = IDL.Record({
+  'profileImage' : IDL.Opt(ProfileImage),
+  'name' : IDL.Text,
+});
 export const GeoId = IDL.Text;
 export const USCounty = IDL.Record({
   'censusLandAreaSqMeters' : IDL.Text,
@@ -70,6 +85,12 @@ export const USPlace = IDL.Record({
   'censusPlaceType' : IDL.Text,
   'censusStateCode' : CensusStateCode,
 });
+export const SecretaryCategorySuggestion = IDL.Record({
+  'statesByGeoId' : IDL.Vec(USState),
+  'searchTerm' : IDL.Text,
+  'locationLevel' : USHierarchyLevel,
+  'proposedCategories' : IDL.Vec(IDL.Text),
+});
 export const Task = IDL.Record({
   'id' : IDL.Nat,
   'completed' : IDL.Bool,
@@ -86,20 +107,88 @@ export const SubmitProposalResult = IDL.Variant({
 });
 
 export const idlService = IDL.Service({
+  '_caffeineStorageBlobIsLive' : IDL.Func(
+      [IDL.Vec(IDL.Nat8)],
+      [IDL.Bool],
+      ['query'],
+    ),
+  '_caffeineStorageBlobsToDelete' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      ['query'],
+    ),
+  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      [],
+      [],
+    ),
+  '_caffeineStorageCreateCertificate' : IDL.Func(
+      [IDL.Text],
+      [_CaffeineStorageCreateCertificateResult],
+      [],
+    ),
+  '_caffeineStorageRefillCashier' : IDL.Func(
+      [IDL.Opt(_CaffeineStorageRefillInformation)],
+      [_CaffeineStorageRefillResult],
+      [],
+    ),
+  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'deleteProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'getAdminModerationQueue' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
+      ['query'],
+    ),
+  'getAllCityComplaintCategories' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
+  'getAllCountyComplaintCategories' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getAllProposals' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
       ['query'],
     ),
+  'getAllStateComplaintCategories' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCityComplaintSuggestions' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+  'getCountyComplaintSuggestions' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
+  'getPlacesForState' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
   'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+  'getSecretaryCategorySuggestion' : IDL.Func(
+      [IDL.Text, USHierarchyLevel],
+      [SecretaryCategorySuggestion],
+      ['query'],
+    ),
+  'getStateComplaintSuggestions' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getTasks' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
@@ -110,6 +199,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'hideProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'ingestUSGeographyData' : IDL.Func([IDL.Vec(USGeographyDataChunk)], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
@@ -137,6 +227,17 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const _CaffeineStorageCreateCertificateResult = IDL.Record({
+    'method' : IDL.Text,
+    'blob_hash' : IDL.Text,
+  });
+  const _CaffeineStorageRefillInformation = IDL.Record({
+    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const _CaffeineStorageRefillResult = IDL.Record({
+    'success' : IDL.Opt(IDL.Bool),
+    'topped_up_amount' : IDL.Opt(IDL.Nat),
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -172,7 +273,11 @@ export const idlFactory = ({ IDL }) => {
     'censusAcreage' : IDL.Nat,
     'termType' : IDL.Text,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const ProfileImage = IDL.Vec(IDL.Nat8);
+  const UserProfile = IDL.Record({
+    'profileImage' : IDL.Opt(ProfileImage),
+    'name' : IDL.Text,
+  });
   const GeoId = IDL.Text;
   const USCounty = IDL.Record({
     'censusLandAreaSqMeters' : IDL.Text,
@@ -199,6 +304,12 @@ export const idlFactory = ({ IDL }) => {
     'censusPlaceType' : IDL.Text,
     'censusStateCode' : CensusStateCode,
   });
+  const SecretaryCategorySuggestion = IDL.Record({
+    'statesByGeoId' : IDL.Vec(USState),
+    'searchTerm' : IDL.Text,
+    'locationLevel' : USHierarchyLevel,
+    'proposedCategories' : IDL.Vec(IDL.Text),
+  });
   const Task = IDL.Record({
     'id' : IDL.Nat,
     'completed' : IDL.Bool,
@@ -215,20 +326,88 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
+    '_caffeineStorageBlobIsLive' : IDL.Func(
+        [IDL.Vec(IDL.Nat8)],
+        [IDL.Bool],
+        ['query'],
+      ),
+    '_caffeineStorageBlobsToDelete' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
+    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        [],
+        [],
+      ),
+    '_caffeineStorageCreateCertificate' : IDL.Func(
+        [IDL.Text],
+        [_CaffeineStorageCreateCertificateResult],
+        [],
+      ),
+    '_caffeineStorageRefillCashier' : IDL.Func(
+        [IDL.Opt(_CaffeineStorageRefillInformation)],
+        [_CaffeineStorageRefillResult],
+        [],
+      ),
+    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'deleteProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'getAdminModerationQueue' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
+        ['query'],
+      ),
+    'getAllCityComplaintCategories' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
+    'getAllCountyComplaintCategories' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getAllProposals' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
         ['query'],
       ),
+    'getAllStateComplaintCategories' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCityComplaintSuggestions' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+    'getCountyComplaintSuggestions' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
+    'getPlacesForState' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
     'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+    'getSecretaryCategorySuggestion' : IDL.Func(
+        [IDL.Text, USHierarchyLevel],
+        [SecretaryCategorySuggestion],
+        ['query'],
+      ),
+    'getStateComplaintSuggestions' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getTasks' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
@@ -239,6 +418,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'hideProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'ingestUSGeographyData' : IDL.Func([IDL.Vec(USGeographyDataChunk)], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),

@@ -1,80 +1,91 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Geography guard validation, header styling, and bottom-aligned hero image",
+  "title": "Refine header branding/auth CTA and Secretary discovery results",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Enforce geography-required rules in Create Instance Proposal while allowing submit attempts to trigger validation feedback (not a disabled-only dead end).",
+      "summary": "Update header branding colors so wordmark and nav labels are white by default and teal on hover/active while keeping the existing teal logo SVG unchanged.",
       "acceptanceCriteria": [
-        "If the user attempts to submit the Create Instance Proposal form without selecting the required geography fields for the current geography depth, the proposal is not submitted.",
-        "The submit/proceed action is not permanently blocked in a way that prevents showing validation feedback (i.e., the UI must allow an attempt that results in an error message instead of a disabled-only dead end).",
-        "Geography requirements are enforced as: state required always; county required when the user has selected a county or place; place required when the user has selected a place."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "operation": "modify",
-          "description": "Adjust submit/proceed behavior so users can always attempt submission (even when other fields are incomplete) to trigger validation feedback; prevent proposal submission when required geography is missing. Update geography-required logic to follow the specified rules (state always required; county required when county/place selection is in-progress; place required when place selection is in-progress), including tracking “in-progress” based on user interaction with the county/place selectors."
-        },
-        {
-          "path": "frontend/src/components/create-instance/SelectCounty.tsx",
-          "operation": "modify",
-          "description": "Add a lightweight interaction signal (e.g., forward Select open-state changes) so the parent Create Instance Proposal flow can treat county selection as “in-progress” even before a county value is chosen."
-        },
-        {
-          "path": "frontend/src/components/create-instance/SelectPlace.tsx",
-          "operation": "modify",
-          "description": "Add a lightweight interaction signal (e.g., forward Select open-state changes) so the parent Create Instance Proposal flow can treat place selection as “in-progress” even before a place value is chosen."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Show simple English inline geography validation messages and visually highlight the missing geography field, clearing errors on selection changes.",
-      "acceptanceCriteria": [
-        "When required geography is missing on submit attempt, an inline error is shown in the Create Instance Proposal card.",
-        "The message text is simple and in English (e.g., \"Please select a state.\", \"Please select a county.\", \"Please select a place.\").",
-        "The missing geography input section (state/county/place) is visually highlighted when validation fails.",
-        "The error message clears when the user changes any geography selection."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "operation": "modify",
-          "description": "Ensure an attempted submit reliably produces an inline, simple English message for the missing geography selection(s), and that the corresponding geography section is visually highlighted. Ensure the error clears immediately when the user changes any geography selection (state/county/place) after a failed attempt."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Update HomeHeader fixed top bar to solid black while preserving layout and readable contrast, without changing shadcn/ui components.",
-      "acceptanceCriteria": [
-        "The fixed header bar background renders as solid black across the homepage.",
-        "Header contents (logo text/icon and Get Started button) remain readable and visually consistent on the black background.",
-        "No changes are made to any files under frontend/src/components/ui (shadcn components)."
+        "The header continues to use the existing asset at frontend/public/whisper-logo-teal.svg with no color modifications to the SVG.",
+        "The “Whisper” text next to the logo renders white in the header.",
+        "Desktop nav menu labels (e.g., Geography, Admin when present) render white by default.",
+        "On hover, focused, or active route, nav menu labels render in teal (consistent with the app’s existing teal accent token).",
+        "Mobile menu items match the same white default / teal hover-active behavior."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/common/HomeHeader.tsx",
           "operation": "modify",
-          "description": "Change the fixed header’s background styling to render as solid black (no translucent background), keeping the existing layout and ensuring logo/button contrast remains readable on black; do not modify any shadcn/ui component files."
+          "description": "Adjust header styling classes to render the “Whisper” wordmark and all nav labels in white by default, with teal styling on hover/focus and for the active route; keep using frontend/public/whisper-logo-teal.svg as-is without modifying the SVG; ensure the same color behavior applies in the mobile Sheet menu. Use composed shadcn-ui primitives already in use (e.g., Button, Sheet) and verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useCurrentPath.ts",
+          "operation": "create",
+          "description": "Add a small hook to track the current route (listening to popstate) so HomeHeader can reliably apply an active/selected style to matching nav items (desktop + mobile) without editing any files in frontend/src/components/ui. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Change the header “Get Started” CTA so unauthenticated users start Internet Identity login (with disabled/loading state during login).",
+      "acceptanceCriteria": [
+        "When not authenticated, clicking “Get Started” initiates the Internet Identity login flow.",
+        "When not authenticated, clicking “Get Started” does not scroll to the “get-started” section and does not navigate to create-instance, proposals, or open the Secretary widget.",
+        "If login is already in progress, the CTA is disabled (or otherwise prevents duplicate login attempts) and shows an appropriate loading state consistent with existing auth UI copy."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/common/HomeHeader.tsx",
+          "operation": "modify",
+          "description": "Update the unauthenticated header CTA so the “Get Started” button calls useInternetIdentity().login(), is disabled when loginStatus is 'logging-in', and shows the existing uiCopy.auth.loggingIn label; remove/disable the previous scroll-to-section behavior for this CTA when unauthenticated. Use composed shadcn-ui Button and verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "When authenticated, replace the “Get Started” CTA with a profile control (avatar + label) that opens a submenu with Profile and Logout actions (including clearing React Query cache).",
+      "acceptanceCriteria": [
+        "After successful authentication, the “Get Started” CTA is no longer shown in the header.",
+        "A profile control is shown instead, including an avatar image when available; if no image is available, a deterministic fallback (e.g., initials or generic icon) is shown.",
+        "Opening the profile control shows a submenu that includes “Profile” and “Logout”.",
+        "Clicking “Profile” navigates to the existing profile page route and closes the submenu.",
+        "Clicking “Logout” logs out (clears identity) and clears React Query cache, matching existing logout behavior.",
+        "Mobile header/menu provides equivalent authenticated profile access and logout."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/common/UserProfileMenu.tsx",
+          "operation": "create",
+          "description": "Create a reusable authenticated header control that uses the existing useGetCallerUserProfile hook for display name and optional profileImage, renders an Avatar with deterministic fallback (e.g., initials), and provides a dropdown submenu with “Profile” (navigates to /profile) and “Logout” (calls clear() and queryClient.clear()). Compose existing shadcn-ui components (e.g., DropdownMenu, Avatar, Button) rather than editing files under frontend/src/components/ui. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/common/HomeHeader.tsx",
+          "operation": "modify",
+          "description": "Wire UserProfileMenu into the header for authenticated users (desktop and mobile), replacing the “Get Started” CTA when authenticated; ensure mobile Sheet shows equivalent Profile + Logout access and that selecting actions closes the mobile menu where appropriate. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Use the provided hero image URL and bottom-justify the background image while preserving existing preload + fallback behavior.",
+      "summary": "Refine the Secretary lookup/discovery flow to show an explicit result step with clear messaging and explicit next-action buttons, removing any auto-navigation timeouts.",
       "acceptanceCriteria": [
-        "The hero background uses the exact provided URL (no modification).",
-        "The hero background image is bottom-justified (CSS background-position aligned to bottom, e.g., \"center bottom\").",
-        "Hero image continues to be preloaded via the existing preload logic before display, and a fallback background color is shown while loading."
+        "When an existing instance is detected, the Secretary shows a result state with an explicit action button to navigate to the relevant destination; it does not auto-navigate after a delay.",
+        "When no instance is detected, the Secretary shows the “founding citizen” result message and an explicit action button to proceed to instance proposal creation; it does not auto-navigate after a delay.",
+        "The Secretary remains open on the result step until the user chooses an action or closes the widget.",
+        "The refined flow continues to support both county and city selection and continues to use the existing geography data sources and typeahead UI.",
+        "All user-facing text in the refined flow is in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Update the hero background styling to bottom-justify the existing preloaded background image by changing background positioning to align to bottom (e.g., center bottom), while keeping the heroImageUrl exactly as provided, maintaining the existing usePreloadedImage preload logic, and preserving the fallback background color while loading."
+          "description": "Replace the current discovery auto-navigation timeouts with an explicit 'result' step state that persists until user action: (1) if an existing instance is detected, show a clear found message plus a button such as “View existing instance” that navigates via the existing secretary navigation registry; (2) if not found, show the appropriate founding-citizen message plus a button such as “Create an instance proposal” that navigates to the create-instance destination. Keep the widget open on the result step and do not auto-close unless the user chooses an action or closes the widget. Retain existing county/city selection and typeahead behavior (SecretaryLocationTypeahead) and existing geography/proposals data sources. Use composed shadcn-ui components (Card/Button/etc.) already imported and verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/uiCopy.ts",
+          "operation": "modify",
+          "description": "Add/adjust English UI copy strings needed for the refined discovery result step (e.g., explicit result titles/messages and action button labels for found/not-found outcomes), ensuring all newly user-facing text is in English."
         }
       ]
     }

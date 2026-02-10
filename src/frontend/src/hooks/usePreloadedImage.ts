@@ -7,16 +7,20 @@ interface UsePreloadedImageResult {
 
 /**
  * Preloads a static image URL and exposes ready/error state.
- * Logs a console warning when the image fails to load.
+ * Does not log warnings (caller handles diagnostics).
+ * Resets state when src changes to prevent stale state.
  */
 export function usePreloadedImage(src: string): UsePreloadedImageResult {
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
+    // Reset state when src changes
+    setIsReady(false);
+    setHasError(false);
+
     if (!src) {
       setHasError(true);
-      console.warn('usePreloadedImage: No image source provided');
       return;
     }
 
@@ -27,10 +31,9 @@ export function usePreloadedImage(src: string): UsePreloadedImageResult {
       setHasError(false);
     };
 
-    const handleError = (e: ErrorEvent | Event) => {
+    const handleError = () => {
       setHasError(true);
       setIsReady(false);
-      console.warn(`Failed to load image: ${src}`, e);
     };
 
     img.addEventListener('load', handleLoad);
@@ -42,7 +45,7 @@ export function usePreloadedImage(src: string): UsePreloadedImageResult {
       if (img.naturalWidth > 0) {
         handleLoad();
       } else {
-        handleError(new Event('error'));
+        handleError();
       }
     }
 

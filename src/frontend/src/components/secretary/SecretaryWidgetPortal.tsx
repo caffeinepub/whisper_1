@@ -6,9 +6,10 @@ interface SecretaryWidgetPortalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onOptionSelect?: (optionNumber: number) => void;
+  initialFlow?: 'discovery' | null;
 }
 
-export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect }: SecretaryWidgetPortalProps) {
+export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, initialFlow }: SecretaryWidgetPortalProps) {
   const [mounted, setMounted] = useState(false);
   const [overlayRoot, setOverlayRoot] = useState<HTMLElement | null>(null);
 
@@ -32,7 +33,12 @@ export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect }: Se
   }
 
   return createPortal(
-    <SecretaryWidget open={open} onOpenChange={onOpenChange} onOptionSelect={onOptionSelect} />,
+    <SecretaryWidget 
+      open={open} 
+      onOpenChange={onOpenChange} 
+      onOptionSelect={onOptionSelect}
+      initialFlow={initialFlow}
+    />,
     overlayRoot
   );
 }

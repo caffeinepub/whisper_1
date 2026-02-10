@@ -2,201 +2,173 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, AlertCircle, RefreshCw } from 'lucide-react';
-import { useGetAllProposals } from '@/hooks/useQueries';
+import { FileText, Loader2 } from 'lucide-react';
 import { ProposalDetailDialog } from './ProposalDetailDialog';
-import { IconBubble } from '@/components/common/IconBubble';
-import { LoadingIndicator } from '@/components/common/LoadingIndicator';
-import type { Proposal } from '@/backend';
+import { useGetAllProposals } from '@/hooks/useQueries';
 import { formatProposalGeography } from '@/lib/formatProposalGeography';
+import { LoadingIndicator } from '@/components/common/LoadingIndicator';
+import { listenForProjectNavigation, type SecretaryProjectNavigationPayload } from '@/utils/secretaryProjectNavigation';
+import { uiCopy } from '@/lib/uiCopy';
+import type { Proposal } from '@/backend';
 
-interface ProposalsSectionProps {
-  proposalToOpen?: string | null;
-  onProposalOpened?: () => void;
-}
+export function ProposalsSection() {
+  const { data: proposals, isLoading, error, refetch, isRefetching } = useGetAllProposals();
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [autoOpenCategory, setAutoOpenCategory] = useState<string | undefined>(undefined);
 
-export function ProposalsSection({ proposalToOpen, onProposalOpened }: ProposalsSectionProps) {
-  const { data: proposals = [], isLoading, error, refetch, isRefetching } = useGetAllProposals();
-  const [selectedProposal, setSelectedProposal] = useState<{ name: string; proposal: Proposal } | null>(null);
-
-  // Auto-open proposal when proposalToOpen is provided
+  // Listen for Secretary navigation events
   useEffect(() => {
-    if (proposalToOpen && proposals.length > 0 && !isLoading) {
-      const proposalEntry = proposals.find(([name]) => name === proposalToOpen);
-      if (proposalEntry) {
-        const [name, proposal] = proposalEntry;
-        setSelectedProposal({ name, proposal });
-        if (onProposalOpened) {
-          onProposalOpened();
-        }
+    const cleanup = listenForProjectNavigation((payload: SecretaryProjectNavigationPayload) => {
+      // Find the proposal by name
+      const proposal = proposals?.find(([name]) => name === payload.proposalName);
+      if (proposal) {
+        setSelectedProposal(proposal[1]);
+        setAutoOpenCategory(payload.category);
+        setDialogOpen(true);
       }
-    }
-  }, [proposalToOpen, proposals, isLoading, onProposalOpened]);
+    });
 
-  const handleRefresh = () => {
-    refetch();
+    return cleanup;
+  }, [proposals]);
+
+  const handleViewDetails = (proposal: Proposal) => {
+    setSelectedProposal(proposal);
+    setAutoOpenCategory(undefined);
+    setDialogOpen(true);
   };
 
-  const handleProposalClick = (name: string, proposal: Proposal) => {
-    setSelectedProposal({ name, proposal });
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    // Don't clear selectedProposal immediately to avoid flash
+    setTimeout(() => {
+      if (!dialogOpen) {
+        setSelectedProposal(null);
+        setAutoOpenCategory(undefined);
+      }
+    }, 300);
   };
-
-  const handleCloseDialog = () => {
-    setSelectedProposal(null);
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <IconBubble size="lg" variant="secondary">
-              <MapPin className="h-6 w-6" />
-            </IconBubble>
-            <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
-          </div>
-          <CardDescription className="text-white/70">
-            View and manage instance creation proposals from your community.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LoadingIndicator label="Loading proposals..." />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <IconBubble size="lg" variant="secondary">
-              <MapPin className="h-6 w-6" />
-            </IconBubble>
-            <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
-          </div>
-          <CardDescription className="text-white/70">
-            View and manage instance creation proposals from your community.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert className="bg-destructive/20 border-destructive/50">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            <AlertDescription className="text-white">
-              Failed to load proposals. Please try again.
-            </AlertDescription>
-          </Alert>
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            className="mt-4 border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <>
-      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <IconBubble size="lg" variant="secondary">
-                <MapPin className="h-6 w-6" />
-              </IconBubble>
-              <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
-            </div>
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefetching}
-              variant="outline"
-              size="sm"
-              className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-            >
-              {isRefetching ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </>
-              )}
-            </Button>
-          </div>
-          <CardDescription className="text-white/70">
-            View and manage instance creation proposals from your community.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {proposals.length === 0 ? (
-            <div className="text-center py-8 text-white/60">
-              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No proposals yet. Be the first to create one!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {proposals.map(([name, proposal]) => (
-                <Card
-                  key={name}
-                  className="bg-white/5 border-white/10 hover:border-secondary/50 transition-all cursor-pointer hover-lift"
-                  onClick={() => handleProposalClick(name, proposal)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg text-white mb-1">{proposal.instanceName}</CardTitle>
-                        <CardDescription className="text-white/60 text-sm">
-                          {formatProposalGeography(proposal)}
-                        </CardDescription>
-                      </div>
-                      <Badge
-                        variant={
-                          proposal.status === 'Approved'
-                            ? 'default'
-                            : proposal.status === 'Rejected'
-                              ? 'destructive'
-                              : 'secondary'
-                        }
-                        className={
-                          proposal.status === 'Pending'
-                            ? 'bg-secondary/20 text-secondary border-secondary/30'
-                            : ''
-                        }
-                      >
-                        {proposal.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-white/70 text-sm line-clamp-2">{proposal.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-2">{uiCopy.proposals.title}</h2>
+          <p className="text-slate-300">{uiCopy.proposals.description}</p>
+        </div>
+        {proposals && proposals.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="border-secondary text-secondary hover:bg-secondary/20"
+          >
+            {isRefetching ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              uiCopy.proposals.refreshButton
+            )}
+          </Button>
+        )}
+      </div>
 
-      {/* Proposal Detail Dialog */}
-      {selectedProposal && (
-        <ProposalDetailDialog
-          proposalName={selectedProposal.name}
-          proposal={selectedProposal.proposal}
-          open={!!selectedProposal}
-          onOpenChange={(open) => {
-            if (!open) handleCloseDialog();
-          }}
-        />
+      {isLoading ? (
+        <Card className="bg-slate-900/80 border-slate-700">
+          <CardContent className="py-12">
+            <LoadingIndicator label={uiCopy.proposals.loadingMessage} />
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card className="bg-slate-900/80 border-slate-700">
+          <CardContent className="py-12 text-center">
+            <p className="text-destructive mb-4">{uiCopy.proposals.errorMessage}</p>
+            <Button variant="outline" onClick={() => refetch()}>
+              {uiCopy.proposals.retryButton}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : !proposals || proposals.length === 0 ? (
+        <Card className="bg-slate-900/80 border-slate-700">
+          <CardContent className="py-12 text-center">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-slate-500" />
+            <p className="text-slate-400">{uiCopy.proposals.emptyState}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {proposals.map(([instanceName, proposal]) => {
+            const geography = formatProposalGeography(proposal);
+            return (
+              <Card
+                key={instanceName}
+                className="bg-slate-900/80 border-slate-700 hover-lift cursor-pointer"
+                onClick={() => handleViewDetails(proposal)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <CardTitle className="text-white text-lg">{proposal.instanceName}</CardTitle>
+                    <Badge
+                      variant={
+                        proposal.status === 'Approved'
+                          ? 'default'
+                          : proposal.status === 'Rejected'
+                            ? 'destructive'
+                            : 'secondary'
+                      }
+                      className="shrink-0"
+                    >
+                      {proposal.status}
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-slate-300 line-clamp-2">
+                    {proposal.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{uiCopy.proposals.levelLabel}:</span>
+                      <span className="text-white font-medium">{geography.levelLabel}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{uiCopy.proposals.stateLabel}:</span>
+                      <span className="text-white font-medium">{geography.state}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{uiCopy.proposals.countyLabel}:</span>
+                      <span className="text-white font-medium">{geography.county}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{uiCopy.proposals.populationLabel}:</span>
+                      <span className="text-white font-medium">{geography.population}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full border-secondary text-secondary hover:bg-secondary/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(proposal);
+                    }}
+                  >
+                    {uiCopy.proposals.viewDetailsButton}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
-    </>
+
+      <ProposalDetailDialog
+        proposal={selectedProposal}
+        open={dialogOpen}
+        onOpenChange={handleDialogClose}
+        autoOpenIssueProject={!!autoOpenCategory}
+      />
+    </div>
   );
 }

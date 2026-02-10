@@ -25,7 +25,13 @@ export function useCreateTask() {
       if (!actor) throw new Error('Actor not available');
       return actor.createTask(proposalId, description);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (newTaskId, variables) => {
+      // Optimistically add the new task to the cache
+      queryClient.setQueryData<Array<[bigint, Task]>>(['tasks', variables.proposalId], (old) => {
+        if (!old) return [[newTaskId, { id: newTaskId, description: variables.description, completed: false }]];
+        return [...old, [newTaskId, { id: newTaskId, description: variables.description, completed: false }]];
+      });
+      // Also invalidate to ensure consistency with backend
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.proposalId] });
     },
   });
@@ -40,7 +46,35 @@ export function useUpdateTaskStatus() {
       if (!actor) throw new Error('Actor not available');
       return actor.updateTaskStatus(proposalId, taskId, completed);
     },
-    onSuccess: (_, variables) => {
+    onMutate: async ({ proposalId, taskId, completed }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['tasks', proposalId] });
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData<Array<[bigint, Task]>>(['tasks', proposalId]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<Array<[bigint, Task]>>(['tasks', proposalId], (old) => {
+        if (!old) return old;
+        return old.map(([id, task]) => {
+          if (id === taskId) {
+            return [id, { ...task, completed }];
+          }
+          return [id, task];
+        });
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousTasks };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks', variables.proposalId], context.previousTasks);
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch after error or success to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.proposalId] });
     },
   });

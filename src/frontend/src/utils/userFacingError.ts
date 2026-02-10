@@ -20,11 +20,21 @@ export function getUserFacingError(error: unknown): { userMessage: string; origi
       userMessage = 'You do not have permission to perform this action.';
     } else if (error.message.includes('submit') || error.message.includes('Submission')) {
       userMessage = 'Submission failed. Please try again.';
+    } else if (error.message.includes('Only admins can')) {
+      userMessage = 'Admin access required. You do not have permission to perform this action.';
+    } else if (error.message.includes('approve') || error.message.includes('reject')) {
+      userMessage = 'Failed to update proposal status. Please try again.';
+    } else if (error.message.includes('hide')) {
+      userMessage = 'Failed to hide item. Please try again.';
+    } else if (error.message.includes('delete')) {
+      userMessage = 'Failed to delete item. Please try again.';
     }
   } else if (typeof error === 'string') {
     // Handle string errors
     if (error.includes('name already exists') || error.includes('already taken')) {
       userMessage = 'This name is already taken. Please choose a different name.';
+    } else if (error.includes('Unauthorized') || error.includes('Only admins')) {
+      userMessage = 'You do not have permission to perform this action.';
     }
   }
 

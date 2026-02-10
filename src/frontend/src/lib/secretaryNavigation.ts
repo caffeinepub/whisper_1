@@ -1,128 +1,73 @@
-export type NavigationIntent = {
-  type: 'url' | 'section' | 'action';
-  target: string;
-  params?: Record<string, string>;
-};
+/**
+ * Centralized Secretary navigation utilities with option metadata,
+ * keyword matching, and deep-link parsing/creation for consistent routing.
+ */
 
-export function parseDeepLink(url: string): NavigationIntent | null {
-  try {
-    const urlObj = new URL(url, window.location.origin);
-    const hash = urlObj.hash.slice(1);
-    const searchParams = new URLSearchParams(urlObj.search);
-    
-    if (hash) {
-      return {
-        type: 'section',
-        target: hash,
-      };
-    }
-    
-    const action = searchParams.get('action');
-    if (action) {
-      const params: Record<string, string> = {};
-      searchParams.forEach((value, key) => {
-        if (key !== 'action') {
-          params[key] = value;
-        }
-      });
-      
-      return {
-        type: 'action',
-        target: action,
-        params,
-      };
-    }
-    
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export function createDeepLink(intent: NavigationIntent): string {
-  const url = new URL(window.location.origin);
-  
-  if (intent.type === 'section') {
-    url.hash = intent.target;
-  } else if (intent.type === 'action') {
-    url.searchParams.set('action', intent.target);
-    if (intent.params) {
-      Object.entries(intent.params).forEach(([key, value]) => {
-        url.searchParams.set(key, value);
-      });
-    }
-  }
-  
-  return url.toString();
-}
-
-// Centralized Secretary option routing metadata
-export type SecretaryOption = {
-  number: number;
+export interface SecretaryOption {
+  id: string;
   label: string;
-  description: string;
   keywords: string[];
-  destinationId: string;
-  confirmationMessage: string;
-};
+  confirmationMessage?: string;
+}
 
-export const SECRETARY_OPTIONS: SecretaryOption[] = [
+/**
+ * All available Secretary navigation options with their metadata.
+ */
+export const secretaryOptions: SecretaryOption[] = [
   {
-    number: 1,
-    label: 'Report an issue',
-    description: 'Potholes, streetlights, etc.',
-    keywords: ['report', 'issue', 'problem', 'pothole'],
-    destinationId: 'create-instance',
-    confirmationMessage: 'I\'ll help you report an issue. Taking you to the Create Instance form...',
+    id: 'create-instance',
+    label: 'Create Instance',
+    keywords: ['create', 'instance', 'proposal', 'new', 'start', 'begin', 'setup'],
+    confirmationMessage: "I'll help you create a new instance.",
   },
   {
-    number: 2,
-    label: 'File a complaint',
-    description: 'Police misconduct, etc.',
-    keywords: ['complaint', 'police', 'misconduct', 'file'],
-    destinationId: 'complaint',
-    confirmationMessage: 'I\'ll help you file a complaint. Taking you to the complaint form...',
+    id: 'your-city-discovery',
+    label: 'Your City on Whisper?',
+    keywords: ['city', 'town', 'my city', 'find', 'discover', 'is my city', 'location', 'where', 'place'],
+    confirmationMessage: "Let me help you find your city on Whisper.",
   },
   {
-    number: 3,
-    label: 'Submit a FOIA request',
-    description: 'Request public information',
-    keywords: ['foia', 'information', 'request', 'freedom', 'public'],
-    destinationId: 'foia',
-    confirmationMessage: 'I\'ll help you submit a FOIA request. Taking you to the request form...',
+    id: 'proposals',
+    label: 'View Proposals',
+    keywords: ['proposals', 'view', 'list', 'browse', 'see', 'show'],
+    confirmationMessage: "I'll show you all proposals.",
   },
   {
-    number: 4,
-    label: 'Join a campaign',
-    description: 'Support local initiatives',
-    keywords: ['campaign', 'petition', 'join', 'support', 'initiative'],
-    destinationId: 'create-instance',
-    confirmationMessage: 'I\'ll help you join a campaign. Taking you to the Create Instance form...',
+    id: 'report-issue',
+    label: 'Report an Issue',
+    keywords: ['report', 'issue', 'problem', 'bug', 'complaint', 'concern'],
+    confirmationMessage: "I'll help you report an issue.",
   },
   {
-    number: 5,
-    label: 'Browse local issues',
-    description: 'See what others are working on',
-    keywords: ['browse', 'issues', 'proposals', 'local', 'area', 'view'],
-    destinationId: 'proposals',
-    confirmationMessage: 'I\'ll show you local issues. Taking you to the proposals section...',
+    id: 'complaint',
+    label: 'File a Complaint',
+    keywords: ['complaint', 'file', 'formal', 'grievance'],
+    confirmationMessage: "I'll help you file a complaint.",
   },
   {
-    number: 6,
-    label: 'Get support',
-    description: 'Help with the platform',
-    keywords: ['support', 'help', 'question', 'assistance', 'how'],
-    destinationId: 'support',
-    confirmationMessage: 'I\'ll help you get support. Taking you to the support section...',
+    id: 'foia',
+    label: 'FOIA Request',
+    keywords: ['foia', 'freedom', 'information', 'records', 'request', 'public records'],
+    confirmationMessage: "I'll help you with a FOIA request.",
+  },
+  {
+    id: 'support',
+    label: 'Get Support',
+    keywords: ['support', 'help', 'contact', 'assistance', 'question'],
+    confirmationMessage: "I'll connect you with support.",
   },
 ];
 
-export function matchKeywordToOption(text: string): SecretaryOption | null {
-  const lowerText = text.toLowerCase();
+/**
+ * Finds a Secretary option by matching keywords in user input.
+ * Returns the first match found, or null if no match.
+ */
+export function findOptionByKeyword(input: string): SecretaryOption | null {
+  const normalizedInput = input.toLowerCase().trim();
   
-  for (const option of SECRETARY_OPTIONS) {
+  for (const option of secretaryOptions) {
     for (const keyword of option.keywords) {
-      if (lowerText.includes(keyword)) {
+      if (normalizedInput.includes(keyword.toLowerCase())) {
         return option;
       }
     }
@@ -131,6 +76,21 @@ export function matchKeywordToOption(text: string): SecretaryOption | null {
   return null;
 }
 
-export function getOptionByNumber(optionNumber: number): SecretaryOption | null {
-  return SECRETARY_OPTIONS.find(opt => opt.number === optionNumber) || null;
+/**
+ * Deep link format: #secretary:destination-id
+ */
+export function createDeepLink(destinationId: string): string {
+  return `#secretary:${destinationId}`;
+}
+
+/**
+ * Parses a deep link hash and returns the destination info.
+ */
+export function parseDeepLink(hash: string): { type: 'section'; id: string } | null {
+  if (!hash || !hash.startsWith('#secretary:')) {
+    return null;
+  }
+  
+  const id = hash.slice('#secretary:'.length);
+  return { type: 'section', id };
 }

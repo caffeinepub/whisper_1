@@ -98,15 +98,18 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-size: 16px;
+    overflow-x: hidden;
   }
 }
 
 @layer utilities {
-  /* Hero overlay using ::before pseudo-element */
+  /* Hero section with improved responsive background handling */
   .hero {
     position: relative;
+    min-height: 70vh;
   }
 
+  /* Hero overlay using ::before pseudo-element */
   .hero::before {
     content: "";
     position: absolute;
@@ -121,6 +124,13 @@
   .hero > * {
     position: relative;
     z-index: 2;
+  }
+
+  /* Responsive hero adjustments */
+  @media (max-width: 768px) {
+    .hero {
+      min-height: 60vh;
+    }
   }
 
   /* Hover lift effect */
@@ -177,20 +187,24 @@
     }
   }
 
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
+    animation: fade-in-up 0.5s ease-out;
   }
 
   .animate-fade-in {
-    animation: fade-in 0.6s ease-out;
+    animation: fade-in 0.3s ease-out;
   }
 
-  /* Respect reduced motion preferences */
-  @media (prefers-reduced-motion: reduce) {
-    .motion-reduce\:opacity-100 {
-      opacity: 1 !important;
-      animation: none !important;
-      transform: none !important;
-    }
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
   }
 }

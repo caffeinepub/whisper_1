@@ -2,151 +2,155 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { X, MapPin, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, X, MapPin } from 'lucide-react';
+import { IconBubble } from '@/components/common/IconBubble';
 import { SelectState } from './SelectState';
 import { SelectCounty } from './SelectCounty';
 import { SelectPlace } from './SelectPlace';
-import { useGetAllStates } from '@/hooks/useUSGeography';
 import { useCheckInstanceName, useSubmitProposal } from '@/hooks/useCreateInstanceProposal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { IconBubble } from '@/components/common/IconBubble';
 import { LoadingIndicator } from '@/components/common/LoadingIndicator';
+import { generateWhisperInstanceName, isValidWhisperInstanceName } from '@/lib/whisperInstanceNaming';
+import { uiCopy } from '@/lib/uiCopy';
 import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
 
 interface CreateInstancePlaceholderCardProps {
   onClose: () => void;
-  initialInstanceName?: string;
-  onProposalSubmitted?: (instanceName: string) => void;
+  onProposalSubmitted: (instanceName: string) => void;
 }
 
-export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '', onProposalSubmitted }: CreateInstancePlaceholderCardProps) {
-  const [instanceName, setInstanceName] = useState(initialInstanceName);
+export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: CreateInstancePlaceholderCardProps) {
+  const [instanceName, setInstanceName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedState, setSelectedState] = useState<USState | null>(null);
   const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
-  const [geographyLevel, setGeographyLevel] = useState<'state' | 'county' | 'place'>('state');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [submittedInstanceName, setSubmittedInstanceName] = useState('');
-  const [geographyError, setGeographyError] = useState<string | null>(null);
-  const [countyInteracted, setCountyInteracted] = useState(false);
-  const [placeInteracted, setPlaceInteracted] = useState(false);
+  const [countyTouched, setCountyTouched] = useState(false);
+  const [placeTouched, setPlaceTouched] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
-  const { data: states = [], isLoading: statesLoading, error: statesError } = useGetAllStates();
-
   const {
     data: isNameTaken,
-    isLoading: isCheckingName,
-    error: nameCheckError,
+    isLoading: checkingName,
+    isFetched: nameCheckFetched,
   } = useCheckInstanceName(debouncedInstanceName);
 
-  const { mutate: submitProposal, isPending: isSubmitting, error: submitError } = useSubmitProposal();
+  const { mutate: submitProposal, isPending: isSubmitting } = useSubmitProposal();
 
+  // Auto-generate instance name when geography changes
   useEffect(() => {
     if (selectedState) {
-      setSelectedCounty(null);
-      setSelectedPlace(null);
-      setCountyInteracted(false);
-      setPlaceInteracted(false);
+      try {
+        let generatedName = '';
+        if (selectedPlace) {
+          generatedName = generateWhisperInstanceName(USHierarchyLevel.place, selectedState.longName, selectedCounty?.fullName, selectedPlace.shortName);
+        } else if (selectedCounty) {
+          generatedName = generateWhisperInstanceName(USHierarchyLevel.county, selectedState.longName, selectedCounty.fullName);
+        } else {
+          generatedName = generateWhisperInstanceName(USHierarchyLevel.state, selectedState.longName);
+        }
+        setInstanceName(generatedName);
+      } catch (error) {
+        console.error('Error generating instance name:', error);
+      }
     }
+  }, [selectedState, selectedCounty, selectedPlace]);
+
+  useEffect(() => {
+    setSelectedCounty(null);
+    setSelectedPlace(null);
+    setCountyTouched(false);
+    setPlaceTouched(false);
   }, [selectedState]);
 
   useEffect(() => {
-    if (selectedCounty) {
-      setSelectedPlace(null);
-      setPlaceInteracted(false);
-    }
+    setSelectedPlace(null);
+    setPlaceTouched(false);
   }, [selectedCounty]);
 
-  // Clear geography error when selections change
-  useEffect(() => {
-    setGeographyError(null);
-  }, [selectedState, selectedCounty, selectedPlace]);
+  const handleCountyOpenChange = (open: boolean) => {
+    if (open) {
+      setCountyTouched(true);
+    }
+  };
 
-  const isNameAvailable = debouncedInstanceName.length > 0 && !isNameTaken && !isCheckingName && !nameCheckError;
-  const showNameTaken = debouncedInstanceName.length > 0 && isNameTaken && !isCheckingName;
-  const showNameCheckError = debouncedInstanceName.length > 0 && nameCheckError && !isCheckingName;
+  const handlePlaceOpenChange = (open: boolean) => {
+    if (open) {
+      setPlaceTouched(true);
+    }
+  };
 
-  // Geography validation: State always required; County required when county or place is interacted; Place required when place is interacted
-  const isGeographyValid = 
-    selectedState !== null &&
-    (!countyInteracted || selectedCounty !== null) &&
-    (!placeInteracted || selectedPlace !== null);
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
 
-  const canSubmit =
-    instanceName.trim().length > 0 &&
-    description.trim().length > 0 &&
-    isGeographyValid &&
-    isNameAvailable &&
-    !isSubmitting;
+    if (!instanceName.trim()) {
+      errors.push('Instance name is required');
+    } else if (!isValidWhisperInstanceName(instanceName)) {
+      errors.push('Instance name must start with "WHISPER-"');
+    }
 
-  // Compute missing geography selections
-  const getMissingGeographyMessage = (): string | null => {
+    if (!description.trim()) {
+      errors.push('Description is required');
+    }
+
     if (!selectedState) {
-      return 'Please select a state.';
-    }
-    if (countyInteracted && !selectedCounty) {
-      return 'Please select a county.';
-    }
-    if (placeInteracted && !selectedPlace) {
-      return 'Please select a place.';
-    }
-    return null;
-  };
-
-  // Determine which field is missing for highlighting
-  const getMissingField = (): 'state' | 'county' | 'place' | null => {
-    if (!selectedState) return 'state';
-    if (countyInteracted && !selectedCounty) return 'county';
-    if (placeInteracted && !selectedPlace) return 'place';
-    return null;
-  };
-
-  const handleSubmitAttempt = () => {
-    // Check if geography is valid
-    const missingMessage = getMissingGeographyMessage();
-    if (missingMessage) {
-      setGeographyError(missingMessage);
-      return;
+      errors.push('State is required');
     }
 
-    // Proceed with submission
-    handleSubmit();
+    if (countyTouched && !selectedCounty) {
+      errors.push('County is required after opening the selector');
+    }
+
+    if (placeTouched && !selectedPlace) {
+      errors.push('Place is required after opening the selector');
+    }
+
+    setValidationErrors(errors);
+    return errors.length === 0;
   };
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
+    if (!validateForm()) {
+      return;
+    }
 
-    let censusBoundaryId = '';
-    let squareMeters = BigInt(0);
-    let population2020 = '';
-    let countyName = '';
-    let hierarchyLevel: USHierarchyLevel = USHierarchyLevel.state;
+    if (isNameTaken) {
+      setValidationErrors(['Instance name is already taken']);
+      return;
+    }
 
-    if (geographyLevel === 'state' && selectedState) {
-      censusBoundaryId = selectedState.fipsCode;
-      squareMeters = selectedState.censusLandAreaSqMeters;
-      population2020 = 'State-level data';
-      countyName = 'N/A';
-      hierarchyLevel = USHierarchyLevel.state;
-    } else if (geographyLevel === 'county' && selectedCounty) {
+    let geographyLevel: USHierarchyLevel;
+    let censusBoundaryId: string;
+    let squareMeters: bigint;
+    let population2020: string;
+    let countyName: string;
+
+    if (selectedPlace) {
+      geographyLevel = USHierarchyLevel.place;
+      censusBoundaryId = selectedPlace.censusCensusFipsCode;
+      squareMeters = BigInt(Number(selectedPlace.censusLandKm2) * 1_000_000);
+      population2020 = selectedPlace.population ? selectedPlace.population.toString() : '0';
+      countyName = selectedPlace.countyFullName;
+    } else if (selectedCounty) {
+      geographyLevel = USHierarchyLevel.county;
       censusBoundaryId = selectedCounty.fipsCode;
       squareMeters = BigInt(selectedCounty.censusLandAreaSqMeters);
       population2020 = selectedCounty.population2010;
-      countyName = selectedCounty.shortName;
-      hierarchyLevel = USHierarchyLevel.county;
-    } else if (geographyLevel === 'place' && selectedPlace) {
-      censusBoundaryId = selectedPlace.censusCensusFipsCode;
-      squareMeters = BigInt(selectedPlace.censusLandKm2) * BigInt(1_000_000);
-      population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'Data unavailable';
-      countyName = selectedPlace.countyFullName;
-      hierarchyLevel = USHierarchyLevel.place;
+      countyName = selectedCounty.fullName;
+    } else if (selectedState) {
+      geographyLevel = USHierarchyLevel.state;
+      censusBoundaryId = selectedState.fipsCode;
+      squareMeters = selectedState.censusLandAreaSqMeters;
+      population2020 = '0';
+      countyName = 'N/A';
+    } else {
+      setValidationErrors(['Invalid geography selection']);
+      return;
     }
 
     submitProposal(
@@ -154,277 +158,187 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
         description,
         instanceName,
         status: 'Pending',
-        state: selectedState?.shortName || '',
+        state: selectedState?.longName || '',
         county: countyName,
-        geographyLevel: hierarchyLevel,
+        geographyLevel,
         censusBoundaryId,
         squareMeters,
         population2020,
       },
       {
         onSuccess: () => {
-          setShowSuccess(true);
-          setSubmittedInstanceName(instanceName);
+          onProposalSubmitted(instanceName);
+          onClose();
+        },
+        onError: (error: any) => {
+          if (error?.message) {
+            setValidationErrors([error.message]);
+          } else {
+            setValidationErrors(['Failed to submit proposal. Please try again.']);
+          }
         },
       }
     );
   };
 
-  const handleViewProposal = () => {
-    if (onProposalSubmitted) {
-      onProposalSubmitted(submittedInstanceName);
-    }
-    onClose();
-  };
-
-  const missingField = getMissingField();
-
-  if (showSuccess) {
-    return (
-      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <IconBubble size="lg" variant="success">
-                <CheckCircle2 className="h-6 w-6" />
-              </IconBubble>
-              <CardTitle className="text-2xl text-white">Proposal Submitted Successfully!</CardTitle>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-white/60 hover:text-white hover:bg-white/10"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <CardDescription className="text-white/70">
-            Your instance proposal has been submitted and is pending review.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert className="bg-success/20 border-success/50">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <AlertDescription className="text-white">
-              Your proposal for <strong>{submittedInstanceName}</strong> has been created. It will be reviewed by administrators before approval.
-            </AlertDescription>
-          </Alert>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleViewProposal}
-              className="bg-secondary hover:bg-secondary/90 text-white font-semibold flex-1"
-            >
-              View Your Proposal
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-            >
-              Close
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isNameAvailable = nameCheckFetched && !isNameTaken && debouncedInstanceName.length > 0 && isValidWhisperInstanceName(debouncedInstanceName);
+  const showNameTaken = nameCheckFetched && isNameTaken;
+  const showInvalidFormat = debouncedInstanceName.length > 0 && !isValidWhisperInstanceName(debouncedInstanceName);
 
   return (
     <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <IconBubble size="lg" variant="secondary">
-              <MapPin className="h-6 w-6" />
+            <IconBubble size="md" variant="secondary">
+              <MapPin className="h-5 w-5" />
             </IconBubble>
-            <CardTitle className="text-2xl text-white">Create Instance Proposal</CardTitle>
+            <div>
+              <CardTitle className="text-white">{uiCopy.createInstance.title}</CardTitle>
+              <CardDescription className="text-white/60">{uiCopy.createInstance.description}</CardDescription>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
             className="text-white/60 hover:text-white hover:bg-white/10"
-            disabled={isSubmitting}
+            aria-label={uiCopy.common.close}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <CardDescription className="text-white/70">
-          Submit a proposal to create a new Whisper instance for your community.
-        </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
-        {/* Instance Name */}
-        <div className="space-y-2">
-          <Label htmlFor="instance-name" className="text-white">
-            Instance Name
-          </Label>
-          <Input
-            id="instance-name"
-            value={instanceName}
-            onChange={(e) => setInstanceName(e.target.value)}
-            placeholder="e.g., San Francisco Civic Hub"
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
-            disabled={isSubmitting}
-          />
-          {isCheckingName && (
-            <div className="flex items-center gap-2 text-white/60 text-sm">
-              <LoadingIndicator size="sm" />
-              <span>Checking availability...</span>
+        {validationErrors.length > 0 && (
+          <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                {validationErrors.map((error, index) => (
+                  <p key={index} className="text-sm text-destructive">
+                    {error}
+                  </p>
+                ))}
+              </div>
             </div>
-          )}
-          {isNameAvailable && (
-            <div className="flex items-center gap-2 text-success text-sm">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Name is available</span>
-            </div>
-          )}
-          {showNameTaken && (
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>This name is already taken</span>
-            </div>
-          )}
-          {showNameCheckError && (
-            <div className="flex items-center gap-2 text-warning text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>Unable to verify name availability. Please try again.</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description" className="text-white">
-            Description
-          </Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the purpose and goals of this instance..."
-            rows={4}
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <Separator className="bg-white/10" />
-
-        {/* Geography Selection */}
         <div className="space-y-4">
-          <h4 className="text-white font-semibold">Select Geography</h4>
-
-          {/* State Selection */}
-          <div className={`space-y-2 ${missingField === 'state' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
+          <div className="space-y-2">
             <Label htmlFor="state" className="text-white">
-              State <span className="text-destructive">*</span>
+              {uiCopy.createInstance.stateLabel}
             </Label>
-            {statesLoading ? (
-              <LoadingIndicator label="Loading states..." />
-            ) : statesError ? (
-              <Alert className="bg-destructive/20 border-destructive/50">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <AlertDescription className="text-white">
-                  Failed to load states. Please try again.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <SelectState
-                value={selectedState}
-                onChange={(state) => {
-                  setSelectedState(state);
-                  setGeographyLevel('state');
-                }}
-                disabled={isSubmitting}
-              />
-            )}
+            <SelectState
+              value={selectedState}
+              onChange={setSelectedState}
+              disabled={isSubmitting}
+            />
           </div>
 
-          {/* County Selection */}
           {selectedState && (
-            <div className={`space-y-2 ${missingField === 'county' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
+            <div className="space-y-2">
               <Label htmlFor="county" className="text-white">
-                County {countyInteracted && <span className="text-destructive">*</span>}
+                {uiCopy.createInstance.countyLabel}
               </Label>
               <SelectCounty
                 stateGeoId={selectedState.hierarchicalId}
                 value={selectedCounty}
-                onChange={(county) => {
-                  setSelectedCounty(county);
-                  if (county) {
-                    setGeographyLevel('county');
-                  }
-                }}
-                onOpenChange={(open) => {
-                  if (open) {
-                    setCountyInteracted(true);
-                  }
-                }}
+                onChange={setSelectedCounty}
                 disabled={isSubmitting}
+                onOpenChange={handleCountyOpenChange}
               />
             </div>
           )}
 
-          {/* Place Selection */}
           {selectedCounty && (
-            <div className={`space-y-2 ${missingField === 'place' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
+            <div className="space-y-2">
               <Label htmlFor="place" className="text-white">
-                Place {placeInteracted && <span className="text-destructive">*</span>}
+                {uiCopy.createInstance.placeLabel}
               </Label>
               <SelectPlace
                 countyGeoId={selectedCounty.hierarchicalId}
                 value={selectedPlace}
-                onChange={(place) => {
-                  setSelectedPlace(place);
-                  if (place) {
-                    setGeographyLevel('place');
-                  }
-                }}
-                onOpenChange={(open) => {
-                  if (open) {
-                    setPlaceInteracted(true);
-                  }
-                }}
+                onChange={setSelectedPlace}
                 disabled={isSubmitting}
+                onOpenChange={handlePlaceOpenChange}
               />
             </div>
           )}
-
-          {/* Geography Error Message */}
-          {geographyError && (
-            <Alert className="bg-destructive/20 border-destructive/50">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-white">{geographyError}</AlertDescription>
-            </Alert>
-          )}
         </div>
 
-        {/* Submit Error */}
-        {submitError && (
-          <Alert className="bg-destructive/20 border-destructive/50">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            <AlertDescription className="text-white">{submitError.message}</AlertDescription>
-          </Alert>
-        )}
+        <Separator className="bg-white/10" />
 
-        {/* Submit Button */}
-        <Button
-          onClick={handleSubmitAttempt}
-          disabled={isSubmitting}
-          className="w-full bg-accent hover:bg-accent-hover text-white font-semibold"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Submitting Proposal...
-            </>
-          ) : (
-            'Submit Proposal'
-          )}
-        </Button>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="instanceName" className="text-white">
+              {uiCopy.createInstance.instanceNameLabel}
+            </Label>
+            <div className="relative">
+              <Input
+                id="instanceName"
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                placeholder={uiCopy.createInstance.instanceNamePlaceholder}
+                disabled={isSubmitting}
+                className={`bg-white/5 border-white/10 text-white placeholder:text-white/40 pr-10 ${
+                  showNameTaken || showInvalidFormat ? 'border-destructive' : isNameAvailable ? 'border-success' : ''
+                }`}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {checkingName && <Loader2 className="h-4 w-4 animate-spin text-white/40" />}
+                {!checkingName && isNameAvailable && <CheckCircle2 className="h-4 w-4 text-success" />}
+                {!checkingName && (showNameTaken || showInvalidFormat) && <AlertCircle className="h-4 w-4 text-destructive" />}
+              </div>
+            </div>
+            <p className="text-xs text-white/60">{uiCopy.createInstance.whisperNamingHelper}</p>
+            {checkingName && <p className="text-xs text-white/60">{uiCopy.createInstance.checkingAvailability}</p>}
+            {!checkingName && isNameAvailable && <p className="text-xs text-success">{uiCopy.createInstance.nameAvailable}</p>}
+            {!checkingName && showNameTaken && <p className="text-xs text-destructive">{uiCopy.createInstance.nameTaken}</p>}
+            {!checkingName && showInvalidFormat && <p className="text-xs text-destructive">Name must start with "WHISPER-"</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-white">
+              {uiCopy.createInstance.descriptionLabel}
+            </Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={uiCopy.createInstance.descriptionPlaceholder}
+              disabled={isSubmitting}
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            disabled={isSubmitting}
+            className="flex-1 border-white/20 text-white hover:bg-white/10"
+          >
+            {uiCopy.createInstance.cancelButton}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || checkingName || !selectedState}
+            className="flex-1 bg-secondary hover:bg-secondary/90 text-white"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {uiCopy.createInstance.submitting}
+              </>
+            ) : (
+              uiCopy.createInstance.submitButton
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

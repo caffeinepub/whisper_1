@@ -3,7 +3,7 @@ import { useActor } from './useActor';
 
 /**
  * Hook to update a proposal's status (approve/reject).
- * Invalidates and refetches the proposals list after successful update.
+ * Invalidates and refetches the proposals list, individual proposal details, and moderation queue after successful update.
  */
 export function useUpdateProposalStatus() {
   const { actor } = useActor();
@@ -42,9 +42,10 @@ export function useUpdateProposalStatus() {
       return result;
     },
     onSuccess: (_, variables) => {
-      // Invalidate both the list and the specific proposal to refresh UI
+      // Invalidate all relevant queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
       queryClient.invalidateQueries({ queryKey: ['proposal', variables.instanceName] });
+      queryClient.invalidateQueries({ queryKey: ['moderationItems'] });
     },
   });
 }

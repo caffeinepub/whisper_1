@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import { Principal } from '@icp-sdk/core/principal';
 import type { Proposal } from '@/backend';
 
@@ -33,6 +34,7 @@ export function useIsParent(childId: string, parentId: string) {
  */
 export function useGetAllProposals() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<Array<[string, Proposal]>>({
     queryKey: ['proposals'],
@@ -48,7 +50,7 @@ export function useGetAllProposals() {
         throw new Error('Failed to load proposals. Please try again.');
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !!identity && !isFetching,
     retry: 2,
   });
 }
@@ -59,6 +61,7 @@ export function useGetAllProposals() {
  */
 export function useGetProposal(instanceName: string) {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<Proposal | null>({
     queryKey: ['proposal', instanceName],
@@ -77,29 +80,51 @@ export function useGetProposal(instanceName: string) {
         throw new Error('Failed to load proposal details. Please try again.');
       }
     },
-    enabled: !!actor && !isFetching && !!instanceName,
+    enabled: !!actor && !!identity && !isFetching && !!instanceName,
     retry: 2,
   });
 }
 
 /**
  * Hook to check if the current caller is an admin.
+ * Identity-aware: only attempts admin check when authenticated.
+ * Includes principal in query key to ensure fresh checks per user.
+ * Short staleTime ensures admin status refreshes quickly after first-user assignment.
  */
 export function useIsCallerAdmin() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity, isInitializing } = useInternetIdentity();
 
-  return useQuery<boolean>({
-    queryKey: ['isCallerAdmin'],
+  const isAuthenticated = !!identity;
+  const principalString = identity?.getPrincipal().toString() || 'anonymous';
+
+  const query = useQuery<boolean>({
+    queryKey: ['isCallerAdmin', principalString],
     queryFn: async () => {
-      if (!actor) return false;
+      if (!actor) {
+        throw new Error('Backend connection not available');
+      }
       try {
         return await actor.isCallerAdmin();
       } catch (error) {
         console.error('Error checking admin status:', error);
-        return false;
+        throw error; // Surface the error instead of returning false
       }
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    // Only enable when authenticated and actor is ready
+    enabled: !!actor && isAuthenticated && !actorFetching && !isInitializing,
+    staleTime: 0, // Always refetch on mount to catch first-user admin assignment
+    refetchOnMount: true, // Ensure fresh check when component mounts
+    retry: 2,
   });
+
+  return {
+    ...query,
+    // Provide loading state that accounts for actor initialization and identity
+    isLoading: actorFetching || isInitializing || query.isLoading,
+    // Only consider fetched when actor is ready, authenticated, and query has completed
+    isFetched: !!actor && isAuthenticated && query.isFetched,
+    // Expose authentication state for UI gating
+    isAuthenticated,
+  };
 }

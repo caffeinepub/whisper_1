@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Improve Create Instance Proposal geography validation, update homepage header styling, and adjust the homepage hero background image behavior.
+**Goal:** Improve the header membership/login experience and refine the Secretary lookup flow so outcomes require explicit user action, while updating navbar branding colors.
 
 **Planned changes:**
-- Add a geography validation guard in the Create Instance Proposal flow to prevent submission/progression when required geography selections are missing (state always required; county required when county/place selection is in progress; place required when place selection is in progress), while still allowing a submit/proceed attempt to trigger validation feedback.
-- Show simple inline English validation messaging for missing geography (e.g., “Please select a state/county/place.”) and visually highlight the missing geography field; clear the error when any geography selection changes.
-- Update the fixed HomeHeader (top menu/logo bar) background to solid black while keeping the existing layout and ensuring readable contrast for the logo and Get Started button.
-- Set the homepage hero background to use the exact provided image URL, keep existing preload + fallback behavior, and bottom-justify the background image within the hero section (e.g., `background-position: center bottom`).
+- Update header/nav styling so the existing teal logo remains unchanged, while the “Whisper” wordmark and all nav menu labels render white by default and use teal on hover/focus/active (desktop + mobile).
+- Change the header “Get Started” CTA so, when unauthenticated, it initiates Internet Identity login (with a loading/disabled state during login) and does not trigger scrolling or any instance/chat/Secretary flows.
+- When authenticated, replace “Get Started” with a profile control (avatar with fallback + label) that opens a submenu with “Profile” (routes to `/profile`) and “Logout” (logs out and clears cached queries), including equivalent access on mobile.
+- Refine the Secretary lookup/discovery flow to stop any timeout-based auto-navigation; after state + county/city selection, show an explicit result message and present next-action buttons (view existing instance when found, or create an instance proposal when not found) while keeping the widget open until the user acts or closes it.
 
-**User-visible outcome:** Users are clearly guided to complete required geography selections before continuing, the homepage header displays with a black background and readable content, and the hero background image uses the provided URL aligned to the bottom while loading smoothly.
+**User-visible outcome:** The navbar uses the updated white/teal behavior, “Get Started” logs visitors in via Internet Identity, logged-in users access Profile/Logout from a profile menu, and the Secretary lookup clearly presents results with explicit buttons rather than auto-navigating.

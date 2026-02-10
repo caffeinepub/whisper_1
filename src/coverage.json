@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T07:26:26.820Z",
+  "generatedAt": "2026-02-10T19:48:30.573Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,50 +12,52 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Prevent form progression/submission in the Create Instance Proposal flow when the required geography selections are missing (state always required; county required when a county/place selection is in-progress; place required when a place selection is in-progress), and ensure the user can trigger validation feedback even if the form is otherwise incomplete.",
+        "summary": "Update the top navigation bar branding colors: keep using the existing teal logo SVG, render the “Whisper” wordmark text in white, and render all menu item labels in white by default with teal styling on hover/rollover and when selected/active.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "frontend/src/components/create-instance/SelectCounty.tsx",
-          "frontend/src/components/create-instance/SelectPlace.tsx"
+          "frontend/src/components/common/HomeHeader.tsx",
+          "frontend/src/hooks/useCurrentPath.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "frontend/src/components/create-instance/SelectCounty.tsx",
-          "frontend/src/components/create-instance/SelectPlace.tsx"
+          "frontend/src/components/common/HomeHeader.tsx",
+          "frontend/src/hooks/useCurrentPath.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Display a clear, simple, English validation message telling the user what geography selection(s) they must make before continuing, and visually indicate which geography field is missing.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Change the static (fixed) top menu / logo bar (HomeHeader) background color to solid black while keeping existing layout and ensuring readable contrast for the logo and button.",
+        "summary": "Change the header “Get Started” CTA behavior so that when the user is not authenticated it triggers Internet Identity login (becoming a site member) rather than scrolling to a page section or initiating instance creation/chat flows.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/common/HomeHeader.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/common/HomeHeader.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "When the user is authenticated, replace the header “Get Started” CTA with a user profile entry that shows the user’s profile image (fallback if none) and label, and opens a submenu with at least: “Profile” (navigates to /profile) and “Logout” (logs out and clears cached queries).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/common/UserProfileMenu.tsx",
+          "frontend/src/components/common/HomeHeader.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/common/UserProfileMenu.tsx",
           "frontend/src/components/common/HomeHeader.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Use the provided direct image URL as the homepage hero background image and bottom-justify the image (align to bottom) within the hero section.",
+        "summary": "Refine the Secretary “lookup/discovery” flow to avoid auto-navigation side effects and make the outcome explicit: after the user selects state + county or city, show a clear result message and present explicit next-action buttons (e.g., “View existing instance” when found, or “Create an instance proposal” when not found), without automatically navigating after a timeout.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/lib/uiCopy.ts"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/lib/uiCopy.ts"
         ]
       }
     ]
@@ -65,11 +67,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
     "frontend/src/components/common/HomeHeader.tsx",
-    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-    "frontend/src/components/create-instance/SelectCounty.tsx",
-    "frontend/src/components/create-instance/SelectPlace.tsx",
+    "frontend/src/components/common/UserProfileMenu.tsx",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/hooks/useCurrentPath.ts",
+    "frontend/src/lib/uiCopy.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

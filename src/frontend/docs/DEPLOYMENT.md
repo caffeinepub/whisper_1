@@ -1,12 +1,14 @@
 # Whisper Deployment Guide
 
-## Overview
+This document provides instructions for deploying Whisper to the Internet Computer (ICP) network.
 
-This document provides developer-controlled deployment configuration and guidance for Whisper on the Internet Computer Protocol (ICP). **Caffeine.ai does not automatically manage canister lifecycle**—all deployment, upgrade, and cycle management actions are performed by developers via `dfx` commands or scripts.
+## Prerequisites
 
-## Deployment Configuration
+- dfx CLI installed and configured
+- Cycles wallet with sufficient cycles for deployment
+- Node.js and pnpm installed
 
-### Sample dfx.json
+## Configuration
 
-Below is a sample `dfx.json` configuration for Whisper. This example includes one backend canister and the frontend canister. As the project scales to multi-installation topology, additional installation-specific canisters can be added to this configuration.
+### dfx.json Sample
 

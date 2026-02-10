@@ -1,20 +1,32 @@
 import Map "mo:core/Map";
 import Array "mo:core/Array";
 import Text "mo:core/Text";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
-import List "mo:core/List";
 import Iter "mo:core/Iter";
+import List "mo:core/List";
 import Runtime "mo:core/Runtime";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import MixinStorage "blob-storage/Mixin";
+import Storage "blob-storage/Storage";
+
+// Specify the data migration function in with-clause
 
 actor {
+  include MixinStorage();
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
+  public type ProfileImage = Storage.ExternalBlob;
+
   public type UserProfile = {
     name : Text;
+    profileImage : ?ProfileImage;
   };
+
   type GeoId = Text;
   type CensusId = Text;
   type HierarchicalGeoId = Text;
@@ -102,6 +114,13 @@ actor {
     completed : Bool;
   };
 
+  type SecretaryCategorySuggestion = {
+    searchTerm : Text;
+    statesByGeoId : [USState];
+    locationLevel : USHierarchyLevel;
+    proposedCategories : [Text];
+  };
+
   public type SubmitProposalResult = {
     #success : { proposal : Proposal };
     #error : {
@@ -171,7 +190,167 @@ actor {
   let proposals = Map.empty<Text, Proposal>();
   var nextTaskId = 0;
   let allTasks = Map.empty<Text, Map.Map<Nat, Task>>();
-  stable var installations : [Installation] = [];
+  var installations = ([] : [Installation]);
+  let moderationQueue = List.empty<Text>();
+
+  let complaintCategoriesCity = [
+    "Noise Complaints",
+    "Graffiti Removal",
+    "Road Potholes",
+    "Streetlight Outages",
+    "Illegal Dumping",
+    "Abandoned Vehicles",
+    "Broken Sidewalks",
+    "Public Park Maintenance",
+    "Water Leaks",
+    "Sewer Overflows",
+    "Broken Traffic Signals",
+    "Zoning Violations",
+    "Restaurant Health Inspections",
+    "Building Permits Issues",
+    "Animal Control Concerns",
+    "Parking Violations",
+    "Public Transportation Issues",
+    "Storm Drain Blockages",
+    "Tree Trimming Requests",
+    "Neighborhood Watch Concerns",
+    "Public Library Services",
+    "Recycling Program Issues",
+    "Bike Lane Requests",
+    "Public Art Installations",
+    "Crime Reporting",
+    "School Safety Concerns",
+    "Community Garden Requests",
+    "Local Event Permits",
+    "Public Restroom Cleanliness",
+    "Emergency Preparedness Information",
+    "Business Licensing Issues",
+    "Utility Billing Inquiries",
+    "Public Safety Campaigns",
+    "Youth Programs Support",
+    "Senior Services Requests",
+    "Housing Assistance Requests",
+    "Small Business Support",
+    "Community Center Activities",
+    "Healthcare Accessibility Issues",
+    "Employment Assistance Programs",
+    "Public Internet Access Requests",
+    "Cultural Festival Organization",
+    "Neighborhood Beautification Projects",
+    "Affordable Housing Initiatives",
+    "Local Food Store Feedback",
+    "Public Pool Maintenance",
+    "Waste Management Concerns",
+    "After-School Program Support",
+    "Traffic Calming Requests",
+    "Public Art Lighting Issues",
+    "Environmental Sustainability Projects",
+  ];
+
+  let complaintCategoriesCounty = [
+    "Rural Road Maintenance",
+    "County Park Upkeep",
+    "Flood Zone Concerns",
+    "Agricultural Water Use",
+    "Public Health Services",
+    "Animal Control Issues",
+    "Land Use Permits",
+    "Emergency Management Plans",
+    "Public Transportation Access",
+    "County Fair Organization",
+    "Wildlife Conservation Efforts",
+    "Solid Waste Disposal",
+    "Groundwater Contamination",
+    "Public Library Expansion",
+    "County Facility Maintenance",
+    "Bridge Inspections",
+    "Rural Broadband Expansion",
+    "Historical Preservation",
+    "Tourism Promotion",
+    "Youth Development Programs",
+    "Wildfire Prevention",
+    "Elderly Care Services",
+    "Food Assistance Programs",
+    "Neighborhood Crime Prevention",
+    "Public Housing Projects",
+    "Transportation Planning",
+    "Childcare Services",
+    "Business Incentive Programs",
+    "Renewable Energy Projects",
+    "Floodplain Management",
+    "Community Health Clinics",
+    "Rural Housing Assistance",
+    "Trauma Care Access",
+    "Air Quality Concerns",
+    "Hazardous Materials Storage",
+    "Public Transit Funding",
+    "Marine Conservation",
+    "Disaster Recovery Efforts",
+    "Wildfire Response Planning",
+    "Highway Maintenance",
+    "Public Safety Training",
+    "Waterway Maintenance",
+    "Regional Planning",
+    "Veterans Services",
+    "Community Policing",
+    "River Clean-Up Initiatives",
+    "Mass Transit Development",
+    "Land Conservation Requests",
+    "Cultural Heritage Preservation",
+    "Emergency Communication Systems",
+    "Environmental Education Programs",
+  ];
+
+  let complaintCategoriesState = [
+    "Education Funding",
+    "Healthcare Policy",
+    "Transportation Infrastructure",
+    "Environmental Protection",
+    "Criminal Justice Reform",
+    "Taxation Issues",
+    "Energy Policy",
+    "Public Safety",
+    "Economic Development",
+    "Affordable Housing",
+    "Voting Rights",
+    "Gun Control",
+    "Marijuana Legalization",
+    "Minimum Wage Laws",
+    "Transportation Safety",
+    "Public Health Initiatives",
+    "Alcohol Regulation",
+    "Disability Services",
+    "Consumer Protection",
+    "Military Affairs",
+    "Budget Allocation",
+    "Tax Exemptions",
+    "Digital Access",
+    "Public Safety Technology",
+    "Healthcare Incentives",
+    "Labor Market Programs",
+    "Pedestrian Safety",
+    "Aging Infrastructure",
+    "Childcare Assistance",
+    "Tax Compliance",
+    "Homelessness Initiatives",
+    "Business Development",
+    "Legal Services Expansion",
+    "Disaster Loans",
+    "Healthcare Expansion",
+    "Education Technology",
+    "Transportation Projects",
+    "Energy Programs",
+    "Regulatory Reform",
+    "Affordable Childcare",
+    "Tourism Development",
+    "Affordable Housing Grants",
+    "Public Library Expansion",
+    "Disaster Annex Development",
+    "Rehabilitation Funding",
+    "Legal Tech Services",
+    "Mental Health Assistance",
+    "Irrigation Project Funding"
+  ];
 
   func validStatusTransition(current : Text, next : Text, _proposal : Proposal) : Bool {
     switch (current, next) {
@@ -237,7 +416,6 @@ actor {
       });
     };
 
-    // Geography validation - all required fields must be non-empty
     if (state.size() == 0) {
       return #error({ message = "Proposal must contain valid state"; });
     };
@@ -269,6 +447,7 @@ actor {
           population2020;
         };
         proposals.add(instanceName, newProposal);
+        moderationQueue.add(instanceName);
         #success { proposal = newProposal };
       };
       case (?_) {
@@ -280,7 +459,7 @@ actor {
   };
 
   public shared ({ caller }) func updateProposalStatus(instanceName : Text, newStatus : Text) : async Bool {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can update proposal status");
     };
     switch (proposals.get(instanceName)) {
@@ -295,6 +474,35 @@ actor {
         } else { false };
       };
     };
+  };
+
+  public shared ({ caller }) func hideProposal(instanceName : Text) : async Bool {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can hide proposals");
+    };
+    let filteredQueue : List.List<Text> = moderationQueue.filter(
+      func(name) { name != instanceName }
+    );
+    moderationQueue.clear();
+    for (name in filteredQueue.values()) {
+      moderationQueue.add(name);
+    };
+    true;
+  };
+
+  public shared ({ caller }) func deleteProposal(instanceName : Text) : async Bool {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete proposals");
+    };
+    proposals.remove(instanceName);
+    let filteredQueue : List.List<Text> = moderationQueue.filter(
+      func(name) { name != instanceName }
+    );
+    moderationQueue.clear();
+    for (name in filteredQueue.values()) {
+      moderationQueue.add(name);
+    };
+    true;
   };
 
   public query ({ caller }) func isInstanceNameTaken(instanceName : Text) : async Bool {
@@ -318,6 +526,23 @@ actor {
     proposals.toArray();
   };
 
+  public query ({ caller }) func getAdminModerationQueue() : async [(Text, Proposal)] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view moderation queue");
+    };
+    moderationQueue.toArray().map(
+      func(instanceName) {
+        switch (proposals.get(instanceName)) {
+          case (?proposal) { (instanceName, proposal) };
+          case (null) {
+            Runtime.trap("Proposal referenced in moderation queue not found: " # instanceName);
+          };
+        };
+      }
+    );
+  };
+
+  // Geography query functions - accessible to all users including guests
   public query ({ caller }) func getAllStates() : async [USState] {
     usGeography.states.values().toArray();
   };
@@ -344,8 +569,22 @@ actor {
     } else { placesArray };
   };
 
+  // New Backend Support: Fetch Places for State
+  public query ({ caller }) func getPlacesForState(stateGeoId : GeoId) : async [USPlace] {
+    let filteredPlacesList = List.empty<USPlace>();
+    for ((placeGeoId, place) in usGeography.places.entries()) {
+      if (placeGeoId.startsWith(#text(stateGeoId))) {
+        filteredPlacesList.add(place);
+      };
+    };
+    let filteredPlaces = filteredPlacesList.toArray();
+    if (filteredPlaces.size() == 0) {
+      Runtime.trap("No places found for state GeoId: " # stateGeoId);
+    } else { filteredPlaces };
+  };
+
   public shared ({ caller }) func ingestUSGeographyData(data : [USGeographyDataChunk]) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can ingest geography data");
     };
     let newStates = Map.empty<HierarchicalGeoId, USState>();
@@ -387,7 +626,7 @@ actor {
       case (null) { Runtime.trap("Proposal does not exist") };
       case (?proposal) {
         if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Only proposal creator can create a Task");
+          Runtime.trap("Unauthorized: Only proposal creator or admin can create tasks");
         };
       };
     };
@@ -422,7 +661,7 @@ actor {
       case (null) { Runtime.trap("Proposal does not exist") };
       case (?proposal) {
         if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Only proposal creator can update task");
+          Runtime.trap("Unauthorized: Only proposal creator or admin can update tasks");
         };
       };
     };
@@ -451,7 +690,7 @@ actor {
       case (null) { Runtime.trap("Proposal does not exist") };
       case (?proposal) {
         if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Only proposal creator or admin can view tasks");
+          Runtime.trap("Unauthorized: Only proposal creator or admin can view tasks");
         };
       };
     };
@@ -459,6 +698,82 @@ actor {
     switch (allTasks.get(proposalId)) {
       case (null) { Runtime.trap("No tasks found for proposal") };
       case (?tasks) { tasks.toArray() };
+    };
+  };
+
+  public query ({ caller }) func getCityComplaintSuggestions(searchTerm : Text) : async [Text] {
+    let filtered = complaintCategoriesCity.filter(
+      func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+    );
+    let toArrayFiltered = filtered;
+    toArrayFiltered.sliceToArray(0, Nat.min(toArrayFiltered.size(), 10));
+  };
+
+  public query ({ caller }) func getCountyComplaintSuggestions(searchTerm : Text) : async [Text] {
+    let filtered = complaintCategoriesCounty.filter(
+      func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+    );
+    let toArrayFiltered = filtered;
+    toArrayFiltered.sliceToArray(0, Nat.min(toArrayFiltered.size(), 10));
+  };
+
+  public query ({ caller }) func getStateComplaintSuggestions(searchTerm : Text) : async [Text] {
+    let filtered = complaintCategoriesState.filter(
+      func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+    );
+    let toArrayFiltered = filtered;
+    toArrayFiltered.sliceToArray(0, Nat.min(toArrayFiltered.size(), 10));
+  };
+
+  public query ({ caller }) func getAllCityComplaintCategories() : async [Text] {
+    complaintCategoriesCity;
+  };
+
+  public query ({ caller }) func getAllCountyComplaintCategories() : async [Text] {
+    complaintCategoriesCounty;
+  };
+
+  public query ({ caller }) func getAllStateComplaintCategories() : async [Text] {
+    complaintCategoriesState;
+  };
+
+  public query ({ caller }) func getSecretaryCategorySuggestion(searchTerm : Text, locationLevel : USHierarchyLevel) : async SecretaryCategorySuggestion {
+    let statesByGeoId = usGeography.states.values().toArray();
+    let filteredCategories = switch (locationLevel) {
+      case (#place) {
+        complaintCategoriesCity.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#county) {
+        complaintCategoriesCounty.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#state) {
+        complaintCategoriesState.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#country) {
+        let stateFiltered = complaintCategoriesState.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        let countyFiltered = complaintCategoriesCounty.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        let cityFiltered = complaintCategoriesCity.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        stateFiltered.concat(countyFiltered).concat(cityFiltered);
+      };
+    };
+
+    {
+      searchTerm;
+      locationLevel;
+      statesByGeoId;
+      proposedCategories = filteredCategories.sliceToArray(0, Nat.min(filteredCategories.size(), 10));
     };
   };
 };

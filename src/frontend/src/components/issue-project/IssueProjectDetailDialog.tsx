@@ -8,11 +8,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Users, FileText, CheckSquare } from 'lucide-react';
+import { MapPin, Users, FileText, CheckSquare, Tag } from 'lucide-react';
 import { IconBubble } from '@/components/common/IconBubble';
 import { IssueProjectTasksTab } from './IssueProjectTasksTab';
+import { useGetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
 import type { Proposal } from '@/backend';
-import { formatProposalGeography, getGeographyLevelLabel } from '@/lib/formatProposalGeography';
+import { formatProposalGeographyString, getGeographyLevelLabel } from '@/lib/formatProposalGeography';
 
 interface IssueProjectDetailDialogProps {
   proposalName: string;
@@ -27,6 +28,8 @@ export function IssueProjectDetailDialog({
   open,
   onOpenChange,
 }: IssueProjectDetailDialogProps) {
+  const category = useGetIssueProjectCategory(proposalName);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -38,7 +41,7 @@ export function IssueProjectDetailDialog({
             <DialogTitle className="text-2xl">Issue Project: {proposal.instanceName}</DialogTitle>
           </div>
           <DialogDescription className="text-white/70">
-            {formatProposalGeography(proposal)}
+            {formatProposalGeographyString(proposal)}
           </DialogDescription>
         </DialogHeader>
 
@@ -61,25 +64,37 @@ export function IssueProjectDetailDialog({
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Status Badge */}
-            <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">Status:</span>
-              <Badge
-                variant={
-                  proposal.status === 'Approved'
-                    ? 'default'
-                    : proposal.status === 'Rejected'
-                      ? 'destructive'
-                      : 'secondary'
-                }
-                className={
-                  proposal.status === 'Pending'
-                    ? 'bg-secondary/20 text-secondary border-secondary/30'
-                    : ''
-                }
-              >
-                {proposal.status}
-              </Badge>
+            {/* Status and Category */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-white/60 text-sm">Status:</span>
+                <Badge
+                  variant={
+                    proposal.status === 'Approved'
+                      ? 'default'
+                      : proposal.status === 'Rejected'
+                        ? 'destructive'
+                        : 'secondary'
+                  }
+                  className={
+                    proposal.status === 'Pending'
+                      ? 'bg-secondary/20 text-secondary border-secondary/30'
+                      : ''
+                  }
+                >
+                  {proposal.status}
+                </Badge>
+              </div>
+              
+              {category && (
+                <div className="flex items-center gap-2">
+                  <span className="text-white/60 text-sm">Category:</span>
+                  <Badge variant="secondary" className="bg-secondary/20 text-secondary border-secondary/30">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {category}
+                  </Badge>
+                </div>
+              )}
             </div>
 
             <Separator className="bg-white/10" />

@@ -1,252 +1,104 @@
-# Smoke Test: Instance Creation to Follow-up Actions
+# Smoke Test: Instance Creation and Issue Project Workflow
 
-**Test Date:** February 10, 2026  
-**Test Version:** Draft Version 38  
-**Tester:** AI Agent (Automated Build)
+This document provides a comprehensive manual smoke test for the end-to-end flow from proposal creation through Issue Project task management, now extended to include regression validations.
 
-## Purpose
+## Prerequisites
+- Backend deployed with geography data ingested
+- At least one admin user assigned (first user becomes admin automatically)
+- Test with both admin and non-admin users
 
-This document records the manual smoke test steps and expected results for the complete end-to-end flow from instance proposal creation through instance-dependent follow-up actions (Issue Project tasks).
+## Test Flow
 
-## Test Environment
+### 1. Proposal Creation
+1. Navigate to home page
+2. Scroll to "Get Started" section or click "Get Started" in header
+3. Click "Open Secretary" button
+4. In Secretary widget, select "Create Instance"
+5. Fill in proposal form:
+   - Select state (e.g., "California")
+   - Select county (e.g., "Los Angeles County")
+   - Enter description (e.g., "Community engagement platform for LA")
+6. Click "Submit Proposal"
+7. **Expected**: Success message appears
+8. **Expected**: Proposal appears in proposals list
 
-- **Frontend:** React + TypeScript with Vite
-- **Backend:** Motoko canister on Internet Computer
-- **Browser:** Chrome/Firefox (latest stable)
-- **Network:** Local dfx replica or IC testnet
+### 2. Admin Moderation
+1. Log in as admin user
+2. Navigate to Admin → Moderation page
+3. **Expected**: Newly created proposal appears in moderation queue
+4. Click "Approve" on the proposal
+5. **Expected**: Proposal status changes to "Approved"
+6. **Expected**: Proposal removed from moderation queue
 
-## Test Scenario
+### 3. Issue Project Creation (via Secretary)
+1. Open Secretary widget
+2. Select "Report an Issue"
+3. Select geography (state/county/place)
+4. Enter issue description (e.g., "pothole on main street")
+5. **Expected**: Category suggestions appear
+6. Select a category (e.g., "Road Potholes")
+7. **Expected**: Success message
+8. **Expected**: Navigates to proposals section
+9. **Expected**: Proposal detail dialog opens with selected category badge
 
-### Objective
-Verify that a user can:
-1. Create and submit an instance proposal
-2. See the proposal appear in Browse Proposals without page reload
-3. Open the newly created proposal detail view
-4. Access the Issue Project from the proposal detail
-5. Create and manage tasks within the Issue Project
-6. Observe all UI updates without manual page refreshes
+### 4. Task Management
+1. In proposal detail dialog, click "Tasks" tab
+2. Enter task description (e.g., "Inspect pothole location")
+3. Click "Add Task"
+4. **Expected**: Task appears in list immediately
+5. **Expected**: Task shows as incomplete (unchecked)
+6. Click checkbox to complete task
+7. **Expected**: Task shows as complete (checked, strikethrough)
+8. Add multiple tasks and toggle completion
+9. **Expected**: Each task updates independently
+10. **Expected**: No full page reloads
 
----
+### 5. Regression Validations
 
-## Test Steps and Expected Results
+#### Header Logo (Regression 1)
+1. While on home page, verify logo appears in header (desktop and mobile)
+2. **Expected**: Logo visible next to "Whisper" text
+3. If logo fails to load, text remains visible
 
-### Step 1: Navigate to Create Instance Section
+#### Hover Colors (Regression 2)
+1. Hover over navigation links in header
+2. **Expected**: Hover color is accent (not black)
 
-**Action:**
-- Open the application homepage
-- Click "Get Started" or "Create Instance" button
+#### Profile Load/Save (Regression 3)
+1. Navigate to Profile page
+2. **Expected**: Profile loads without "Actor not available" error
+3. Edit name and save
+4. **Expected**: Save succeeds
+5. Log out and log back in
+6. **Expected**: Profile loads correctly
 
-**Expected Result:**
-- ✅ Create Instance form appears with geography selection fields
-- ✅ Form includes: Instance Name, Description, State, County (optional), Place (optional)
-- ✅ All fields are enabled and interactive
+#### Back to Home Navigation (Regression 4)
+1. From Profile or Geography page, click "Back to Home"
+2. **Expected**: Navigates to home page without full reload
+3. **Expected**: Browser back/forward buttons work correctly
 
-**Observed Result:**
-- _To be filled during manual testing_
+#### Secretary Geography Suggestions (Regression 5)
+1. Open Secretary → "Report an Issue"
+2. Select different geography levels (state/county/place)
+3. **Expected**: Suggestions change based on selected level
+4. **Expected**: No errors or blank suggestion lists
 
----
+## Issue Tracking Template
 
-### Step 2: Fill Out Instance Proposal Form
+If any test fails, document using this template:
 
-**Action:**
-- Enter instance name: "Test City Hub"
-- Enter description: "A test instance for smoke testing the complete flow"
-- Select State: "California"
-- Select County: "San Francisco County"
-- (Optional) Select Place if desired
-
-**Expected Result:**
-- ✅ Instance name availability check runs automatically (debounced)
-- ✅ Green checkmark appears if name is available
-- ✅ County dropdown populates after state selection
-- ✅ Place dropdown populates after county selection (if applicable)
-- ✅ Submit button becomes enabled when all required fields are valid
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 3: Submit Instance Proposal
-
-**Action:**
-- Click "Submit Proposal" button
-
-**Expected Result:**
-- ✅ Button shows loading state: "Submitting Proposal..." with spinner
-- ✅ All form controls are disabled during submission
-- ✅ Success message appears: "Proposal Submitted Successfully!"
-- ✅ Success card displays submitted instance name
-- ✅ "View Your Proposal" button is visible
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 4: Navigate to Newly Created Proposal
-
-**Action:**
-- Click "View Your Proposal" button in the success card
-
-**Expected Result:**
-- ✅ Create Instance form closes
-- ✅ Browse Proposals section opens and scrolls into view
-- ✅ Newly created proposal appears in the proposals list
-- ✅ Proposal Detail Dialog opens automatically for the new proposal
-- ✅ No page reload occurs (React Query invalidation handles data refresh)
-
-**Observed Result:**
-- _To be filled during manual testing_
+**Test Step**: [e.g., "Task Management - Add Task"]  
+**Expected Behavior**: [What should happen]  
+**Actual Behavior**: [What actually happened]  
+**Severity**: ☐ Critical ☐ High ☐ Medium ☐ Low  
+**Screenshots/Logs**: [Attach if available]  
+**Reproducible**: ☐ Always ☐ Sometimes ☐ Once  
 
 ---
 
-### Step 5: Verify Proposal Detail View
+**Test Date**: _______________  
+**Tester**: _______________  
+**Environment**: ☐ Local ☐ Testnet ☐ Mainnet  
+**Overall Status**: ☐ Pass ☐ Fail  
 
-**Action:**
-- Review the Proposal Detail Dialog content
-
-**Expected Result:**
-- ✅ Dialog displays correct instance name: "Test City Hub"
-- ✅ Status badge shows "Pending"
-- ✅ Description matches submitted text
-- ✅ Geography details are correct (State, County, Census ID)
-- ✅ Demographics section shows population and area data
-- ✅ "Open Issue Project" button is visible and enabled
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 6: Open Issue Project
-
-**Action:**
-- Click "Open Issue Project" button in Proposal Detail Dialog
-
-**Expected Result:**
-- ✅ Issue Project Detail Dialog opens
-- ✅ Dialog shows two tabs: "Overview" and "Tasks"
-- ✅ Overview tab displays proposal information
-- ✅ Tasks tab is accessible
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 7: Create a Task in Issue Project
-
-**Action:**
-- Switch to "Tasks" tab
-- Enter task description: "Test task for smoke test"
-- Click "Add Task" button
-
-**Expected Result:**
-- ✅ Input field shows loading state during task creation
-- ✅ New task appears in the task list below
-- ✅ Task shows unchecked checkbox and correct description
-- ✅ No page reload occurs (React Query invalidation handles refresh)
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 8: Toggle Task Completion
-
-**Action:**
-- Click the checkbox next to the newly created task
-
-**Expected Result:**
-- ✅ Checkbox shows loading/disabled state during update
-- ✅ Task completion status updates (checkbox becomes checked)
-- ✅ Task text may show strikethrough or visual completion indicator
-- ✅ No page reload occurs
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 9: Create Additional Task
-
-**Action:**
-- Add another task: "Second test task"
-- Click "Add Task"
-
-**Expected Result:**
-- ✅ Second task appears in the list
-- ✅ Both tasks are visible and independently manageable
-- ✅ Task IDs are unique and sequential
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-### Step 10: Navigate Back Through UI
-
-**Action:**
-- Close Issue Project Dialog
-- Close Proposal Detail Dialog
-- Verify proposals list still shows the new proposal
-
-**Expected Result:**
-- ✅ Dialogs close cleanly without errors
-- ✅ Browse Proposals section remains visible
-- ✅ New proposal is still listed with "Pending" status
-- ✅ Can re-open proposal detail by clicking on it
-
-**Observed Result:**
-- _To be filled during manual testing_
-
----
-
-## Known Issues
-
-### Issue 1: [To be documented if found]
-**Description:**  
-_Describe any issues discovered during testing_
-
-**Reproduction Steps:**  
-1. _Step 1_
-2. _Step 2_
-
-**Expected Behavior:**  
-_What should happen_
-
-**Actual Behavior:**  
-_What actually happens_
-
-**Workaround:**  
-_If any workaround exists_
-
-**Status:**  
-_Fixed / Open / Deferred_
-
----
-
-## Test Summary
-
-**Total Steps:** 10  
-**Steps Passed:** _To be filled_  
-**Steps Failed:** _To be filled_  
-**Known Issues:** _To be filled_  
-
-**Overall Status:** ✅ PASS / ❌ FAIL / ⚠️ PARTIAL
-
----
-
-## Notes
-
-- This smoke test focuses on the happy path flow
-- Error handling and edge cases should be tested separately
-- Admin approval flow is not covered in this test (requires admin role)
-- Test should be repeated on both local dfx and IC testnet environments
-
----
-
-## Changelog
-
-- **2026-02-10:** Initial smoke test document created for Draft Version 38
+**Notes**:
