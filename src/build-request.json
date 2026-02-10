@@ -1,76 +1,46 @@
 {
   "kind": "build_request",
-  "title": "Connect instance-dependent follow-ups, run end-to-end smoke test, and set hero background to provided direct URL",
+  "title": "Revert application code to Draft 38",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Use the below direct image URL as the hero image and bottom justify it.  Apply a 25 percent dark‑blue overlay on top and bottom‑justify the background image.\nhttps://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T042856Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=15d679d2bc5a687e8aa935235f8610a85ac00ee395a9c4736db993b144122a97"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Hero background uses the exact provided URL (not a local /assets/ path).",
-        "Hero background uses cover sizing and is bottom-justified (equivalent to CSS background-position: center bottom).",
-        "A dark-blue overlay is rendered above the image at 25% opacity (0.25), matching the existing dark-blue color used in the hero overlay.",
-        "If the image fails to load, the UI still renders with a reasonable solid-color fallback (no broken layout)."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Run micro steps 9. Connect the completed flow to any follow-up steps that depend on the instance"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After a successful instance proposal submission, the app provides an explicit next-step action (English UI text) that takes the user directly to the newly created proposal in the proposals browsing flow.",
-        "The proposals list reflects the newly submitted proposal without requiring a full page reload (react-query invalidation/refresh behavior is wired and verified).",
-        "From the newly created proposal detail view, the user can reach the instance-dependent follow-up UI that already exists (e.g., the issue project/tasks flow) for that proposal/instance identifier.",
-        "No navigation relies on editing immutable hook files; changes are implemented via component composition and safe props/state changes in editable files."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
+      "text": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-5"
         ],
         "quotes": [
-          "10. Run a quick test to make sure the whole chain works end-to-end"
+          "Please revert back to Draft 38 now"
         ]
       },
       "acceptanceCriteria": [
-        "A new markdown doc is added under frontend/docs/ (or an existing appropriate docs location) describing the exact manual steps used to validate the chain end-to-end and the observed result for each step.",
-        "Smoke test covers: creating/submitting an instance proposal, verifying it appears in Browse Proposals, opening Proposal Detail, performing at least one instance-dependent follow-up action reachable from that detail flow (e.g., opening the Issue Project and creating/completing a task if available), and confirming the UI updates as expected.",
-        "Any failures discovered during the smoke test are fixed as part of this build, or clearly documented in the test doc as known remaining issues with reproduction steps."
+        "The generated code in this draft matches Draft 38 behavior and UI as previously deployed/reviewed.",
+        "No post–Draft 38 changes remain in the frontend or backend after the revert.",
+        "The app builds successfully (frontend + backend) after reverting to Draft 38."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui).",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add a migration file if an actual stable-state upgrade is required."
+    "Do not modify the read-only frontend paths listed in SYSTEM_CONTEXT. (If Draft 38 included changes in those paths, achieve the revert by adjusting surrounding/composing code instead of editing those files.)"
   ],
   "nonGoals": [
-    "Implementing automated end-to-end test infrastructure (e.g., Playwright/Cypress).",
-    "Adding new authentication providers beyond Internet Identity.",
-    "Introducing external databases or non-ICP backend services."
+    "Do not introduce new features or bug fixes beyond restoring the Draft 38 state.",
+    "Do not perform any additional redesign or content changes not present in Draft 38."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

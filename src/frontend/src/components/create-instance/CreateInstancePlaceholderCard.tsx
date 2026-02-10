@@ -32,6 +32,8 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
   const [geographyLevel, setGeographyLevel] = useState<'state' | 'county' | 'place'>('state');
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedInstanceName, setSubmittedInstanceName] = useState('');
+  const [geographyError, setGeographyError] = useState<string | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
@@ -58,19 +60,72 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     }
   }, [selectedCounty]);
 
+  // Clear geography error when selections change
+  useEffect(() => {
+    setGeographyError(null);
+    setAttemptedSubmit(false);
+  }, [selectedState, selectedCounty, selectedPlace]);
+
   const isNameAvailable = debouncedInstanceName.length > 0 && !isNameTaken && !isCheckingName && !nameCheckError;
   const showNameTaken = debouncedInstanceName.length > 0 && isNameTaken && !isCheckingName;
   const showNameCheckError = debouncedInstanceName.length > 0 && nameCheckError && !isCheckingName;
 
+  // Geography validation: State always required; County required for county/place levels; Place required for place level
+  const isGeographyValid = 
+    selectedState !== null &&
+    (geographyLevel === 'state' || 
+     (geographyLevel === 'county' && selectedCounty !== null) ||
+     (geographyLevel === 'place' && selectedCounty !== null && selectedPlace !== null));
+
   const canSubmit =
     instanceName.trim().length > 0 &&
     description.trim().length > 0 &&
-    selectedState &&
+    isGeographyValid &&
     isNameAvailable &&
-    !isSubmitting &&
-    ((geographyLevel === 'state') ||
-      (geographyLevel === 'county' && selectedCounty) ||
-      (geographyLevel === 'place' && selectedPlace));
+    !isSubmitting;
+
+  // Compute missing geography selections
+  const getMissingGeographyMessage = (): string | null => {
+    if (!selectedState) {
+      return 'Please select a state.';
+    }
+    if (geographyLevel === 'county' && !selectedCounty) {
+      return 'Please select a county.';
+    }
+    if (geographyLevel === 'place') {
+      if (!selectedCounty) {
+        return 'Please select a county.';
+      }
+      if (!selectedPlace) {
+        return 'Please select a place.';
+      }
+    }
+    return null;
+  };
+
+  // Determine which field is missing for highlighting
+  const getMissingField = (): 'state' | 'county' | 'place' | null => {
+    if (!selectedState) return 'state';
+    if (geographyLevel === 'county' && !selectedCounty) return 'county';
+    if (geographyLevel === 'place') {
+      if (!selectedCounty) return 'county';
+      if (!selectedPlace) return 'place';
+    }
+    return null;
+  };
+
+  const handleSubmitAttempt = () => {
+    setAttemptedSubmit(true);
+    // Check if geography is valid
+    const missingMessage = getMissingGeographyMessage();
+    if (missingMessage) {
+      setGeographyError(missingMessage);
+      return;
+    }
+
+    // Proceed with submission
+    handleSubmit();
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -127,6 +182,8 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
     }
     onClose();
   };
+
+  const missingField = attemptedSubmit ? getMissingField() : null;
 
   if (showSuccess) {
     return (
@@ -267,9 +324,9 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
           <h4 className="text-white font-semibold">Select Geography</h4>
 
           {/* State Selection */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${missingField === 'state' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
             <Label htmlFor="state" className="text-white">
-              State
+              State <span className="text-destructive">*</span>
             </Label>
             {statesLoading ? (
               <LoadingIndicator label="Loading states..." />
@@ -294,9 +351,9 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
 
           {/* County Selection */}
           {selectedState && (
-            <div className="space-y-2">
+            <div className={`space-y-2 ${missingField === 'county' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
               <Label htmlFor="county" className="text-white">
-                County (Optional)
+                County {(geographyLevel === 'county' || geographyLevel === 'place') && <span className="text-destructive">*</span>}
               </Label>
               <SelectCounty
                 stateGeoId={selectedState.hierarchicalId}
@@ -312,9 +369,9 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
 
           {/* Place Selection */}
           {selectedCounty && (
-            <div className="space-y-2">
+            <div className={`space-y-2 ${missingField === 'place' ? 'p-3 rounded-lg bg-destructive/10 border-2 border-destructive/50 ring-2 ring-destructive/30' : ''}`}>
               <Label htmlFor="place" className="text-white">
-                Place (Optional)
+                Place {geographyLevel === 'place' && <span className="text-destructive">*</span>}
               </Label>
               <SelectPlace
                 countyGeoId={selectedCounty.hierarchicalId}
@@ -326,6 +383,14 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
                 disabled={isSubmitting}
               />
             </div>
+          )}
+
+          {/* Geography Error Message */}
+          {geographyError && (
+            <Alert className="bg-destructive/20 border-destructive/50">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-white">{geographyError}</AlertDescription>
+            </Alert>
           )}
         </div>
 
@@ -339,7 +404,7 @@ export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '
 
         {/* Submit Button */}
         <Button
-          onClick={handleSubmit}
+          onClick={handleSubmitAttempt}
           disabled={!canSubmit}
           className="w-full bg-accent hover:bg-accent-hover text-white font-semibold"
         >

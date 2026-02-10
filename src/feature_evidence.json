@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-homepage-hero-to-use-the-user-provided-direct-image-url-as-the-background-image-keep-the-background-bottom-justified-and-apply-a-dark-blue-overlay-at-exactly-25-opacity-over-the-entire-hero-area",
-      "featureTitle": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
+      "featureId": "feature-revert-the-current-draft-codebase-back-to-the-exact-state-of-draft-38-frontend-backend-replacing-any-changes-introduced-after-draft-38",
+      "featureTitle": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
       "files": [
         "frontend/src/App.tsx"
       ],
@@ -17,46 +17,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-connect-the-completed-instance-proposal-submission-flow-to-the-next-instance-dependent-follow-up-steps-by-guiding-the-user-into-the-proposal-they-just-created-or-the-relevant-instance-record-without-requiring-manual-page-refreshes-or-manual-navigation",
-      "featureTitle": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-        "frontend/src/components/proposals/ProposalsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-run-a-quick-end-to-end-smoke-test-of-the-full-chain-proposal-creation-through-instance-dependent-follow-ups-and-record-the-steps-and-results-in-a-repo-document",
-      "featureTitle": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
-      "files": [
-        "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

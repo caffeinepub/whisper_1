@@ -1,65 +1,41 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Hero background URL update, post-submission follow-ups wiring, and documented smoke test",
+  "title": "Frontend revert to Draft 38 state",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update homepage hero background to use the provided direct URL with bottom-justified cover sizing and a 25% dark-blue overlay plus solid-color fallback.",
+      "summary": "Restore the frontend UI/behavior to match Draft 38 exactly, removing any post–Draft 38 changes.",
       "acceptanceCriteria": [
-        "Hero background uses the exact provided URL (not a local /assets/ path).",
-        "Hero background uses cover sizing and is bottom-justified (equivalent to CSS background-position: center bottom).",
-        "A dark-blue overlay is rendered above the image at 25% opacity (0.25), matching the existing dark-blue color used in the hero overlay.",
-        "If the image fails to load, the UI still renders with a reasonable solid-color fallback (no broken layout)."
+        "The generated code in this draft matches Draft 38 behavior and UI as previously deployed/reviewed.",
+        "No post–Draft 38 changes remain in the frontend or backend after the revert.",
+        "The app builds successfully (frontend + backend) after reverting to Draft 38."
       ],
       "file_operations": [
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Replace the hero background image source with the exact user-provided direct URL, keep backgroundPosition as center bottom and backgroundSize as cover, preserve the existing dark-blue overlay color while setting its opacity to exactly 0.25, and keep/verify the solid-color fallback behavior when image preloading fails."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "After proposal submission, guide the user directly into the newly created proposal and ensure proposals data refreshes without reload, enabling access to existing instance-dependent follow-ups.",
-      "acceptanceCriteria": [
-        "After a successful instance proposal submission, the app provides an explicit next-step action (English UI text) that takes the user directly to the newly created proposal in the proposals browsing flow.",
-        "The proposals list reflects the newly submitted proposal without requiring a full page reload (react-query invalidation/refresh behavior is wired and verified).",
-        "From the newly created proposal detail view, the user can reach the instance-dependent follow-up UI that already exists (e.g., the issue project/tasks flow) for that proposal/instance identifier.",
-        "No navigation relies on editing immutable hook files; changes are implemented via component composition and safe props/state changes in editable files."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-          "operation": "modify",
-          "description": "Add an explicit post-success next-step action (e.g., a button with English text like \"View your proposal\") to guide the user into the proposal they just submitted; capture the submitted proposal identifier from the mutation result and call a new optional callback prop so App can reveal the proposals browsing UI and preselect/open the new proposal. Verify the component's usage instructions before implementing (shadcn-ui Button/Alert patterns already used here)."
+          "description": "Revert the main application UI composition back to Draft 38, removing any post–Draft 38 sections/flows and restoring Draft 38 layout, interactions, and Secretary/navigation wiring. Ensure the hero uses the Draft 38 static asset at frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png (no remote URL dependency), with Draft 38 overlay styling (dark blue oklch(0.20 0.08 230) at 30% opacity) and Draft 38 CTA/button styles. Use existing shadcn-ui components already in the codebase (e.g., Card/Button/Input/Textarea) as per Draft 38 composition; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/common/HomeHeader.tsx",
           "operation": "modify",
-          "description": "Wire the post-submission follow-up navigation by passing a callback into CreateInstancePlaceholderCard that (1) opens the Browse Proposals section, (2) scrolls to it, and (3) passes the just-created proposal name down so the Proposal Detail dialog can be opened without manual refresh/navigation."
+          "description": "Revert the fixed header (branding + primary CTA) to the exact Draft 38 structure, copy, and styling, ensuring it matches Draft 38 behavior when interacting with the App’s 'Get Started' flow. If this file is listed as read-only in SYSTEM_CONTEXT, do not edit it; instead, achieve Draft 38 parity by adjusting composition/props usage in frontend/src/App.tsx."
         },
         {
-          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Support an externally-provided \"proposal to open\" signal (via a new optional prop) that, once proposals data is available, selects and opens ProposalDetailDialog for that proposal; ensure this does not require a full reload and works with react-query refresh/invalidation behavior. Verify the component's usage instructions before implementing (shadcn-ui Card/Button/Dialog patterns already used here)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Manually smoke test the end-to-end flow (proposal creation through instance-dependent follow-ups) and record steps/results in a repo document.",
-      "acceptanceCriteria": [
-        "A new markdown doc is added under frontend/docs/ (or an existing appropriate docs location) describing the exact manual steps used to validate the chain end-to-end and the observed result for each step.",
-        "Smoke test covers: creating/submitting an instance proposal, verifying it appears in Browse Proposals, opening Proposal Detail, performing at least one instance-dependent follow-up action reachable from that detail flow (e.g., opening the Issue Project and creating/completing a task if available), and confirming the UI updates as expected.",
-        "Any failures discovered during the smoke test are fixed as part of this build, or clearly documented in the test doc as known remaining issues with reproduction steps."
-      ],
-      "file_operations": [
+          "description": "Restore global theme tokens, utility classes, and any Draft 38-specific styling (including overlay root behavior and hero/widget contrast rules) to match Draft 38. Do not modify any read-only frontend paths listed in SYSTEM_CONTEXT; if this file is read-only, revert styling by adjusting Tailwind config usage and/or component class usage in composing files instead."
+        },
         {
-          "path": "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md",
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Revert Tailwind theme extensions (colors, shadows, animations, typography) back to the Draft 38 configuration so the UI renders identically to Draft 38. Do not modify any read-only frontend paths listed in SYSTEM_CONTEXT; if this file is read-only, achieve Draft 38 parity by reverting class usage in composing components instead."
+        },
+        {
+          "path": "frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png",
           "operation": "create",
-          "description": "Document the exact manual smoke test steps and observed results for the full chain: submit a proposal, confirm it appears in Browse Proposals without page reload, open Proposal Detail, open the Issue Project from that detail flow, and perform at least one task action (create and/or toggle complete) verifying UI updates; include any remaining known issues with repro steps if not fixed."
+          "description": "Ensure the Draft 38 hero image asset exists at this exact path so the homepage hero can load it as a static asset without remote dependencies. If the asset already exists, replace it with the Draft 38 version and remove any post–Draft 38 asset substitutions in the UI wiring."
         }
       ]
     }

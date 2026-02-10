@@ -1,60 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project includes configuring a website/app hero section (image by direct URL with styling overlay) and completing an end-to-end instance-dependent flow with follow-up steps and testing.",
-  "architectural_notes": [
-    "Hero section should support external/direct image URLs as the background source",
-    "Hero image styling requirements: bottom-justified background positioning with a 25% dark-blue overlay layer"
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
   "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-homepage-hero-to-use-the-user-provided-direct-image-url-as-the-background-image-keep-the-background-bottom-justified-and-apply-a-dark-blue-overlay-at-exactly-25-opacity-over-the-entire-hero-area",
-      "title": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
+      "id": "feature-revert-the-current-draft-codebase-back-to-the-exact-state-of-draft-38-frontend-backend-replacing-any-changes-introduced-after-draft-38",
+      "title": "Revert the current draft codebase back to the exact state of Draft 38 (frontend + backend), replacing any changes introduced after Draft 38.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-connect-the-completed-instance-proposal-submission-flow-to-the-next-instance-dependent-follow-up-steps-by-guiding-the-user-into-the-proposal-they-just-created-or-the-relevant-instance-record-without-requiring-manual-page-refreshes-or-manual-navigation",
-      "title": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-run-a-quick-end-to-end-smoke-test-of-the-full-chain-proposal-creation-through-instance-dependent-follow-ups-and-record-the-steps-and-results-in-a-repo-document",
-      "title": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Allow setting hero image via a provided direct URL and bottom-justify the background image",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Apply a 25% dark-blue overlay on top of the hero image",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Connect the completed flow to any follow-up steps that depend on the instance and verify the full chain works end-to-end",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Connect instance-dependent follow-ups, run end-to-end smoke test, and set hero background to provided direct URL",
+  "new_feature_requests": [],
+  "projectName": "Revert application code to Draft 38",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
