@@ -1,10 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Remove remaining editor-related frontend dependencies and permanently update the homepage hero headline/subtext strings (without changing design or functionality).
+**Goal:** Prevent Caffeine draft preview pages from showing a blank screen by blocking injected draft editor scripts and removing any frontend dependency chain that triggers editor/script injection.
 
 **Planned changes:**
-- Remove any remaining editor-related frontend packages, imports, references, and runtime paths; verify a clean frontend rebuild and app load with no editor-related errors.
-- In `frontend/src/App.tsx` (home route hero), replace only the displayed hero headline and subtext with the exact provided strings and add the required permanent two-line comment immediately above them.
+- Add a temporary, early-loading in-site script that blocks Caffeine preview’s injected draft editor scripts from loading/executing, gated to only run on Caffeine draft preview hostnames/conditions, and loaded before the main application bundle.
+- Remove/strip suspected editor-triggering dependencies/imports from the frontend bundle so Caffeine preview no longer decides to inject the draft editor subsystem.
 
-**User-visible outcome:** The app builds and loads without any editor-related code, and the homepage hero section shows the new official mission headline and subtext exactly as provided, with no other UI or behavior changes.
+**User-visible outcome:** Opening a Caffeine draft preview URL renders the React app normally (no blank white screen and no “disallowed origin” draft-editor error in the console), while normal (non-draft) deployments remain unaffected.

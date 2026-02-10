@@ -1,50 +1,49 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:06:55.869Z",
-  "summary": "REQ-2 hero headline/subtext strings and the required permanent comments appear to be implemented in frontend/src/App.tsx, and a before/after note is documented in frontend/docs/HOMEPAGE_REDESIGN_NOTES.md. However, the diff does not provide evidence that editor-related frontend dependencies/references were removed (REQ-1), nor does it include the requested demo preview URL snippet. Additional unrequested documentation content about broader homepage redesign details was added/updated.",
+  "generatedAt": "2026-02-10T22:58:58.404Z",
+  "summary": "REQ-1 appears implemented via an early-loaded draft preview script blocker added to frontend/index.html and a new public blocker script gated to *-draft.caffeine.* hostnames. There is no evidence in the provided diff summary that REQ-2 (stripping the editor-triggering dependency chain from the frontend bundle) was implemented. Several additional changes (error boundary hardening/logging, project state tracking, and a large frontend-file-summaries update) are present but not explicitly requested.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
-      "reason": "The diff shows no changes to package/dependency files (e.g., package.json/lockfiles) and no explicit removal of editor-related imports/usages; only App.tsx and documentation/state files are shown as modified.",
-      "evidence": [
-        "frontend/src/App.tsx",
-        "frontend-file-summaries.txt",
-        "project_state.json"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "Provide a demo preview URL snippet (as available in the deployment output) that shows the updated hero section with the new exact text.",
-      "reason": "No deployment output or preview URL snippet is present in the modified files shown in the diff summary.",
+      "requirement": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
+      "reason": "The diff summary shows no package/import removals, no refactors removing editor-related dependencies, and no evidence of eliminating editor-related references from the bundle. Only a blocker script and ancillary changes are shown.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+        "frontend/public/caffeine-draft-preview-blocker.js",
+        "frontend/index.html",
+        "frontend/src/components/common/AppErrorBoundary.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Expanded homepage redesign documentation beyond the requested hero headline/subtext string update (e.g., hero image asset details, overlay color/opacity, CTA button styling, contrast fixes, secretary widget styling).",
-      "reason": "The BuildRequest explicitly constrained UI changes to ONLY the hero headline and hero subtext strings and did not request broader redesign documentation content.",
+      "description": "Hardened React AppErrorBoundary with additional logging/handling for 'disallowed origin' and script-related errors plus UI fallback improvements.",
+      "reason": "BuildRequest focuses on blocking the injected draft editor script and stripping the dependency chain; it does not request changing the error boundary behavior/UI.",
       "evidence": [
-        "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+        "frontend/src/components/common/AppErrorBoundary.tsx"
       ]
     },
     {
-      "description": "Project tracking/state updates marking new feature requests (AR-1..AR-4) as pending in project_state.json.",
-      "reason": "The BuildRequest did not ask for changes to project tracking metadata/state files.",
+      "description": "Added/updated project tracking metadata for AR-1..AR-4 in project_state.json.",
+      "reason": "BuildRequest does not request adding or modifying repository project tracking/state files.",
       "evidence": [
         "project_state.json"
+      ]
+    },
+    {
+      "description": "Updated/added a large frontend-file-summaries.txt describing many files/features not part of the requested mitigation.",
+      "reason": "BuildRequest does not request generating or updating documentation summary artifacts.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
-    "frontend/src/App.tsx",
+    "frontend/index.html",
+    "frontend/public/caffeine-draft-preview-blocker.js",
+    "frontend/src/components/common/AppErrorBoundary.tsx",
     "project_state.json"
   ]
 }

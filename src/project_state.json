@@ -1,24 +1,26 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Update the Whisper app frontend by removing remaining editor-related dependencies and permanently updating the homepage/national hub hero headline and subtext to the provided exact mission statement text without changing any other UI, styling, or functionality.",
+  "summary": "Investigate and mitigate blank white screen in Caffeine preview caused by injected draft editor script (disallowed origin) by stripping suspected dependency chain and adding a temporary in-site blocker to prevent preview system injection.",
   "architectural_notes": [
-    "Hero headline and subtext must be hard-coded and treated as permanent official mission statement; include an explicit 'PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS' comment above the strings."
+    "Caffeine preview may auto-inject an editor subsystem (draft-script.js) based on bundle detection, which can fail with a 'disallowed origin' error and prevent the app from mounting."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Preview can render a blank white screen when injected draft editor script throws 'disallowed origin' for the preview URL (e.g., https://just-olive-eim-draft.caffeine.xyz)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-remove-any-remaining-editor-related-dependencies-and-references-from-the-frontend-codebase-then-ensure-the-frontend-rebuild-succeeds-without-editor-related-packages-imports-or-runtime-paths",
-      "title": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
+      "id": "feature-add-a-temporary-early-executing-in-site-blocker-that-prevents-the-caffeine-preview-system-s-injected-draft-editor-script-from-loading-executing-e-g-draft-script-js-draft-editor-so-the-preview-no-longer-crashes-with-the-disallowed-origin-error-and-the-react-app-can-mount",
+      "title": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-existing-whisper-app-homepage-national-hub-hero-section-hero-headline-and-subtext-by-changing-only-the-displayed-strings-keeping-the-exact-existing-design-layout-colors-buttons-functionality-unchanged-in-the-component-that-renders-the-current-homepage-hero-text-currently-in-frontend-src-app-tsx-under-the-home-route-render-replace-the-headline-and-subtext-with-the-exact-new-strings-and-add-the-required-permanent-comment-immediately-above-the-strings",
-      "title": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+      "id": "feature-strip-the-suspected-editor-triggering-dependency-chain-from-the-frontend-bundle-so-the-preview-system-stops-deciding-to-inject-the-draft-editor-subsystem-in-the-first-place",
+      "title": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
       "reqIds": [
         "REQ-2"
       ],
@@ -28,19 +30,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Remove any remaining editor-related dependencies from the frontend and rebuild",
+      "summary": "Strip suspected editor-triggering dependency chain from the bundle to stop Caffeine preview from injecting draft-script.js (disallowed origin) and causing blank screen",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Update Whisper homepage/national hub hero headline and subtext to the provided exact text and make it permanent with a DO NOT CHANGE comment (no other UI/behavior changes)",
+      "summary": "Add a temporary in-site script/workaround to block the problematic dependency chain / prevent preview system injection of the editor script",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Whisper",
+  "projectName": "Mitigate Caffeine preview blank screen by blocking injected draft editor script and stripping editor-triggering dependency chain",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

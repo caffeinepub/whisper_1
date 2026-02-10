@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:06:55.872Z",
+  "generatedAt": "2026-02-10T22:58:58.407Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,28 +12,29 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
+        "summary": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/package.json",
-          "frontend/src/App.tsx",
-          "frontend/src/main.tsx"
+          "frontend/public/caffeine-draft-preview-blocker.js",
+          "frontend/index.html"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/public/caffeine-draft-preview-blocker.js",
+          "frontend/index.html"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+        "summary": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/index.html",
           "frontend/src/App.tsx",
-          "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+          "frontend/src/components/common/AppErrorBoundary.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+          "frontend/index.html",
+          "frontend/src/components/common/AppErrorBoundary.tsx"
         ]
       }
     ]
@@ -43,8 +44,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
-    "frontend/src/App.tsx",
+    "frontend/index.html",
+    "frontend/public/caffeine-draft-preview-blocker.js",
+    "frontend/src/components/common/AppErrorBoundary.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

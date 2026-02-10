@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-remove-any-remaining-editor-related-dependencies-and-references-from-the-frontend-codebase-then-ensure-the-frontend-rebuild-succeeds-without-editor-related-packages-imports-or-runtime-paths",
-      "featureTitle": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
+      "featureId": "feature-add-a-temporary-early-executing-in-site-blocker-that-prevents-the-caffeine-preview-system-s-injected-draft-editor-script-from-loading-executing-e-g-draft-script-js-draft-editor-so-the-preview-no-longer-crashes-with-the-disallowed-origin-error-and-the-react-app-can-mount",
+      "featureTitle": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/index.html",
+        "frontend/public/caffeine-draft-preview-blocker.js"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,11 +23,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-existing-whisper-app-homepage-national-hub-hero-section-hero-headline-and-subtext-by-changing-only-the-displayed-strings-keeping-the-exact-existing-design-layout-colors-buttons-functionality-unchanged-in-the-component-that-renders-the-current-homepage-hero-text-currently-in-frontend-src-app-tsx-under-the-home-route-render-replace-the-headline-and-subtext-with-the-exact-new-strings-and-add-the-required-permanent-comment-immediately-above-the-strings",
-      "featureTitle": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+      "featureId": "feature-strip-the-suspected-editor-triggering-dependency-chain-from-the-frontend-bundle-so-the-preview-system-stops-deciding-to-inject-the-draft-editor-subsystem-in-the-first-place",
+      "featureTitle": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
       "files": [
-        "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
-        "frontend/src/App.tsx"
+        "frontend/index.html",
+        "frontend/src/components/common/AppErrorBoundary.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",

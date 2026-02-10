@@ -1,55 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Remove editor-related frontend dependencies and lock permanent homepage hero strings",
+  "title": "Caffeine draft preview blank-screen mitigation (early script blocker + bundle dependency stripping)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Remove any remaining editor-related frontend dependencies and code references so the frontend builds and runs without editor packages/imports/paths.",
+      "summary": "Add a temporary, early-executing blocker that prevents Caffeine draft preview injected editor scripts from loading/executing so the React app mounts.",
       "acceptanceCriteria": [
-        "A clean frontend build completes successfully after removing editor-related dependencies/references.",
-        "No remaining editor-related imports/usages exist in the frontend source (e.g., modules/components/utilities tied to an in-app editor).",
-        "No editor-related runtime errors occur when loading the app."
+        "The blocker is implemented without modifying any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
+        "The blocker runs before the application bundle executes (i.e., it is loaded before the main module script).",
+        "When opening a draft preview URL (e.g., https://just-olive-eim-draft.caffeine.xyz), the browser console no longer shows the draft-editor “disallowed origin” error originating from injected draft scripts, and the app renders instead of a blank white page.",
+        "The blocker is scoped as “temporary” and is gated to only activate on Caffeine draft preview hostnames/conditions (so it does not interfere with normal deployments)."
       ],
       "file_operations": [
         {
-          "path": "frontend/package.json",
-          "operation": "modify",
-          "description": "Remove any editor-related dependencies (and related scripts/config entries if present) so a clean install/build no longer pulls editor packages; ensure build scripts still succeed after the removal."
+          "path": "frontend/public/caffeine-draft-preview-blocker.js",
+          "operation": "create",
+          "description": "Create a TEMPORARY, self-contained, early-load script that (only on Caffeine draft preview hostnames/conditions) blocks the injected draft editor script(s) from loading/executing by intercepting script insertion (e.g., document.createElement/appendChild, DOM mutations) and refusing URLs/identifiers matching known draft editor patterns (e.g., draft-script.js, draft-editor). Ensure it fails open (does nothing) on non-draft hosts and logs minimal diagnostics for verification."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Audit and remove any remaining editor-related imports, lazy-loaded pages, routes, or runtime code paths (if present) while keeping existing non-editor routing behavior unchanged."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Remove any remaining editor-related provider/wrapper initialization or imports (if present) so app bootstrap has no editor runtime paths."
+          "description": "Load the temporary blocker before the main module script so it executes prior to /src/main.tsx. Add a standard script tag referencing frontend/public/caffeine-draft-preview-blocker.js ahead of the existing module script. Keep changes minimal and do not alter the React entry path."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Permanently update the homepage hero headline and subtext strings in frontend/src/App.tsx with the required 'PERMANENT HERO TEXT' comment, without changing any layout/styling/buttons/functionality.",
+      "summary": "Remove the suspected editor-triggering dependency chain from the frontend bundle so Caffeine preview no longer decides to inject the draft editor subsystem.",
       "acceptanceCriteria": [
-        "In frontend/src/App.tsx, the homepage hero headline text is exactly: \"Of the People, By the People — Realized\"",
-        "In frontend/src/App.tsx, the homepage hero subtext is exactly: \"Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up.\"",
-        "The following two comment lines exist immediately above the hero text strings in code and match exactly:\n// PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS\n// This is the official mission statement and must remain exactly as written",
-        "No other homepage/UI text, layout, styling classes, colors, buttons, Secretary widget, routing, or functionality is changed as part of this update.",
-        "Provide a brief before/after note documenting the prior hero headline/subtext and the new headline/subtext.",
-        "Provide a demo preview URL snippet (as available in the deployment output) that shows the updated hero section with the new exact text."
+        "Frontend build succeeds after removing the suspected editor-related dependency chain (including any direct imports and transitive inclusions that can trigger editor/script injection heuristics).",
+        "No editor-related packages/imports/runtime references remain in the built frontend output (e.g., no references indicative of draft editor tooling in the compiled JS).",
+        "Draft preview loads and renders the app without requiring the temporary blocker to catch/neutralize injected draft editor scripts (blocker may remain in place, but should not be the only thing preventing a crash)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Under the home route render, change ONLY the displayed hero headline and subtext strings to the exact provided new strings; add the two required permanent comment lines immediately above the strings; do not alter any existing classes/layout/colors/buttons/functionality."
+          "description": "Audit and remove any editor/draft-preview markers or injected-tooling hooks that could be present in the base HTML (e.g., extra script tags, data-* attributes, meta tags, or inline bootstraps that can trigger draft editor heuristics). Keep only what is required to mount the app (root containers + main module script + the temporary blocker from REQ-1)."
         },
         {
-          "path": "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add a brief before/after note documenting the prior hero headline/subtext and the new required strings, and include a small section to capture the deployment demo preview URL snippet once available."
+          "description": "Audit the top-level app module and its lazy imports for any suspected editor/draft tooling imports or transitive inclusions; remove/replace the dependency chain so no draft/editor-related code is reachable from the runtime bundle. Do not change the homepage mission statement strings or the “PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS” comment."
+        },
+        {
+          "path": "frontend/src/components/common/AppErrorBoundary.tsx",
+          "operation": "modify",
+          "description": "Harden the error boundary logging/handling to aid verification during draft preview testing (capture and surface relevant script/load/runtime errors without exposing new user-facing copy changes), ensuring the app provides actionable diagnostics if any residual editor-triggered failures occur."
         }
       ]
     }
