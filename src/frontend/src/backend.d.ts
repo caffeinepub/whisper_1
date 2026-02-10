@@ -49,7 +49,22 @@ export interface USState {
     censusAcreage: bigint;
     termType: string;
 }
-export type HierarchicalGeoId = string;
+export interface Task {
+    id: bigint;
+    completed: boolean;
+    description: string;
+}
+export type SubmitProposalResult = {
+    __kind__: "error";
+    error: {
+        message: string;
+    };
+} | {
+    __kind__: "success";
+    success: {
+        proposal: Proposal;
+    };
+};
 export interface Proposal {
     status: string;
     geographyLevel: USHierarchyLevel;
@@ -65,6 +80,7 @@ export interface Proposal {
 export interface UserProfile {
     name: string;
 }
+export type HierarchicalGeoId = string;
 export enum USHierarchyLevel {
     country = "country",
     state = "state",
@@ -78,6 +94,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    createTask(proposalId: string, description: string): Promise<bigint>;
     getAllProposals(): Promise<Array<[string, Proposal]>>;
     getAllStates(): Promise<Array<USState>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -85,12 +102,14 @@ export interface backendInterface {
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
+    getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     ingestUSGeographyData(data: Array<USGeographyDataChunk>): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<boolean>;
+    submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
+    updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
 }

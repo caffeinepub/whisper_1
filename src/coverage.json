@@ -1,81 +1,64 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T04:21:17.549Z",
+  "generatedAt": "2026-02-10T05:29:34.505Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-6",
-        "summary": "Fix and standardize the global design tokens so Tailwind color utilities (e.g., `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`) reliably resolve to the intended teal values across the app, eliminating any conflicting/duplicate CSS variable definitions that prevent teal accents from appearing consistently.",
+        "id": "REQ-1",
+        "summary": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/tailwind.config.js",
-          "frontend/src/index.css",
-          "frontend/index.css"
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/tailwind.config.js",
-          "frontend/src/index.css",
-          "frontend/index.css"
+          "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-7",
-        "summary": "Update frontend styling (Tailwind classes and/or design variables only) so teal accents are applied consistently to the site logo/wordmark, Lucide icons (where not semantic), buttons (including outline/secondary variants), and other interactive elements, without changing component behavior or introducing new UI components.",
+        "id": "REQ-2",
+        "summary": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
           "frontend/src/App.tsx",
-          "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/components/proposals/ProposalsSection.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
           "frontend/src/App.tsx",
-          "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx"
+          "frontend/src/components/proposals/ProposalsSection.tsx"
         ]
       },
       {
-        "id": "REQ-8",
-        "summary": "Replace the hero/header background image with the user-provided image URL and adjust the hero background positioning to be bottom-justified (e.g., `background-position: bottom` / `center bottom`) while preserving existing overlay and text readability.",
+        "id": "REQ-3",
+        "summary": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg",
-          "frontend/src/App.tsx"
+          "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.css",
-    "frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg",
+    "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md",
     "frontend/src/App.tsx",
-    "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
-    "frontend/src/index.css",
-    "frontend/tailwind.config.js",
+    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+    "frontend/src/components/proposals/ProposalsSection.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

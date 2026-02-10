@@ -1,45 +1,35 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Whisper app frontend styling update: apply cohesive teal theme across UI elements and replace hero/header image with a community-collaboration-appropriate image, bottom-justified. No backend/canister/functionality changes.",
+  "summary": "Project includes configuring a website/app hero section (image by direct URL with styling overlay) and completing an end-to-end instance-dependent flow with follow-up steps and testing.",
   "architectural_notes": [
-    "Frontend-only changes: restrict updates to styling (CSS/Tailwind/design variables); do not modify backend logic, canisters, functionality, or non-style components."
+    "Hero section should support external/direct image URLs as the background source",
+    "Hero image styling requirements: bottom-justified background positioning with a 25% dark-blue overlay layer"
   ],
-  "known_issues": [
-    "Build/deployment may intermittently fail due to a Caffeine configuration error (platform/internal mismatch), not caused by user changes."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
-  "imageRequirements": "## Required Images\n- Hero background photo (whisper-hero-community-collab.dim_2400x1350.jpg)",
   "existing_features": [
     {
-      "id": "feature-fix-and-standardize-the-global-design-tokens-so-tailwind-color-utilities-e-g-text-secondary-bg-secondary-border-secondary-ring-secondary-bg-accent-reliably-resolve-to-the-intended-teal-values-across-the-app-eliminating-any-conflicting-duplicate-css-variable-definitions-that-prevent-teal-accents-from-appearing-consistently",
-      "title": "Fix and standardize the global design tokens so Tailwind color utilities (e.g., `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`) reliably resolve to the intended teal values across the app, eliminating any conflicting/duplicate CSS variable definitions that prevent teal accents from appearing consistently.",
+      "id": "feature-update-the-homepage-hero-to-use-the-user-provided-direct-image-url-as-the-background-image-keep-the-background-bottom-justified-and-apply-a-dark-blue-overlay-at-exactly-25-opacity-over-the-entire-hero-area",
+      "title": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
       "reqIds": [
-        "REQ-6"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-frontend-styling-tailwind-classes-and-or-design-variables-only-so-teal-accents-are-applied-consistently-to-the-site-logo-wordmark-lucide-icons-where-not-semantic-buttons-including-outline-secondary-variants-and-other-interactive-elements-without-changing-component-behavior-or-introducing-new-ui-components",
-      "title": "Update frontend styling (Tailwind classes and/or design variables only) so teal accents are applied consistently to the site logo/wordmark, Lucide icons (where not semantic), buttons (including outline/secondary variants), and other interactive elements, without changing component behavior or introducing new UI components.",
+      "id": "feature-connect-the-completed-instance-proposal-submission-flow-to-the-next-instance-dependent-follow-up-steps-by-guiding-the-user-into-the-proposal-they-just-created-or-the-relevant-instance-record-without-requiring-manual-page-refreshes-or-manual-navigation",
+      "title": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
       "reqIds": [
-        "REQ-7"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-replace-the-hero-header-background-image-with-the-user-provided-image-url-and-adjust-the-hero-background-positioning-to-be-bottom-justified-e-g-background-position-bottom-center-bottom-while-preserving-existing-overlay-and-text-readability",
-      "title": "Replace the hero/header background image with the user-provided image URL and adjust the hero background positioning to be bottom-justified (e.g., `background-position: bottom` / `center bottom`) while preserving existing overlay and text readability.",
+      "id": "feature-run-a-quick-end-to-end-smoke-test-of-the-full-chain-proposal-creation-through-instance-dependent-follow-ups-and-record-the-steps-and-results-in-a-repo-document",
+      "title": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
       "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-the-new-hero-image-as-a-static-frontend-asset-under-frontend-public-assets-generated-and-reference-it-from-the-hero-section-implementation-do-not-serve-the-image-from-the-backend",
-      "title": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
-      "reqIds": [
-        "REQ-9"
+        "REQ-3"
       ],
       "version": 1
     }
@@ -47,19 +37,24 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Apply teal styling consistently across logo, icons, buttons, and interactive components (CSS/Tailwind/variables only; no backend changes)",
+      "summary": "Allow setting hero image via a provided direct URL and bottom-justify the background image",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Replace header/hero image with provided image and make it bottom-justified",
+      "summary": "Apply a 25% dark-blue overlay on top of the hero image",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Connect the completed flow to any follow-up steps that depend on the instance and verify the full chain works end-to-end",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Whisper",
+  "projectName": "Connect instance-dependent follow-ups, run end-to-end smoke test, and set hero background to provided direct URL",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

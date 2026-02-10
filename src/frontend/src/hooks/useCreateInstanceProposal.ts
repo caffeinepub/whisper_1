@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { USHierarchyLevel } from '@/backend';
+import { useLocalStorageState } from './useLocalStorageState';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 /**
  * Hook to check if an instance name is already taken.
  * Returns true if taken, false if available.
- * Throws error if check fails to prevent submission with unknown state.
+ * Throws user-friendly error if check fails to prevent submission with unknown state.
  */
 export function useCheckInstanceName(instanceName: string) {
   const { actor, isFetching } = useActor();
@@ -18,10 +20,10 @@ export function useCheckInstanceName(instanceName: string) {
         const result = await actor.isInstanceNameTaken(instanceName);
         return result;
       } catch (error) {
-        console.error('Error checking instance name:', error);
-        // Throw error instead of returning false to prevent submission
-        // when we can't verify availability
-        throw new Error('Unable to verify name availability');
+        const { userMessage, originalError } = getUserFacingError(error);
+        console.error('Error checking instance name:', originalError);
+        // Throw user-friendly error to prevent submission when we can't verify availability
+        throw new Error(userMessage);
       }
     },
     enabled: !!actor && !isFetching && !!instanceName && instanceName.length > 0,
@@ -42,12 +44,26 @@ interface SubmitProposalParams {
   population2020: string;
 }
 
+interface SubmissionSuccess {
+  instanceName: string;
+  timestamp: number;
+  state: string;
+  county?: string;
+  geographyLevel: string;
+}
+
 /**
  * Hook to submit a new instance creation proposal with full geography metadata.
+ * On success, persists the submission metadata to localStorage.
+ * Provides user-friendly error messages while logging technical details.
  */
 export function useSubmitProposal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const [, setLastSubmission] = useLocalStorageState<SubmissionSuccess | null>(
+    'whisper-last-proposal-submission',
+    null
+  );
 
   return useMutation({
     mutationFn: async (params: SubmitProposalParams) => {
@@ -55,29 +71,49 @@ export function useSubmitProposal() {
         throw new Error('Backend connection not available');
       }
 
-      const success = await actor.submitProposal(
-        params.description,
-        params.instanceName,
-        params.status,
-        params.state,
-        params.county,
-        params.geographyLevel,
-        params.censusBoundaryId,
-        params.squareMeters,
-        params.population2020
-      );
+      try {
+        const result = await actor.submitProposal(
+          params.description,
+          params.instanceName,
+          params.status,
+          params.state,
+          params.county,
+          params.geographyLevel,
+          params.censusBoundaryId,
+          params.squareMeters,
+          params.population2020
+        );
 
-      if (!success) {
-        throw new Error('Instance name is already taken or proposal submission failed');
+        // Handle discriminated union result
+        if (result.__kind__ === 'error') {
+          throw new Error(result.error.message);
+        }
+
+        // Return the proposal from the success result
+        return {
+          proposal: result.success.proposal,
+          params,
+        };
+      } catch (error) {
+        const { userMessage, originalError } = getUserFacingError(error);
+        console.error('Error submitting proposal:', originalError);
+        throw new Error(userMessage);
       }
-
-      return success;
     },
-    onSuccess: () => {
-      // Invalidate proposals list to show the new proposal
+    onSuccess: (data) => {
+      // Persist submission metadata to localStorage
+      const submissionRecord: SubmissionSuccess = {
+        instanceName: data.params.instanceName,
+        timestamp: Date.now(),
+        state: data.params.state,
+        county: data.params.county || undefined,
+        geographyLevel: data.params.geographyLevel,
+      };
+      setLastSubmission(submissionRecord);
+
+      // Invalidate queries to refresh the proposals list
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      // Invalidate name checks to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck'] });
+      queryClient.invalidateQueries({ queryKey: ['instanceNameCheck', data.params.instanceName] });
     },
   });
 }

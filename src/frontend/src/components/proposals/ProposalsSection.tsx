@@ -1,27 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { MapPin, FileText, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MapPin, AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetAllProposals } from '@/hooks/useQueries';
 import { ProposalDetailDialog } from './ProposalDetailDialog';
 import { IconBubble } from '@/components/common/IconBubble';
+import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import type { Proposal } from '@/backend';
 import { formatProposalGeography } from '@/lib/formatProposalGeography';
 
-export function ProposalsSection() {
-  const { data: proposals, isLoading, error } = useGetAllProposals();
+interface ProposalsSectionProps {
+  proposalToOpen?: string | null;
+  onProposalOpened?: () => void;
+}
+
+export function ProposalsSection({ proposalToOpen, onProposalOpened }: ProposalsSectionProps) {
+  const { data: proposals = [], isLoading, error, refetch, isRefetching } = useGetAllProposals();
   const [selectedProposal, setSelectedProposal] = useState<{ name: string; proposal: Proposal } | null>(null);
+
+  // Auto-open proposal when proposalToOpen is provided
+  useEffect(() => {
+    if (proposalToOpen && proposals.length > 0 && !isLoading) {
+      const proposalEntry = proposals.find(([name]) => name === proposalToOpen);
+      if (proposalEntry) {
+        const [name, proposal] = proposalEntry;
+        setSelectedProposal({ name, proposal });
+        if (onProposalOpened) {
+          onProposalOpened();
+        }
+      }
+    }
+  }, [proposalToOpen, proposals, isLoading, onProposalOpened]);
+
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const handleProposalClick = (name: string, proposal: Proposal) => {
+    setSelectedProposal({ name, proposal });
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedProposal(null);
+  };
 
   if (isLoading) {
     return (
-      <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 shadow-[0_0_30px_rgba(20,184,166,0.2)] rounded-2xl">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-            <p className="text-white/70">Loading proposals...</p>
+      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <IconBubble size="lg" variant="secondary">
+              <MapPin className="h-6 w-6" />
+            </IconBubble>
+            <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
           </div>
+          <CardDescription className="text-white/70">
+            View and manage instance creation proposals from your community.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LoadingIndicator label="Loading proposals..." />
         </CardContent>
       </Card>
     );
@@ -29,94 +69,132 @@ export function ProposalsSection() {
 
   if (error) {
     return (
-      <Card className="bg-[oklch(0.20_0.05_230)] border-destructive/50 shadow-[0_0_30px_rgba(239,68,68,0.2)] rounded-2xl">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <p className="text-destructive">Error loading proposals</p>
-            <p className="text-white/60 text-sm">{error.message}</p>
+      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <IconBubble size="lg" variant="secondary">
+              <MapPin className="h-6 w-6" />
+            </IconBubble>
+            <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
           </div>
+          <CardDescription className="text-white/70">
+            View and manage instance creation proposals from your community.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="bg-destructive/20 border-destructive/50">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-white">
+              Failed to load proposals. Please try again.
+            </AlertDescription>
+          </Alert>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            className="mt-4 border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const proposalsList = proposals || [];
-
   return (
     <>
-      <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 shadow-[0_0_30px_rgba(20,184,166,0.2)] rounded-2xl">
+      <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
         <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <IconBubble size="lg" variant="secondary">
-              <FileText className="h-6 w-6" />
-            </IconBubble>
-            <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <IconBubble size="lg" variant="secondary">
+                <MapPin className="h-6 w-6" />
+              </IconBubble>
+              <CardTitle className="text-2xl text-white">Browse Proposals</CardTitle>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefetching}
+              variant="outline"
+              size="sm"
+              className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            >
+              {isRefetching ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </>
+              )}
+            </Button>
           </div>
           <CardDescription className="text-white/70">
-            View and moderate instance creation proposals from your community
+            View and manage instance creation proposals from your community.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {proposalsList.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-white/60">No proposals yet. Be the first to create one!</p>
+          {proposals.length === 0 ? (
+            <div className="text-center py-8 text-white/60">
+              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No proposals yet. Be the first to create one!</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {proposalsList.map(([name, proposal]) => (
-                <div
+            <div className="space-y-3">
+              {proposals.map(([name, proposal]) => (
+                <Card
                   key={name}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors"
+                  className="bg-white/5 border-white/10 hover:border-secondary/50 transition-all cursor-pointer hover-lift"
+                  onClick={() => handleProposalClick(name, proposal)}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <IconBubble size="sm" variant="secondary">
-                          <MapPin className="h-4 w-4" />
-                        </IconBubble>
-                        <h4 className="font-semibold text-white">{proposal.instanceName}</h4>
-                        <Badge
-                          variant={
-                            proposal.status === 'Approved'
-                              ? 'default'
-                              : proposal.status === 'Rejected'
-                                ? 'destructive'
-                                : 'secondary'
-                          }
-                          className={
-                            proposal.status === 'Pending'
-                              ? 'bg-secondary/20 text-secondary border-secondary/30'
-                              : ''
-                          }
-                        >
-                          {proposal.status}
-                        </Badge>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-white mb-1">{proposal.instanceName}</CardTitle>
+                        <CardDescription className="text-white/60 text-sm">
+                          {formatProposalGeography(proposal)}
+                        </CardDescription>
                       </div>
-                      <p className="text-white/70 text-sm">{formatProposalGeography(proposal)}</p>
-                      <p className="text-white/60 text-sm line-clamp-2">{proposal.description}</p>
+                      <Badge
+                        variant={
+                          proposal.status === 'Approved'
+                            ? 'default'
+                            : proposal.status === 'Rejected'
+                              ? 'destructive'
+                              : 'secondary'
+                        }
+                        className={
+                          proposal.status === 'Pending'
+                            ? 'bg-secondary/20 text-secondary border-secondary/30'
+                            : ''
+                        }
+                      >
+                        {proposal.status}
+                      </Badge>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedProposal({ name, proposal })}
-                      className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-white/70 text-sm line-clamp-2">{proposal.description}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Proposal Detail Dialog */}
       {selectedProposal && (
         <ProposalDetailDialog
           proposalName={selectedProposal.name}
           proposal={selectedProposal.proposal}
           open={!!selectedProposal}
-          onOpenChange={(open) => !open && setSelectedProposal(null)}
+          onOpenChange={(open) => {
+            if (!open) handleCloseDialog();
+          }}
         />
       )}
     </>

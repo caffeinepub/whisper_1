@@ -70,15 +70,25 @@ export const USPlace = IDL.Record({
   'censusPlaceType' : IDL.Text,
   'censusStateCode' : CensusStateCode,
 });
+export const Task = IDL.Record({
+  'id' : IDL.Nat,
+  'completed' : IDL.Bool,
+  'description' : IDL.Text,
+});
 export const USGeographyDataChunk = IDL.Record({
   'states' : IDL.Vec(USState),
   'places' : IDL.Vec(USPlace),
   'counties' : IDL.Vec(USCounty),
 });
+export const SubmitProposalResult = IDL.Variant({
+  'error' : IDL.Record({ 'message' : IDL.Text }),
+  'success' : IDL.Record({ 'proposal' : Proposal }),
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
   'getAllProposals' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
@@ -90,6 +100,11 @@ export const idlService = IDL.Service({
   'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
   'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
   'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+  'getTasks' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -112,10 +127,11 @@ export const idlService = IDL.Service({
         IDL.Nat,
         IDL.Text,
       ],
-      [IDL.Bool],
+      [SubmitProposalResult],
       [],
     ),
   'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+  'updateTaskStatus' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [IDL.Bool], []),
 });
 
 export const idlInitArgs = [];
@@ -183,15 +199,25 @@ export const idlFactory = ({ IDL }) => {
     'censusPlaceType' : IDL.Text,
     'censusStateCode' : CensusStateCode,
   });
+  const Task = IDL.Record({
+    'id' : IDL.Nat,
+    'completed' : IDL.Bool,
+    'description' : IDL.Text,
+  });
   const USGeographyDataChunk = IDL.Record({
     'states' : IDL.Vec(USState),
     'places' : IDL.Vec(USPlace),
     'counties' : IDL.Vec(USCounty),
   });
+  const SubmitProposalResult = IDL.Variant({
+    'error' : IDL.Record({ 'message' : IDL.Text }),
+    'success' : IDL.Record({ 'proposal' : Proposal }),
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
     'getAllProposals' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
@@ -203,6 +229,11 @@ export const idlFactory = ({ IDL }) => {
     'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
     'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
     'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
+    'getTasks' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -229,10 +260,15 @@ export const idlFactory = ({ IDL }) => {
           IDL.Nat,
           IDL.Text,
         ],
-        [IDL.Bool],
+        [SubmitProposalResult],
         [],
       ),
     'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'updateTaskStatus' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Bool],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

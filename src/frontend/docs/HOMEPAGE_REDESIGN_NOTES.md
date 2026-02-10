@@ -8,31 +8,28 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 ## Hero Section
 
 ### Hero Image
-- **Current Asset**: `/frontend/public/assets/generated/whisper-hero-community-real.dim_1600x900.png`
-- **Description**: Photorealistic image of diverse community members collaborating and sharing ideas
-- **Implementation**: Full-width background image with `object-cover` for responsive scaling
-- **Alt Text**: "Diverse community members collaborating and sharing ideas"
+- **Current Asset**: `/frontend/public/assets/generated/whisper-hero-provided.dim_1600x900.png`
+- **Description**: User-provided hero image for community collaboration theme
+- **Implementation**: Full-width background image with `cover` sizing and `center bottom` positioning
+- **Reference**: Static asset loaded directly from `/assets/generated/whisper-hero-provided.dim_1600x900.png`
 
 ### Hero Overlay
-- **Gradient Direction**: `bg-gradient-to-br` (top-left to bottom-right)
-- **Color Stops**: 
-  - `from-slate-900/100` (fully opaque dark slate)
-  - `via-slate-800/95` (95% opacity mid-tone slate)
-  - `to-teal-900/90` (90% opacity dark teal)
-- **Purpose**: Darker overlay (increased opacity by ~20% from previous version) ensures WCAG AA contrast for white hero text over the photorealistic background image
+- **Color**: Dark blue `oklch(0.20 0.08 230)`
+- **Opacity**: Exactly 30% (0.3)
+- **Purpose**: Provides contrast for white hero text while maintaining image visibility
 - **Readability**: Hero headline and description maintain >4.5:1 contrast ratio across all viewport sizes
 
 ### Hero Content
 - **Headline**: "Reclaiming Government of the People, by the People"
 - **Typography**: 
-  - Desktop: `text-6xl` (3.75rem)
-  - Mobile: `text-4xl` (2.25rem)
-  - Weight: `font-bold`
-  - Color: `text-white` with `text-hero-pop` utility for enhanced shadow
+  - Desktop: `text-7xl` (4.5rem)
+  - Mobile: `text-5xl` (3rem)
+  - Weight: `font-extrabold`
+  - Color: `text-white` with text shadow for enhanced readability
 - **Description**: Multi-line value proposition with `text-white/95` for subtle transparency
 - **CTAs**: 
   - Primary: "Explore Whisper" (teal accent button with white text)
-  - Secondary: "Talk to Secretary" (outlined white button with backdrop blur)
+  - Secondary: "Talk to Secretary" (outlined teal button with backdrop blur)
 
 ---
 
@@ -72,9 +69,9 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 - **Monospace**: JetBrains Mono (for hierarchy preview)
 
 ### Text Sizes
-- Hero headline: `text-4xl md:text-6xl`
-- Hero description: `text-lg md:text-xl`
-- Section headings: `text-2xl`
+- Hero headline: `text-5xl md:text-7xl`
+- Hero description: `text-xl md:text-2xl`
+- Section headings: `text-2xl` to `text-3xl`
 - Card titles: `text-lg` to `text-2xl` (context-dependent)
 - Body text: `text-sm` to `text-base`
 - Minimum body text: 16px (WCAG AA compliance)
@@ -93,7 +90,7 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 - `shadow-glow`: Subtle teal glow for accent elements
 - `shadow-glow-lg`: Larger glow for hover states
 - `shadow-md`: Standard elevation for cards
-- `text-hero-pop`: Enhanced text shadow for hero headline over images
+- Text shadows: Enhanced shadows for hero text over images
 
 ### Hover Effects
 - `hover-lift`: Subtle translateY(-2px) with transition
@@ -157,7 +154,7 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 
 ### Layout Adjustments
 - Hero: Single column on mobile, centered content on all sizes
-- Main grid: Stacked on mobile, 3-column on desktop (`lg:grid-cols-3`)
+- Main grid: Stacked on mobile, 3-column on desktop (`md:grid-cols-3`)
 - Navigation: Hidden on mobile, visible on tablet+ (`hidden md:flex`)
 - Cards: Full-width on mobile, grid on desktop
 
@@ -172,8 +169,8 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 - Shadows: `shadow-glow` for accent cards
 
 ### Buttons
-- Border radius: `rounded-xl` (12px) for modern feel
-- Padding: `px-8` for large buttons, `px-4` for standard
+- Border radius: `rounded-full` for hero CTAs, `rounded-xl` for standard buttons
+- Padding: `px-10 py-7` for large buttons, `px-4` for standard
 - Icons: `h-4 w-4` to `h-6 w-6` (context-dependent)
 - Disabled state: `disabled:opacity-50`
 
@@ -187,8 +184,8 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 ## Footer
 
 ### Structure
-- Dark navy background (`bg-card`)
-- Top border: `border-t border-border/50`
+- Dark navy background (`bg-[oklch(0.15_0.05_230)]`)
+- Top border: `border-t border-white/10`
 - Responsive flex layout: Column on mobile, row on desktop
 
 ### Content
@@ -220,3 +217,8 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 - **Secretary Widget**: Changed container background to black at 50% opacity (`bg-black/50`) with medium backdrop blur for consistent text legibility over light page backgrounds
 - **Secretary Widget Text**: Updated all text colors to white or white with transparency for improved contrast against the new black background
 - **Secretary Widget Buttons**: Updated quick action buttons and input field styling to work with the new semi-transparent black background
+
+### Draft Version 34
+- **Hero Image**: Replaced with user-provided static asset (`whisper-hero-provided.dim_1600x900.png`)
+- **Hero Overlay**: Changed to dark blue `oklch(0.20 0.08 230)` at exactly 30% opacity (0.3) for improved image visibility while maintaining text contrast
+- **Hero Implementation**: Confirmed static asset loading (no backend calls) with `center bottom` positioning

@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Apply a cohesive teal theme across the Whisper UI via reliable design tokens, and update the hero background to a new bottom-justified image.
+**Goal:** Use the user-provided direct hero image URL with the correct overlay and positioning, connect post-submission navigation into instance-dependent follow-ups, and document an end-to-end smoke test of the full flow.
 
 **Planned changes:**
-- Standardize global design tokens/CSS variables so Tailwind utilities like `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, and `bg-accent` consistently resolve to the intended teal values in light and dark mode (removing any conflicting/duplicate variable definitions).
-- Update styling (Tailwind classes and/or token usage) so teal accents apply consistently to the header brand area (icon + “Whisper”), non-semantic Lucide icons, and button variants (including secondary/outline) including hover/focus ring states, without changing behavior or adding components.
-- Replace the hero background with the provided image, store it as a static asset under `frontend/public/assets/generated/`, and set the hero background positioning to bottom-justified while preserving overlay and text readability.
+- Update the homepage hero background to use the exact provided direct image URL (not a local asset), with cover sizing, bottom-justified positioning, and a dark-blue overlay at 25% opacity plus a solid-color fallback if the image fails to load.
+- After successful instance proposal submission, add an explicit next-step action that navigates directly to the newly created proposal, ensure the proposals list refreshes without a full reload (react-query invalidation/refresh), and allow reaching existing instance-dependent follow-up UI from the proposal detail view.
+- Run a manual end-to-end smoke test across proposal creation → browse proposals → proposal detail → at least one instance-dependent follow-up action, and record steps/results (and any remaining issues) in a new markdown doc under frontend/docs/ (or an appropriate existing docs location).
 
-**User-visible outcome:** The app displays consistent teal accents across key UI elements (logo, icons, buttons) in both light and dark mode, and the hero section shows the new community-collaboration image anchored to the bottom with readable text.
+**User-visible outcome:** The homepage hero displays the provided background image with the correct overlay; after submitting a proposal, users can immediately open their new proposal and proceed into existing instance-dependent follow-up steps without manual refreshes, with a documented smoke test verifying the chain.

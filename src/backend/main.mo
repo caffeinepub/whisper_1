@@ -26,7 +26,7 @@ actor {
     #hierarchicalId : HierarchicalGeoId;
   };
   type HierarchicalGeoIdOrName = { #name : Text; #hierarchicalId : HierarchicalGeoId };
-  type USHierarchyLevel = { #country; #state; #county; #place };
+  public type USHierarchyLevel = { #country; #state; #county; #place };
   type Effect = { installation : Text; canister : Principal };
   type USCountry = { name : Text; countryGeoId : Text };
   type USState = {
@@ -77,7 +77,7 @@ actor {
   };
   type USGeographySummary = { numStates : Nat; numCounties : Nat };
   type Installation = { scope : Text; owner : Principal; parent : ?Principal; children : [Effect] };
-  type Proposal = {
+  public type Proposal = {
     proposer : Principal;
     description : Text;
     instanceName : Text;
@@ -94,6 +94,19 @@ actor {
     counties : Map.Map<GeoId, USCounty>;
     geoidMapping : Map.Map<GeoId, CensusId>;
     censusidMapping : Map.Map<CensusId, GeoId>;
+  };
+
+  type Task = {
+    id : Nat;
+    description : Text;
+    completed : Bool;
+  };
+
+  public type SubmitProposalResult = {
+    #success : { proposal : Proposal };
+    #error : {
+      message : Text;
+    };
   };
 
   func emptyUSGeographyData() : USGeography {
@@ -156,6 +169,8 @@ actor {
   }>();
 
   let proposals = Map.empty<Text, Proposal>();
+  var nextTaskId = 0;
+  let allTasks = Map.empty<Text, Map.Map<Nat, Task>>();
   stable var installations : [Installation] = [];
 
   func validStatusTransition(current : Text, next : Text, _proposal : Proposal) : Bool {
@@ -192,6 +207,9 @@ actor {
   };
 
   public query ({ caller }) func isParent(_childId : Principal, parentId : Principal) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check parent relationships");
+    };
     installations.any(
       func(inst) {
         switch (inst.parent) { case (?p) { p == parentId }; case (null) { false } };
@@ -209,11 +227,16 @@ actor {
     censusBoundaryId : Text,
     squareMeters : Nat,
     population2020 : Text,
-  ) : async Bool {
+  ) : async SubmitProposalResult {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can submit proposals");
     };
-    if (proposals.containsKey(instanceName)) { return false };
+    if (proposals.containsKey(instanceName)) {
+      return #error({
+        message = "Instance name already exists";
+      });
+    };
+
     switch (proposals.get(instanceName)) {
       case (null) {
         let newProposal = {
@@ -229,9 +252,13 @@ actor {
           population2020;
         };
         proposals.add(instanceName, newProposal);
-        true;
+        #success { proposal = newProposal };
       };
-      case (?_proposal) { false };
+      case (?_) {
+        #error({
+          message = "An unexpected error occurred, unable to create proposal for instance: " # instanceName;
+        });
+      };
     };
   };
 
@@ -254,14 +281,23 @@ actor {
   };
 
   public query ({ caller }) func isInstanceNameTaken(instanceName : Text) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check instance names");
+    };
     proposals.containsKey(instanceName);
   };
 
   public query ({ caller }) func getProposal(instanceName : Text) : async ?Proposal {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view proposals");
+    };
     proposals.get(instanceName);
   };
 
   public query ({ caller }) func getAllProposals() : async [(Text, Proposal)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view proposals");
+    };
     proposals.toArray();
   };
 
@@ -323,4 +359,90 @@ actor {
       usGeography.places.add(hierarchicalId, place);
     };
   };
+
+  // Task Management
+  public shared ({ caller }) func createTask(proposalId : Text, description : Text) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create tasks");
+    };
+
+    switch (proposals.get(proposalId)) {
+      case (null) { Runtime.trap("Proposal does not exist") };
+      case (?proposal) {
+        if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Only proposal creator can create a Task");
+        };
+      };
+    };
+
+    let task = {
+      id = nextTaskId;
+      description;
+      completed = false;
+    };
+
+    switch (allTasks.get(proposalId)) {
+      case (null) {
+        let newTaskMap = Map.empty<Nat, Task>();
+        newTaskMap.add(nextTaskId, task);
+        allTasks.add(proposalId, newTaskMap);
+      };
+      case (?existingTasks) {
+        existingTasks.add(nextTaskId, task);
+      };
+    };
+
+    nextTaskId += 1;
+    task.id;
+  };
+
+  public shared ({ caller }) func updateTaskStatus(proposalId : Text, taskId : Nat, completed : Bool) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update tasks");
+    };
+
+    switch (proposals.get(proposalId)) {
+      case (null) { Runtime.trap("Proposal does not exist") };
+      case (?proposal) {
+        if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Only proposal creator can update task");
+        };
+      };
+    };
+
+    switch (allTasks.get(proposalId)) {
+      case (null) { Runtime.trap("No tasks found for proposal") };
+      case (?tasks) {
+        switch (tasks.get(taskId)) {
+          case (null) { Runtime.trap("Task does not exist") };
+          case (?task) {
+            let updatedTask = { task with completed };
+            tasks.add(taskId, updatedTask);
+            true;
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getTasks(proposalId : Text) : async [(Nat, Task)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view tasks");
+    };
+
+    switch (proposals.get(proposalId)) {
+      case (null) { Runtime.trap("Proposal does not exist") };
+      case (?proposal) {
+        if (proposal.proposer != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Only proposal creator or admin can view tasks");
+        };
+      };
+    };
+
+    switch (allTasks.get(proposalId)) {
+      case (null) { Runtime.trap("No tasks found for proposal") };
+      case (?tasks) { tasks.toArray() };
+    };
+  };
 };
+

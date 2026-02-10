@@ -25,6 +25,13 @@ export interface Proposal {
   'censusBoundaryId' : string,
   'population2020' : string,
 }
+export type SubmitProposalResult = { 'error' : { 'message' : string } } |
+  { 'success' : { 'proposal' : Proposal } };
+export interface Task {
+  'id' : bigint,
+  'completed' : boolean,
+  'description' : string,
+}
 export interface USCounty {
   'censusLandAreaSqMeters' : string,
   'fipsCode' : string,
@@ -76,6 +83,7 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'createTask' : ActorMethod<[string, string], bigint>,
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
   'getAllStates' : ActorMethod<[], Array<USState>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -83,6 +91,7 @@ export interface _SERVICE {
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
+  'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'ingestUSGeographyData' : ActorMethod<
     [Array<USGeographyDataChunk>],
@@ -104,9 +113,10 @@ export interface _SERVICE {
       bigint,
       string,
     ],
-    boolean
+    SubmitProposalResult
   >,
   'updateProposalStatus' : ActorMethod<[string, string], boolean>,
+  'updateTaskStatus' : ActorMethod<[string, bigint, boolean], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

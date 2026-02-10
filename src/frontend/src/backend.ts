@@ -131,7 +131,22 @@ export interface USState {
     censusAcreage: bigint;
     termType: string;
 }
-export type HierarchicalGeoId = string;
+export interface Task {
+    id: bigint;
+    completed: boolean;
+    description: string;
+}
+export type SubmitProposalResult = {
+    __kind__: "error";
+    error: {
+        message: string;
+    };
+} | {
+    __kind__: "success";
+    success: {
+        proposal: Proposal;
+    };
+};
 export interface Proposal {
     status: string;
     geographyLevel: USHierarchyLevel;
@@ -147,6 +162,7 @@ export interface Proposal {
 export interface UserProfile {
     name: string;
 }
+export type HierarchicalGeoId = string;
 export enum USHierarchyLevel {
     country = "country",
     state = "state",
@@ -161,6 +177,7 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    createTask(proposalId: string, description: string): Promise<bigint>;
     getAllProposals(): Promise<Array<[string, Proposal]>>;
     getAllStates(): Promise<Array<USState>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -168,16 +185,18 @@ export interface backendInterface {
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
+    getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     ingestUSGeographyData(data: Array<USGeographyDataChunk>): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<boolean>;
+    submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
+    updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
 }
-import type { CensusStateCode as _CensusStateCode, HierarchicalGeoId as _HierarchicalGeoId, Proposal as _Proposal, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { CensusStateCode as _CensusStateCode, HierarchicalGeoId as _HierarchicalGeoId, Proposal as _Proposal, SubmitProposalResult as _SubmitProposalResult, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -205,6 +224,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async createTask(arg0: string, arg1: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createTask(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createTask(arg0, arg1);
             return result;
         }
     }
@@ -306,6 +339,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getTasks(arg0: string): Promise<Array<[bigint, Task]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTasks(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTasks(arg0);
+            return result;
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -390,18 +437,18 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async submitProposal(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: USHierarchyLevel, arg6: string, arg7: bigint, arg8: string): Promise<boolean> {
+    async submitProposal(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: USHierarchyLevel, arg6: string, arg7: bigint, arg8: string): Promise<SubmitProposalResult> {
         if (this.processError) {
             try {
                 const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n23(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-                return result;
+                return from_candid_SubmitProposalResult_n25(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n23(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-            return result;
+            return from_candid_SubmitProposalResult_n25(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateProposalStatus(arg0: string, arg1: string): Promise<boolean> {
@@ -418,9 +465,26 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateTaskStatus(arg0: string, arg1: bigint, arg2: boolean): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateTaskStatus(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateTaskStatus(arg0, arg1, arg2);
+            return result;
+        }
+    }
 }
 function from_candid_Proposal_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Proposal): Proposal {
     return from_candid_record_n6(_uploadFile, _downloadFile, value);
+}
+function from_candid_SubmitProposalResult_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubmitProposalResult): SubmitProposalResult {
+    return from_candid_variant_n26(_uploadFile, _downloadFile, value);
 }
 function from_candid_USHierarchyLevel_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USHierarchyLevel): USHierarchyLevel {
     return from_candid_variant_n8(_uploadFile, _downloadFile, value);
@@ -482,6 +546,15 @@ function from_candid_record_n14(_uploadFile: (file: ExternalBlob) => Promise<Uin
         censusStateCode: value.censusStateCode
     };
 }
+function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    proposal: _Proposal;
+}): {
+    proposal: Proposal;
+} {
+    return {
+        proposal: from_candid_Proposal_n5(_uploadFile, _downloadFile, value.proposal)
+    };
+}
 function from_candid_record_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: string;
     geographyLevel: _USHierarchyLevel;
@@ -532,6 +605,33 @@ function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Ui
     guest: null;
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}
+function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    error: {
+        message: string;
+    };
+} | {
+    success: {
+        proposal: _Proposal;
+    };
+}): {
+    __kind__: "error";
+    error: {
+        message: string;
+    };
+} | {
+    __kind__: "success";
+    success: {
+        proposal: Proposal;
+    };
+} {
+    return "error" in value ? {
+        __kind__: "error",
+        error: value.error
+    } : "success" in value ? {
+        __kind__: "success",
+        success: from_candid_record_n27(_uploadFile, _downloadFile, value.success)
+    } : value;
 }
 function from_candid_variant_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     country: null;

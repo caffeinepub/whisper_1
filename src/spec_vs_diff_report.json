@@ -1,51 +1,44 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T04:21:17.546Z",
-  "summary": "The diff clearly updates global CSS tokens and Tailwind color mappings toward a teal theme, and applies some teal-related classes in a UI component. However, the required new static hero image asset is not added (no new files), and the hero background change/bottom-justified positioning cannot be verified from the provided truncated App.tsx diff. There is also at least one instance of hard-coded color usage that goes against the token-driven intent.",
+  "generatedAt": "2026-02-10T05:29:34.502Z",
+  "summary": "REQ-1 appears implemented in App hero via a direct external image URL with preloading/fallback logic and an intended 25% dark-blue overlay + bottom-justified background positioning. REQ-2 is partially implemented: the create-instance flow now passes the submitted proposal name upward and ProposalsSection can auto-open a specified proposal, but the diff summary does not clearly evidence React Query invalidation/refresh wiring nor the follow-up UI entry point from the proposal detail view. REQ-3 adds a smoke-test markdown doc, but it is largely a template with \"Observed Result\" fields left unfilled, so it does not yet record actual results.",
   "missing_requirements": [
     {
-      "id": "REQ-9",
-      "requirement": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
-      "reason": "No new files were added in the diff, so the required static image file under `frontend/public/assets/generated/` is not present based on the provided change summary.",
+      "id": "REQ-2",
+      "requirement": "The proposals list reflects the newly submitted proposal without requiring a full page reload (react-query invalidation/refresh behavior is wired and verified).",
+      "reason": "The diff shows navigation wiring (proposalToOpen auto-open) but does not show the submit mutation invalidating/refetching the proposals query or otherwise guaranteeing the newly submitted proposal appears without reload.",
       "evidence": [
-        "File diff summary: Added: 0",
-        "ADDED FILES: none"
+        "frontend/src/components/proposals/ProposalsSection.tsx",
+        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx"
       ]
     },
     {
-      "id": "REQ-8",
-      "requirement": "Replace the hero/header background image with the user-provided image and adjust the hero background positioning to be bottom-justified while preserving existing overlay and text readability.",
-      "reason": "The hero implementation is presumably in `frontend/src/App.tsx`, but the diff for that file is truncated and the provided visible portion does not show the hero section/background styling or `background-position: bottom/center bottom`. Therefore the required change cannot be confirmed from available evidence.",
+      "id": "REQ-2",
+      "requirement": "From the newly created proposal detail view, the user can reach the instance-dependent follow-up UI that already exists (e.g., the issue project/tasks flow) for that proposal/instance identifier.",
+      "reason": "The diff summary does not include the Proposal Detail implementation; therefore there is no direct evidence in the provided modified file snippets that the proposal detail view exposes a follow-up entry point (e.g., \"Open Issue Project\").",
       "evidence": [
-        "frontend/src/App.tsx (truncated)"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Introduced a hard-coded OKLCH background color on the Secretary discoverability nudge card instead of relying purely on global tokens.",
-      "reason": "The BuildRequest emphasizes token-driven teal accents and avoiding hard-coded color values to achieve teal styling; the diff adds a literal color value (`bg-[oklch(...)]`) rather than a token utility for that background.",
-      "evidence": [
-        "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx: `className=\"bg-[oklch(0.20_0.05_230)] border-secondary/50 ...\"`"
+        "frontend/src/components/proposals/ProposalsSection.tsx"
       ]
     },
     {
-      "description": "Added/updated internal project tracking metadata in `project_state.json` (feature request entries AR-1..AR-6).",
-      "reason": "This file and its tracking entries are not part of the requested UI theming/image requirements; it’s additional bookkeeping not specified in the BuildRequest.",
+      "id": "REQ-3",
+      "requirement": "Record the end-to-end smoke test steps and the observed result for each step in a repo document, including performing at least one instance-dependent follow-up action and noting any failures/fixes or known issues.",
+      "reason": "The added smoke test document includes detailed steps and expected results, but the \"Observed Result\" sections are left as \"_To be filled during manual testing_\" (i.e., results were not recorded).",
       "evidence": [
-        "project_state.json"
+        "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md"
       ]
     }
   ],
+  "hallucinated_features": [],
   "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.css",
+    "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md",
     "frontend/src/App.tsx",
-    "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
-    "frontend/src/index.css",
-    "frontend/tailwind.config.js",
+    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+    "frontend/src/components/proposals/ProposalsSection.tsx",
     "project_state.json"
   ]
 }

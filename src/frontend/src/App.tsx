@@ -14,6 +14,7 @@ import { SecretaryDiscoverabilityNudge } from '@/components/secretary/SecretaryD
 import { IconBubble } from '@/components/common/IconBubble';
 import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
+import { usePreloadedImage } from '@/hooks/usePreloadedImage';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
   const [isSecretaryOpen, setIsSecretaryOpen] = useState(false);
   const [instanceNameInput, setInstanceNameInput] = useState('');
   const [showSecretaryNudge, setShowSecretaryNudge] = useLocalStorageState('whisper-secretary-nudge-dismissed', true);
+  const [proposalToOpen, setProposalToOpen] = useState<string | null>(null);
   
   const createInstanceRef = useRef<HTMLDivElement>(null);
   const proposalsRef = useRef<HTMLDivElement>(null);
@@ -37,6 +39,10 @@ function App() {
   const appIdentifier = encodeURIComponent(
     typeof window !== 'undefined' ? window.location.hostname : 'whisper-icp'
   );
+
+  // Preload hero image with graceful fallback
+  const heroImageSrc = 'https://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T042856Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=15d679d2bc5a687e8aa935235f8610a85ac00ee395a9c4736db993b144122a97';
+  const { isReady: heroImageReady, hasError: heroImageError } = usePreloadedImage(heroImageSrc);
 
   // Register navigation destinations
   useEffect(() => {
@@ -167,6 +173,22 @@ function App() {
     setIsCreateInstanceOpen(false);
   };
 
+  const handleProposalSubmitted = (instanceName: string) => {
+    // Close the create instance form
+    setIsCreateInstanceOpen(false);
+    
+    // Open the proposals section
+    setShowProposals(true);
+    
+    // Set the proposal to open
+    setProposalToOpen(instanceName);
+    
+    // Scroll to proposals section
+    setTimeout(() => {
+      proposalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[oklch(0.25_0.08_220)] via-[oklch(0.22_0.09_230)] to-[oklch(0.18_0.10_240)]">
       {/* Header - Dark with semi-transparent backdrop */}
@@ -202,23 +224,24 @@ function App() {
       <main className="flex-1">
         {/* Hero Section with Background Image */}
         <section className="relative py-20 md:py-32 overflow-hidden">
-          {/* Background Image - Bottom Justified */}
+          {/* Background Image - External URL with Bottom Justification */}
           <div 
             className="absolute inset-0 z-0"
             style={{
-              backgroundImage: 'url(/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg)',
+              backgroundImage: heroImageError ? 'none' : `url(${heroImageSrc})`,
+              backgroundColor: heroImageError ? 'oklch(0.20 0.08 230)' : 'transparent',
               backgroundSize: 'cover',
               backgroundPosition: 'center bottom',
               backgroundRepeat: 'no-repeat'
             }}
           />
           
-          {/* Dark Blue Overlay at 40% opacity */}
+          {/* Dark Blue Overlay at 25% opacity */}
           <div 
             className="absolute inset-0 z-[1]"
             style={{
               backgroundColor: 'oklch(0.20 0.08 230)',
-              opacity: 0.4
+              opacity: 0.25
             }}
           />
 
@@ -270,6 +293,7 @@ function App() {
                 <CreateInstancePlaceholderCard
                   onClose={handleCloseCreateInstance}
                   initialInstanceName={instanceNameInput}
+                  onProposalSubmitted={handleProposalSubmitted}
                 />
               ) : (
                 <div className="text-center">
@@ -291,7 +315,7 @@ function App() {
             {/* Proposals Section */}
             {showProposals && (
               <section ref={proposalsRef} id="proposals" className="scroll-mt-24">
-                <ProposalsSection />
+                <ProposalsSection proposalToOpen={proposalToOpen} onProposalOpened={() => setProposalToOpen(null)} />
               </section>
             )}
 
@@ -395,7 +419,7 @@ function App() {
                       <CardTitle className="text-2xl text-white">Submit a FOIA Request</CardTitle>
                     </div>
                     <CardDescription className="text-white/70">
-                      Request public information from government agencies. Track your request on-chain.
+                      Request public records and information from government agencies. Track your request on-chain.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -411,7 +435,7 @@ function App() {
                       <Label htmlFor="foia-request" className="text-white">Request Details</Label>
                       <Textarea
                         id="foia-request"
-                        placeholder="Describe the information you're requesting..."
+                        placeholder="Describe the information you are requesting..."
                         rows={6}
                         className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
                       />
@@ -436,7 +460,7 @@ function App() {
                       <CardTitle className="text-2xl text-white">Get Support</CardTitle>
                     </div>
                     <CardDescription className="text-white/70">
-                      Need help navigating Whisper? Ask a question or report an issue.
+                      Need help using Whisper? Have questions about the platform? We're here to help.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -464,44 +488,20 @@ function App() {
                 </Card>
               </section>
             )}
-
-            {/* CTA Section */}
-            <section className="py-12 text-center">
-              <Card className="bg-gradient-to-br from-[oklch(0.22_0.08_230)] to-[oklch(0.18_0.10_240)] border-secondary/50 shadow-glow">
-                <CardHeader>
-                  <CardTitle className="text-3xl text-white mb-3">Ready to Make a Difference?</CardTitle>
-                  <CardDescription className="text-white/80 text-lg">
-                    Join thousands of citizens rebuilding trust in local governance.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    size="lg"
-                    onClick={handleCreateClick}
-                    className="bg-accent hover:bg-accent-hover text-white font-bold rounded-full px-10 py-7 text-lg shadow-xl transition-all hover:scale-105"
-                  >
-                    Get Started Now
-                  </Button>
-                </CardContent>
-              </Card>
-            </section>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-[oklch(0.12_0.05_230)] border-t border-white/10 py-8">
+      <footer className="bg-[oklch(0.15_0.05_230)] border-t border-white/10 py-8 mt-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <IconBubble size="sm" variant="secondary">
-                <Shield className="h-4 w-4" />
-              </IconBubble>
-              <span className="text-white/80 text-sm">© {new Date().getFullYear()} Whisper</span>
+            <div className="flex items-center gap-2 text-white/60 text-sm">
+              <span>© {new Date().getFullYear()} Whisper</span>
             </div>
             <div className="flex items-center gap-2 text-white/60 text-sm">
               <span>Built with</span>
-              <Heart className="h-4 w-4 text-secondary fill-secondary" />
+              <Heart className="h-4 w-4 text-accent fill-accent" />
               <span>using</span>
               <a
                 href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appIdentifier}`}

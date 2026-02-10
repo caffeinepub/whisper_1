@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-and-standardize-the-global-design-tokens-so-tailwind-color-utilities-e-g-text-secondary-bg-secondary-border-secondary-ring-secondary-bg-accent-reliably-resolve-to-the-intended-teal-values-across-the-app-eliminating-any-conflicting-duplicate-css-variable-definitions-that-prevent-teal-accents-from-appearing-consistently",
-      "featureTitle": "Fix and standardize the global design tokens so Tailwind color utilities (e.g., `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`) reliably resolve to the intended teal values across the app, eliminating any conflicting/duplicate CSS variable definitions that prevent teal accents from appearing consistently.",
+      "featureId": "feature-update-the-homepage-hero-to-use-the-user-provided-direct-image-url-as-the-background-image-keep-the-background-bottom-justified-and-apply-a-dark-blue-overlay-at-exactly-25-opacity-over-the-entire-hero-area",
+      "featureTitle": "Update the homepage hero to use the user-provided direct image URL as the background image, keep the background bottom-justified, and apply a dark-blue overlay at exactly 25% opacity over the entire hero area.",
       "files": [
-        "frontend/index.css",
-        "frontend/src/index.css",
-        "frontend/tailwind.config.js"
+        "frontend/src/App.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -18,16 +16,17 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-frontend-styling-tailwind-classes-and-or-design-variables-only-so-teal-accents-are-applied-consistently-to-the-site-logo-wordmark-lucide-icons-where-not-semantic-buttons-including-outline-secondary-variants-and-other-interactive-elements-without-changing-component-behavior-or-introducing-new-ui-components",
-      "featureTitle": "Update frontend styling (Tailwind classes and/or design variables only) so teal accents are applied consistently to the site logo/wordmark, Lucide icons (where not semantic), buttons (including outline/secondary variants), and other interactive elements, without changing component behavior or introducing new UI components.",
+      "featureId": "feature-connect-the-completed-instance-proposal-submission-flow-to-the-next-instance-dependent-follow-up-steps-by-guiding-the-user-into-the-proposal-they-just-created-or-the-relevant-instance-record-without-requiring-manual-page-refreshes-or-manual-navigation",
+      "featureTitle": "Connect the completed instance proposal submission flow to the next instance-dependent follow-up steps by guiding the user into the proposal they just created (or the relevant instance record) without requiring manual page refreshes or manual navigation.",
       "files": [
         "frontend/src/App.tsx",
-        "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx"
+        "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+        "frontend/src/components/proposals/ProposalsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -38,15 +37,15 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-7"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-replace-the-hero-header-background-image-with-the-user-provided-image-url-and-adjust-the-hero-background-positioning-to-be-bottom-justified-e-g-background-position-bottom-center-bottom-while-preserving-existing-overlay-and-text-readability",
-      "featureTitle": "Replace the hero/header background image with the user-provided image URL and adjust the hero background positioning to be bottom-justified (e.g., `background-position: bottom` / `center bottom`) while preserving existing overlay and text readability.",
+      "featureId": "feature-run-a-quick-end-to-end-smoke-test-of-the-full-chain-proposal-creation-through-instance-dependent-follow-ups-and-record-the-steps-and-results-in-a-repo-document",
+      "featureTitle": "Run a quick end-to-end smoke test of the full chain (proposal creation through instance-dependent follow-ups) and record the steps and results in a repo document.",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/docs/SMOKE_TEST_INSTANCE_FOLLOWUPS.md"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -57,26 +56,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-8"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-the-new-hero-image-as-a-static-frontend-asset-under-frontend-public-assets-generated-and-reference-it-from-the-hero-section-implementation-do-not-serve-the-image-from-the-backend",
-      "featureTitle": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
-      "files": [
-        "frontend/src/App.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-9"
+        "REQ-3"
       ],
       "confidence": "high"
     }
