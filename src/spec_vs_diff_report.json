@@ -1,55 +1,49 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T01:18:08.338Z",
-  "summary": "Diff implements new global theme tokens and adds a warm/neutral `.hero-overlay` utility plus new CTA utility classes, but it also introduces unrelated Secretary navigation/deep-link logic changes and does not provide clear evidence of the new hero image asset/caching changes required by REQ-1.",
+  "generatedAt": "2026-02-10T04:21:17.546Z",
+  "summary": "The diff clearly updates global CSS tokens and Tailwind color mappings toward a teal theme, and applies some teal-related classes in a UI component. However, the required new static hero image asset is not added (no new files), and the hero background change/bottom-justified positioning cannot be verified from the provided truncated App.tsx diff. There is also at least one instance of hard-coded color usage that goes against the token-driven intent.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
-      "reason": "The diff shows no new/changed image asset file (no files added) and the `App.tsx` change is truncated, so there is insufficient evidence that the hero background references the new warm image filename/version for cache-busting and that object-cover/full-bleed behavior is preserved.",
+      "id": "REQ-9",
+      "requirement": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
+      "reason": "No new files were added in the diff, so the required static image file under `frontend/public/assets/generated/` is not present based on the provided change summary.",
       "evidence": [
-        "<file-diff>: Added: 0 (no new image asset present)",
-        "frontend/src/App.tsx (truncated)"
+        "File diff summary: Added: 0",
+        "ADDED FILES: none"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
-      "reason": "While new CTA utility classes are introduced in `index.css`, the `App.tsx` diff is truncated and does not provide direct evidence that the header \"Get Started\" button specifically uses these classes or otherwise has guaranteed contrast in both light/dark modes, including hover/active/focus-visible states.",
+      "id": "REQ-8",
+      "requirement": "Replace the hero/header background image with the user-provided image and adjust the hero background positioning to be bottom-justified while preserving existing overlay and text readability.",
+      "reason": "The hero implementation is presumably in `frontend/src/App.tsx`, but the diff for that file is truncated and the provided visible portion does not show the hero section/background styling or `background-position: bottom/center bottom`. Therefore the required change cannot be confirmed from available evidence.",
       "evidence": [
-        "frontend/src/index.css (truncated): `.cta-primary` utility introduced",
-        "frontend/src/App.tsx (truncated): header/button usage not fully visible"
+        "frontend/src/App.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Secretary navigation registry and deep-link handling logic added/modified in App component.",
-      "reason": "BuildRequest explicitly lists \"No changes to Secretary navigation/deep-linking logic\" as a non-goal, but `App.tsx` shows new imports and logic using `useSecretaryNavigationRegistry` and `parseDeepLink`, and registers navigation destinations and handles deep links on mount.",
+      "description": "Introduced a hard-coded OKLCH background color on the Secretary discoverability nudge card instead of relying purely on global tokens.",
+      "reason": "The BuildRequest emphasizes token-driven teal accents and avoiding hard-coded color values to achieve teal styling; the diff adds a literal color value (`bg-[oklch(...)]`) rather than a token utility for that background.",
       "evidence": [
-        "frontend/src/App.tsx (truncated): imports `useSecretaryNavigationRegistry`, `parseDeepLink`; registers destinations; handles deep links"
+        "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx: `className=\"bg-[oklch(0.20_0.05_230)] border-secondary/50 ...\"`"
       ]
     },
     {
-      "description": "Global theme/token overhaul (OKLCH token values for many CSS variables) beyond hero/overlay/button refinements.",
-      "reason": "The request is narrowly scoped to hero image/overlay and CTA contrast fixes; `index.css` modifies a large set of global CSS variables (background, foreground, card, popover, secondary, muted, border, etc.) for both light and dark mode, which is broader than the requested visual refinements.",
+      "description": "Added/updated internal project tracking metadata in `project_state.json` (feature request entries AR-1..AR-6).",
+      "reason": "This file and its tracking entries are not part of the requested UI theming/image requirements; it’s additional bookkeeping not specified in the BuildRequest.",
       "evidence": [
-        "frontend/src/index.css (truncated): extensive `:root` and `.dark` variable changes"
-      ]
-    },
-    {
-      "description": "New Tailwind theme extensions (glow shadows, animations/keyframes, additional color variants) not explicitly requested.",
-      "reason": "The BuildRequest does not ask for new animation/glow utilities; `tailwind.config.js` adds glow shadows and keyframes/animations (fade-in-up/fade-in) and extends palette variants.",
-      "evidence": [
-        "frontend/tailwind.config.js: `boxShadow.glow`, `boxShadow.glow-lg`, `keyframes`, `animation` additions"
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/index.css",
     "frontend/src/App.tsx",
+    "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
     "frontend/src/index.css",
     "frontend/tailwind.config.js",
     "project_state.json"

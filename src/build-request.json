@@ -1,77 +1,106 @@
 {
   "kind": "build_request",
-  "title": "Warm/neutral hero image + overlay tuning and teal CTA contrast fixes",
+  "title": "Apply cohesive teal theme across Whisper UI and update hero image (bottom-justified)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
+      "id": "REQ-6",
+      "text": "Fix and standardize the global design tokens so Tailwind color utilities (e.g., `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`) reliably resolve to the intended teal values across the app, eliminating any conflicting/duplicate CSS variable definitions that prevent teal accents from appearing consistently.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "changing the image itself to a warmer, cooler photo... the hero image needs to change to a real life collaboration of community shot."
+          "Update the existing Whisper app's frontend design to apply teal styling consistently across elements like the logo, icons, buttons, and other interactive components... Focus only on identifying and modifying the relevant CSS files, Tailwind classes (if used), or design variables to achieve a cohesive teal theme."
         ]
       },
       "acceptanceCriteria": [
-        "Hero background image in the hero section uses the new generated asset (not the prior version) and the image clearly depicts a real-life community collaboration scene.",
-        "Refreshing the page (including hard refresh) consistently shows the latest hero image (implement cache-busting via filename change and/or versioned asset reference).",
-        "Hero image remains full-bleed and properly cropped (object-cover) across mobile and desktop without distortion."
+        "Using `text-secondary`, `bg-secondary`, `border-secondary`, and `ring-secondary` produces teal styling (not default black/white/gray) in both light and dark mode.",
+        "No component requires hard-coded color values to achieve teal accents; tokens/variables drive the styling.",
+        "Global CSS variables are not defined in multiple conflicting places such that one overrides/breaks the other."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Refine the hero overlay gradient to shift tint toward warm or neutral tones and adjust overlay opacity so the new photo’s natural colors remain visible while maintaining strong text readability.",
+      "id": "REQ-7",
+      "text": "Update frontend styling (Tailwind classes and/or design variables only) so teal accents are applied consistently to the site logo/wordmark, Lucide icons (where not semantic), buttons (including outline/secondary variants), and other interactive elements, without changing component behavior or introducing new UI components.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "changing... the overlay color, shifting the tint more toward warm or neutral tones and adjusting the opacity affecting the new photos natural colors"
+          "Do NOT change any backend logic, canisters, functionality, or existing components beyond styling adjustments.",
+          "apply teal styling consistently across elements like the logo, icons, buttons, and other interactive components"
         ]
       },
       "acceptanceCriteria": [
-        "Overlay gradient tint is adjusted away from overly cool/dark rendering and reads as warm/neutral while still fitting the existing civic-teal design language.",
-        "Overlay opacity is tuned so the hero photo remains clearly recognizable (not overly obscured), while the hero headline and paragraph remain readable against the full image.",
-        "Hero headline and description remain visually legible at common breakpoints (mobile + desktop) without relying on the image being unusually dark."
+        "Header brand area (icon + “Whisper” wordmark) clearly renders with teal accents.",
+        "Non-semantic Lucide icons across key interactive areas inherit teal styling via `text-secondary` (or equivalent token usage) instead of rendering as default black/white.",
+        "Secondary/outline buttons consistently use teal for border/text/hover/focus ring states and do not fall back to non-teal colors."
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
+      "id": "REQ-8",
+      "text": "Replace the hero/header background image with the user-provided image URL and adjust the hero background positioning to be bottom-justified (e.g., `background-position: bottom` / `center bottom`) while preserving existing overlay and text readability.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "The \"Get Started\" button is white text on white background",
-          "Also refine the buttons with a colorful, possibly teal colored, palate fitting design"
+          "Also the header image feels too nature driven for a community collaborative site, can you use this image and make it bottom justified  https://storage.basecamp.com/bc4-production-activestorage/mwq1mdibz06qks90zdp0a029rnt5?response-content-disposition=inline%3B%20filename%3D%221-a%20second%20best%20hero%20image.jpg%22%3B%20filename%2A%3DUTF-8%27%271-a%2520second%2520best%2520hero%2520image.jpg&response-content-type=image%2Fjpeg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=PSFBSAZROHOHENDNACPGDOPOONMFHLBHNMKOEBGFNK%2F20260210%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260210T040750Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=9331c81be598a2835b6eed2bf305e692db07d1f0e90a396f0d181a2d19957cde"
         ]
       },
       "acceptanceCriteria": [
-        "The header \"Get Started\" button has sufficient contrast between text and background in both light and dark modes (no white-on-white).",
-        "Primary CTAs use the existing teal accent styling (accent + accent-hover) with clear hover, active, and focus-visible states.",
-        "Button styling remains consistent across the header and hero CTAs (radius, borders, shadows), without introducing ad-hoc raw colors (use existing Tailwind tokens/CSS variables)."
+        "The hero section uses the provided image as the background.",
+        "The background image is bottom-justified on common viewport sizes (mobile/desktop).",
+        "Hero text remains readable against the overlay (no contrast regressions)."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "can you use this image... https://storage.basecamp.com/..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new static hero image file exists under `frontend/public/assets/generated/`.",
+        "The hero section references the local static asset path (not the remote Basecamp URL at runtime)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files in frontend immutablePaths (e.g., frontend/src/main.tsx, frontend/src/hooks/useActor.ts, frontend/src/components/ui/*).",
-    "Keep all changes within the existing React + Tailwind styling system (use existing tokens like --accent / bg-accent rather than raw hex)."
+    "Do not change any backend logic, canisters, data models, or backend files.",
+    "Do not change functionality or component behavior; make styling-only adjustments (CSS variables, Tailwind classes, design tokens).",
+    "Do not edit read-only UI component sources under `frontend/src/components/ui`; style them via tokens, wrappers, or consuming component className overrides.",
+    "Keep all user-facing text in English."
   ],
   "nonGoals": [
-    "No backend/canister changes.",
-    "No new navigation/pages or feature additions beyond hero/overlay/button visual refinements.",
-    "No changes to Secretary navigation/deep-linking logic."
+    "No new features, routes, or interactive flows.",
+    "No refactors unrelated to styling/theme consistency.",
+    "No backend-served asset pipeline; images must remain static frontend assets."
   ],
   "imageRequirements": {
-    "required": [],
-    "edits": [
-      "Adjust white balance toward warm/neutral, improve natural warmth without oversaturation, and keep the scene clearly real-life community collaboration (whisper-hero-community-real-v2.dim_1600x900.png > whisper-hero-community-real-warm-v3.dim_1600x900.png)"
-    ]
+    "required": [
+      "Hero background photo (whisper-hero-community-collab.dim_2400x1350.jpg)"
+    ],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

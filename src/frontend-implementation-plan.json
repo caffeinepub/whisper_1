@@ -1,68 +1,93 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Warm hero photo swap, warmer overlay gradient, and teal CTA contrast consistency",
+  "title": "Cohesive teal tokens across Tailwind + updated bottom-justified hero image",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Swap hero background to the new warm/neutral real-life community collaboration photo and ensure cache-busted delivery.",
+      "id": "REQ-6",
+      "summary": "Standardize global color tokens so Tailwind utilities (text/bg/border/ring for secondary + accent) consistently resolve to teal in light/dark, removing conflicting variable sources.",
       "acceptanceCriteria": [
-        "Hero background image in the hero section uses the new generated asset (not the prior version) and the image clearly depicts a real-life community collaboration scene.",
-        "Refreshing the page (including hard refresh) consistently shows the latest hero image (implement cache-busting via filename change and/or versioned asset reference).",
-        "Hero image remains full-bleed and properly cropped (object-cover) across mobile and desktop without distortion."
+        "Using `text-secondary`, `bg-secondary`, `border-secondary`, and `ring-secondary` produces teal styling (not default black/white/gray) in both light and dark mode.",
+        "No component requires hard-coded color values to achieve teal accents; tokens/variables drive the styling.",
+        "Global CSS variables are not defined in multiple conflicting places such that one overrides/breaks the other."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png",
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Align Tailwind theme color token mappings to a single color space approach so utilities like `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, and `bg-accent` correctly interpret CSS variables (e.g., avoid mixing `hsl(var(--...))` with OKLCH-wrapped variables)."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Normalize `:root` and `.dark` design tokens so `--secondary`, `--accent`, etc. are defined in a Tailwind-compatible format (no nested `oklch(oklch(...))`), ensure ring/border/input tokens support teal focus states, and update any teal glow utilities to derive from tokens rather than hard-coded color values."
+        },
+        {
+          "path": "frontend/index.css",
+          "operation": "delete",
+          "description": "Remove the duplicate global CSS variable definition file to eliminate conflicting/duplicate token sources, keeping `frontend/src/index.css` as the single source of truth for global tokens."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Apply teal accents consistently via tokens/Tailwind classes for the logo/wordmark, non-semantic Lucide icons, and button variants (including outline/secondary) without changing behavior or adding components.",
+      "acceptanceCriteria": [
+        "Header brand area (icon + “Whisper” wordmark) clearly renders with teal accents.",
+        "Non-semantic Lucide icons across key interactive areas inherit teal styling via `text-secondary` (or equivalent token usage) instead of rendering as default black/white.",
+        "Secondary/outline buttons consistently use teal for border/text/hover/focus ring states and do not fall back to non-teal colors."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Replace hard-coded teal/brand color usages (e.g., arbitrary `oklch(...)`/`rgba(...)` shadows and accent colors) with token-driven Tailwind utilities (`text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`, etc.) to ensure consistent teal styling for the header brand, interactive icons, and outline/secondary buttons while preserving existing layout and behavior."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
+          "operation": "modify",
+          "description": "Ensure the primary Secretary CTA button and associated Lucide icon styling rely on teal tokens (`secondary`/`accent`) for consistent appearance across themes (styling-only; no behavior changes)."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Ensure key interactive icons/buttons (menu, send, selectable options) consistently inherit teal styling through `text-secondary`/`border-secondary`/`ring-secondary` token utilities and remove any remaining non-token teal color definitions (styling-only)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Update the hero background to the new image and set background positioning to bottom-justified while keeping overlay/text readability intact.",
+      "acceptanceCriteria": [
+        "The hero section uses the provided image as the background.",
+        "The background image is bottom-justified on common viewport sizes (mobile/desktop).",
+        "Hero text remains readable against the overlay (no contrast regressions)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Update the hero background image reference to the new local static asset and adjust the hero background positioning to bottom-justified (e.g., center bottom) while preserving the existing overlay and text styling for readability."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Add the new hero image as a static frontend asset under frontend/public/assets/generated and reference it locally (no remote URL at runtime).",
+      "acceptanceCriteria": [
+        "A new static hero image file exists under `frontend/public/assets/generated/`.",
+        "The hero section references the local static asset path (not the remote Basecamp URL at runtime)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg",
           "operation": "create",
-          "description": "Add the edited/generated hero image asset with warmer/neutral white balance as specified (cache-busting via new filename)."
+          "description": "Add the generated hero background photo asset at the exact path `frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg` for local runtime use."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update the hero <img> source to use the new asset at frontend/public/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png (ensuring cache-busted reference) while keeping full-bleed object-cover behavior and current cropping intent."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Warm/neutral-tune the hero overlay gradient and opacity to preserve photo visibility while keeping headline/body text readable.",
-      "acceptanceCriteria": [
-        "Overlay gradient tint is adjusted away from overly cool/dark rendering and reads as warm/neutral while still fitting the existing civic-teal design language.",
-        "Overlay opacity is tuned so the hero photo remains clearly recognizable (not overly obscured), while the hero headline and paragraph remain readable against the full image.",
-        "Hero headline and description remain visually legible at common breakpoints (mobile + desktop) without relying on the image being unusually dark."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Add a dedicated hero overlay utility/class (Tailwind @apply-based) that uses warm/neutral-leaning gradient stops with teal continuity and tuned opacity for readability; keep within existing Tailwind + CSS variable token system (no raw hex)."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Replace the current hero overlay gradient classes with the new warm/neutral overlay utility (or updated Tailwind classes) and adjust opacity levels so the updated photo remains recognizable while maintaining strong text readability."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Fix CTA styling so 'Get Started' never becomes white-on-white and standardize CTAs to a consistent teal-forward palette with proper hover/focus-visible states.",
-      "acceptanceCriteria": [
-        "The header \"Get Started\" button has sufficient contrast between text and background in both light and dark modes (no white-on-white).",
-        "Primary CTAs use the existing teal accent styling (accent + accent-hover) with clear hover, active, and focus-visible states.",
-        "Button styling remains consistent across the header and hero CTAs (radius, borders, shadows), without introducing ad-hoc raw colors (use existing Tailwind tokens/CSS variables)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Define reusable CTA utility classes for primary teal CTAs (bg-accent, text using accent foreground, hover:bg-accent-hover, and focus-visible ring using existing tokens) to ensure consistent contrast and interaction states across the app."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Apply the shared CTA utilities to the header 'Get Started' button and hero primary CTA (and any other primary-accent CTAs in this file) using the existing shadcn-ui Button component for consistent radius/border/shadow/focus behavior. Verify the component's usage instructions before implementing."
+          "description": "Ensure the hero section references the local static asset `frontend/public/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg` (and not the remote Basecamp URL) when setting the hero background image."
         }
       ]
     }

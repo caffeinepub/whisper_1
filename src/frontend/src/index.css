@@ -4,95 +4,89 @@
 
 @layer base {
   :root {
-    /* Navy/Teal Civic-Tech Theme - High Contrast */
-    --background: oklch(98% 0.01 240);
-    --foreground: oklch(20% 0.02 240);
-    
-    --card: oklch(96% 0.01 240);
-    --card-foreground: oklch(20% 0.02 240);
-    
-    --popover: oklch(98% 0.01 240);
-    --popover-foreground: oklch(20% 0.02 240);
-    
-    /* High-contrast teal accent - #0EA5E9 equivalent */
-    --primary: oklch(65% 0.15 210);
-    --primary-foreground: oklch(100% 0 0);
-    
-    --secondary: oklch(92% 0.01 240);
-    --secondary-foreground: oklch(20% 0.02 240);
-    
-    /* Lighter muted for better contrast in dark mode */
-    --muted: oklch(94% 0.01 240);
-    --muted-foreground: oklch(45% 0.02 240);
-    
-    /* Teal accent - #0EA5E9 */
-    --accent: oklch(65% 0.15 210);
-    --accent-foreground: oklch(100% 0 0);
-    --accent-hover: oklch(55% 0.15 210); /* Darker teal for hover - #0369a1 */
-    
-    --destructive: oklch(55% 0.22 25);
-    --destructive-foreground: oklch(100% 0 0);
-    
-    --border: oklch(88% 0.01 240);
-    --input: oklch(88% 0.01 240);
-    --ring: oklch(65% 0.15 210);
-    
-    /* Success/Warning colors */
-    --success: oklch(60% 0.15 150);
-    --success-foreground: oklch(100% 0 0);
-    --success-hover: oklch(50% 0.15 150);
-    
-    --warning: oklch(70% 0.15 80);
-    --warning-foreground: oklch(20% 0.02 240);
-    
-    /* Secretary bubble - slate-700 equivalent for better contrast */
-    --secretary-bubble: oklch(40% 0.02 240);
-    
+    /* Premium dark teal-to-navy theme with OKLCH */
+    --background: oklch(0.98 0.002 264);
+    --foreground: oklch(0.15 0.01 264);
+
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0.01 264);
+
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.01 264);
+
+    --primary: oklch(0.45 0.15 264);
+    --primary-foreground: oklch(0.98 0.002 264);
+
+    /* Teal secondary color (#0CA6A6 ≈ oklch(0.62 0.10 192)) */
+    --secondary: oklch(0.62 0.10 192);
+    --secondary-foreground: oklch(0.98 0.002 192);
+
+    --muted: oklch(0.95 0.01 264);
+    --muted-foreground: oklch(0.45 0.02 264);
+
+    /* Teal accent for CTAs and highlights */
+    --accent: oklch(0.60 0.15 180);
+    --accent-hover: oklch(0.55 0.16 180);
+    --accent-foreground: oklch(0.98 0.002 180);
+
+    /* Success green */
+    --success: oklch(0.65 0.18 150);
+    --success-hover: oklch(0.60 0.19 150);
+    --success-foreground: oklch(0.98 0.002 150);
+
+    /* Warning amber */
+    --warning: oklch(0.75 0.15 85);
+    --warning-foreground: oklch(0.15 0.01 85);
+
+    --destructive: oklch(0.58 0.22 25);
+    --destructive-foreground: oklch(0.98 0.002 25);
+
+    --border: oklch(0.90 0.01 264);
+    --input: oklch(0.90 0.01 264);
+    /* Teal ring for focus states */
+    --ring: oklch(0.62 0.10 192);
+
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark mode - Navy/Teal with improved contrast */
-    --background: oklch(18% 0.02 240);
-    --foreground: oklch(98% 0.01 240);
-    
-    --card: oklch(22% 0.02 240);
-    --card-foreground: oklch(98% 0.01 240);
-    
-    --popover: oklch(20% 0.02 240);
-    --popover-foreground: oklch(98% 0.01 240);
-    
-    --primary: oklch(65% 0.15 210);
-    --primary-foreground: oklch(100% 0 0);
-    
-    --secondary: oklch(28% 0.02 240);
-    --secondary-foreground: oklch(98% 0.01 240);
-    
-    /* Lighter muted surfaces for better contrast */
-    --muted: oklch(30% 0.02 240);
-    --muted-foreground: oklch(75% 0.01 240);
-    
-    /* Teal accent - consistent across themes */
-    --accent: oklch(65% 0.15 210);
-    --accent-foreground: oklch(100% 0 0);
-    --accent-hover: oklch(55% 0.15 210);
-    
-    --destructive: oklch(55% 0.22 25);
-    --destructive-foreground: oklch(100% 0 0);
-    
-    --border: oklch(28% 0.02 240);
-    --input: oklch(28% 0.02 240);
-    --ring: oklch(65% 0.15 210);
-    
-    --success: oklch(60% 0.15 150);
-    --success-foreground: oklch(100% 0 0);
-    --success-hover: oklch(50% 0.15 150);
-    
-    --warning: oklch(70% 0.15 80);
-    --warning-foreground: oklch(20% 0.02 240);
-    
-    /* Secretary bubble - slate-700 equivalent */
-    --secretary-bubble: oklch(40% 0.02 240);
+    --background: oklch(0.15 0.01 264);
+    --foreground: oklch(0.98 0.002 264);
+
+    --card: oklch(0.18 0.01 264);
+    --card-foreground: oklch(0.98 0.002 264);
+
+    --popover: oklch(0.15 0.01 264);
+    --popover-foreground: oklch(0.98 0.002 264);
+
+    --primary: oklch(0.70 0.15 264);
+    --primary-foreground: oklch(0.15 0.01 264);
+
+    /* Teal secondary color for dark mode */
+    --secondary: oklch(0.62 0.10 192);
+    --secondary-foreground: oklch(0.98 0.002 192);
+
+    --muted: oklch(0.25 0.02 264);
+    --muted-foreground: oklch(0.65 0.02 264);
+
+    --accent: oklch(0.60 0.15 180);
+    --accent-hover: oklch(0.55 0.16 180);
+    --accent-foreground: oklch(0.98 0.002 180);
+
+    --success: oklch(0.65 0.18 150);
+    --success-hover: oklch(0.60 0.19 150);
+    --success-foreground: oklch(0.98 0.002 150);
+
+    --warning: oklch(0.75 0.15 85);
+    --warning-foreground: oklch(0.15 0.01 85);
+
+    --destructive: oklch(0.60 0.22 25);
+    --destructive-foreground: oklch(0.98 0.002 25);
+
+    --border: oklch(0.25 0.02 264);
+    --input: oklch(0.25 0.02 264);
+    /* Teal ring for focus states in dark mode */
+    --ring: oklch(0.62 0.10 192);
   }
 }
 
@@ -102,95 +96,46 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
     font-size: 16px;
-    font-weight: 400;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
-  }
-  h1 {
-    font-weight: 700;
   }
 }
 
 @layer utilities {
-  /* Hero overlay with warm/neutral gradient and reduced opacity for better photo visibility */
-  .hero-overlay {
-    background: linear-gradient(
-      135deg,
-      oklch(25% 0.02 40) 0%,
-      oklch(28% 0.03 200) 40%,
-      oklch(32% 0.05 190) 100%
-    );
-    opacity: 0.65;
-  }
-  
-  /* Enhanced text shadow for hero headline with stronger pop */
-  .text-hero-pop {
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4);
-  }
-  
-  /* Reusable CTA utility classes for consistent teal-forward palette */
-  .cta-primary {
-    background-color: hsl(var(--accent));
-    color: hsl(var(--accent-foreground));
-    font-weight: 600;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease;
-    border: 1px solid hsl(var(--accent) / 0.2);
-  }
-  
-  .cta-primary:hover {
-    background-color: hsl(var(--accent-hover));
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  }
-  
-  .cta-primary:focus-visible {
-    outline: 2px solid hsl(var(--accent));
-    outline-offset: 2px;
-  }
-  
-  .cta-success {
-    background-color: hsl(var(--success));
-    color: hsl(var(--success-foreground));
-    font-weight: 500;
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease;
-    border: 1px solid hsl(var(--success) / 0.2);
-  }
-  
-  .cta-success:hover {
-    background-color: hsl(var(--success-hover));
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  }
-  
-  .cta-success:focus-visible {
-    outline: 2px solid hsl(var(--success));
-    outline-offset: 2px;
-  }
-  
-  /* Glow effects for buttons and cards */
-  .shadow-glow {
-    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
-  }
-  
-  .shadow-glow-lg {
-    box-shadow: 0 0 30px rgba(14, 165, 233, 0.4);
-  }
-  
-  /* Hover lift effect with refined transition */
+  /* Hover lift effect */
   .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  
   .hover-lift:hover {
-    transform: translateY(-2px) scale(1.01);
+    transform: translateY(-2px);
   }
-  
-  /* Animations */
+
+  /* Teal glow shadow for accent elements - using token */
+  .shadow-glow {
+    box-shadow: 0 0 20px color-mix(in oklch, var(--secondary) 20%, transparent);
+  }
+
+  /* Overlay root container - highest z-index for critical overlays */
+  #overlay-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  #overlay-root > * {
+    pointer-events: auto;
+  }
+
+  /* Utility class for highest z-index elements */
+  .z-overlay {
+    z-index: 9999;
+  }
+
+  /* Animation keyframes */
   @keyframes fade-in-up {
     from {
       opacity: 0;
@@ -201,7 +146,7 @@
       transform: translateY(0);
     }
   }
-  
+
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -210,26 +155,21 @@
       opacity: 1;
     }
   }
-  
+
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
+    animation: fade-in-up 0.6s ease-out;
   }
-  
+
   .animate-fade-in {
-    animation: fade-in 0.6s ease-out forwards;
+    animation: fade-in 0.6s ease-out;
   }
-  
+
   /* Respect reduced motion preferences */
   @media (prefers-reduced-motion: reduce) {
-    .animate-fade-in-up,
-    .animate-fade-in {
-      animation: none;
-      opacity: 1;
-      transform: none;
-    }
-    
-    .hover-lift:hover {
-      transform: none;
+    .motion-reduce\:opacity-100 {
+      opacity: 1 !important;
+      animation: none !important;
+      transform: none !important;
     }
   }
 }

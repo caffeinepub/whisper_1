@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Update the homepage hero to use a warmer/neutral real-life community collaboration photo, tune the hero overlay for readability without over-darkening, and fix teal CTA contrast (including the header “Get Started” button).
+**Goal:** Apply a cohesive teal theme across the Whisper UI via reliable design tokens, and update the hero background to a new bottom-justified image.
 
 **Planned changes:**
-- Replace the current hero background with the updated warm/neutral community collaboration image and ensure the latest asset always loads reliably on refresh (avoid stale/cached hero image via versioned/updated asset reference).
-- Adjust the hero overlay gradient tint toward warm/neutral and tune opacity so the photo remains visible while keeping headline and description readable across mobile and desktop.
-- Update CTA/button styles to ensure the header “Get Started” button never renders white-on-white and align primary CTAs to the existing teal accent tokens with consistent hover/active/focus-visible states.
+- Standardize global design tokens/CSS variables so Tailwind utilities like `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, and `bg-accent` consistently resolve to the intended teal values in light and dark mode (removing any conflicting/duplicate variable definitions).
+- Update styling (Tailwind classes and/or token usage) so teal accents apply consistently to the header brand area (icon + “Whisper”), non-semantic Lucide icons, and button variants (including secondary/outline) including hover/focus ring states, without changing behavior or adding components.
+- Replace the hero background with the provided image, store it as a static asset under `frontend/public/assets/generated/`, and set the hero background positioning to bottom-justified while preserving overlay and text readability.
 
-**User-visible outcome:** The homepage hero displays a warm/neutral real-life community collaboration photo consistently, the overlay looks more natural while preserving text readability, and the header/hero CTAs have clear teal-forward styling with proper contrast and interaction states.
+**User-visible outcome:** The app displays consistent teal accents across key UI elements (logo, icons, buttons) in both light and dark mode, and the hero section shows the new community-collaboration image anchored to the bottom with readable text.

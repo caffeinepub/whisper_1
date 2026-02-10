@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Clock, ArrowUpRight, Plus, FileText, MessageCircle, Shield, Users, TrendingUp } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { AlertCircle, CheckCircle2, ArrowUpRight, Plus, FileText, MessageCircle, Shield, Users, TrendingUp, Heart, AlertTriangle, Info, HelpCircle } from 'lucide-react';
 import { CreateInstancePlaceholderCard } from '@/components/create-instance/CreateInstancePlaceholderCard';
 import { ProposalsSection } from '@/components/proposals/ProposalsSection';
-import { SecretaryWidget } from '@/components/secretary/SecretaryWidget';
+import { SecretaryWidgetPortal } from '@/components/secretary/SecretaryWidgetPortal';
 import { SecretaryDiscoverabilityNudge } from '@/components/secretary/SecretaryDiscoverabilityNudge';
+import { IconBubble } from '@/components/common/IconBubble';
 import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
@@ -15,14 +19,18 @@ import { parseDeepLink } from '@/lib/secretaryNavigation';
 function App() {
   const [isCreateInstanceOpen, setIsCreateInstanceOpen] = useState(false);
   const [showProposals, setShowProposals] = useState(false);
+  const [showComplaint, setShowComplaint] = useState(false);
+  const [showFOIA, setShowFOIA] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [isSecretaryOpen, setIsSecretaryOpen] = useState(false);
-  const [hasSeenSecretaryNudge, setHasSeenSecretaryNudge] = useLocalStorageState(
-    'whisper-secretary-nudge-dismissed',
-    false
-  );
+  const [instanceNameInput, setInstanceNameInput] = useState('');
+  const [showSecretaryNudge, setShowSecretaryNudge] = useLocalStorageState('whisper-secretary-nudge-dismissed', true);
   
   const createInstanceRef = useRef<HTMLDivElement>(null);
   const proposalsRef = useRef<HTMLDivElement>(null);
+  const complaintRef = useRef<HTMLDivElement>(null);
+  const foiaRef = useRef<HTMLDivElement>(null);
+  const supportRef = useRef<HTMLDivElement>(null);
   
   const { register, navigate } = useSecretaryNavigationRegistry();
   
@@ -57,6 +65,42 @@ function App() {
     });
 
     register({
+      id: 'complaint',
+      label: 'File a Complaint',
+      keywords: ['complaint', 'police', 'misconduct', 'file'],
+      action: () => {
+        setShowComplaint(true);
+        setTimeout(() => {
+          complaintRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      },
+    });
+
+    register({
+      id: 'foia',
+      label: 'Submit a FOIA Request',
+      keywords: ['foia', 'information', 'request', 'freedom', 'public'],
+      action: () => {
+        setShowFOIA(true);
+        setTimeout(() => {
+          foiaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      },
+    });
+
+    register({
+      id: 'support',
+      label: 'Get Support',
+      keywords: ['support', 'help', 'question', 'assistance', 'how'],
+      action: () => {
+        setShowSupport(true);
+        setTimeout(() => {
+          supportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      },
+    });
+
+    register({
       id: 'secretary',
       label: 'Open Secretary',
       keywords: ['secretary', 'assistant', 'help', 'chat'],
@@ -82,46 +126,71 @@ function App() {
   }, [navigate]);
 
   const handleSecretaryOptionSelect = (optionNumber: number) => {
-    if (optionNumber === 5) {
-      navigate('proposals');
-    } else if (optionNumber === 1 || optionNumber === 4) {
+    // Map option numbers to navigation actions
+    if (optionNumber === 1) {
+      // Report an issue → Create Instance
       navigate('create-instance');
+    } else if (optionNumber === 2) {
+      // File a complaint → Complaint section
+      navigate('complaint');
+    } else if (optionNumber === 3) {
+      // Submit a FOIA request → FOIA section
+      navigate('foia');
+    } else if (optionNumber === 4) {
+      // Join a campaign → Create Instance
+      navigate('create-instance');
+    } else if (optionNumber === 5) {
+      // Browse local issues → Proposals
+      navigate('proposals');
+    } else if (optionNumber === 6) {
+      // Get support → Support section
+      navigate('support');
     }
   };
 
   const handleOpenSecretary = () => {
     setIsSecretaryOpen(true);
-    setHasSeenSecretaryNudge(true);
+  };
+
+  const handleCreateClick = () => {
+    setIsCreateInstanceOpen(true);
+    setTimeout(() => {
+      createInstanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
 
   const handleDismissNudge = () => {
-    setHasSeenSecretaryNudge(true);
+    setShowSecretaryNudge(false);
   };
 
-  const showSecretaryNudge = !hasSeenSecretaryNudge && !isSecretaryOpen;
+  const handleCloseCreateInstance = () => {
+    setIsCreateInstanceOpen(false);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header - Dark Navy */}
-      <header className="bg-card border-b border-border/50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[oklch(0.25_0.08_220)] via-[oklch(0.22_0.09_230)] to-[oklch(0.18_0.10_240)]">
+      {/* Header - Dark with semi-transparent backdrop */}
+      <header className="bg-[oklch(0.15_0.05_230)]/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield className="h-7 w-7 text-accent" />
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <IconBubble size="md" variant="secondary">
+                <Shield className="h-5 w-5" />
+              </IconBubble>
+              <h1 className="text-2xl font-bold tracking-tight text-secondary">
                 Whisper
               </h1>
             </div>
             <nav className="hidden md:flex items-center gap-6 text-sm">
-              <a href="#" className="text-foreground/80 hover:text-foreground transition-colors">Home</a>
-              <a href="#" className="text-foreground/80 hover:text-foreground transition-colors">Features</a>
-              <a href="#" className="text-foreground/80 hover:text-foreground transition-colors">Pricing</a>
-              <a href="#" className="text-foreground/80 hover:text-foreground transition-colors">About</a>
-              <a href="#" className="text-foreground/80 hover:text-foreground transition-colors">Contact</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">Home</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">Features</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">Pricing</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">About</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">Contact</a>
             </nav>
             <Button
-              onClick={() => setIsCreateInstanceOpen(true)}
-              className="cta-primary"
+              onClick={handleCreateClick}
+              className="bg-accent hover:bg-accent-hover text-white font-semibold rounded-full px-6 shadow-lg transition-all"
             >
               Get Started
             </Button>
@@ -131,34 +200,41 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1">
-        {/* Hero Section with Warm Community Image and Refined Overlay */}
+        {/* Hero Section with Background Image */}
         <section className="relative py-20 md:py-32 overflow-hidden">
-          {/* Hero Background Image with Warm Tones */}
-          <div className="absolute inset-0 z-0">
-            <img
-              src="/assets/generated/whisper-hero-community-real-warm-v3.dim_1600x900.png"
-              alt="Diverse community members collaborating and sharing ideas"
-              className="w-full h-full object-cover object-center brightness-105 contrast-105"
-              style={{ objectPosition: '50% 40%' }}
-            />
-            {/* Warm/neutral overlay gradient with reduced opacity for better photo visibility */}
-            <div className="hero-overlay"></div>
-          </div>
+          {/* Background Image - Bottom Justified */}
+          <div 
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: 'url(/assets/generated/whisper-hero-community-collab.dim_2400x1350.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center bottom',
+              backgroundRepeat: 'no-repeat'
+            }}
+          />
+          
+          {/* Dark Blue Overlay at 40% opacity */}
+          <div 
+            className="absolute inset-0 z-[1]"
+            style={{
+              backgroundColor: 'oklch(0.20 0.08 230)',
+              opacity: 0.4
+            }}
+          />
 
-          {/* Hero Content */}
           <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-6">
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white motion-safe:animate-fade-in-up motion-reduce:opacity-100" style={{ textShadow: '0 3px 10px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4)' }}>
+            <div className="max-w-4xl mx-auto text-center space-y-8">
+              <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white motion-safe:animate-fade-in-up motion-reduce:opacity-100" style={{ textShadow: '0 4px 12px rgba(0, 0, 0, 0.6)' }}>
                 Reclaiming Government of the People, by the People
               </h2>
-              <p className="text-lg md:text-xl text-white/95 max-w-2xl mx-auto motion-safe:animate-fade-in-up motion-safe:[animation-delay:150ms] motion-reduce:opacity-100 font-medium" style={{ textShadow: '0 2px 6px rgba(0, 0, 0, 0.4)' }}>
+              <p className="text-xl md:text-2xl text-white/95 max-w-3xl mx-auto motion-safe:animate-fade-in-up motion-safe:[animation-delay:150ms] motion-reduce:opacity-100 font-normal leading-relaxed" style={{ textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)' }}>
                 A decentralized civic platform designed for citizens to identify, collaborate on, and solve issues — where contribution earns recognition and reward, transparency is guaranteed, and trust in local governance is rebuilt from the ground up.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 motion-safe:animate-fade-in-up motion-safe:[animation-delay:300ms] motion-reduce:opacity-100">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 motion-safe:animate-fade-in-up motion-safe:[animation-delay:300ms] motion-reduce:opacity-100">
                 <Button
                   size="lg"
-                  onClick={() => setIsCreateInstanceOpen(true)}
-                  className="cta-primary text-base px-8 py-6"
+                  onClick={handleCreateClick}
+                  className="bg-accent hover:bg-accent-hover text-white font-bold rounded-full px-10 py-7 text-lg shadow-xl transition-all hover:scale-105"
                 >
                   Explore Whisper
                 </Button>
@@ -166,9 +242,9 @@ function App() {
                   size="lg"
                   variant="outline"
                   onClick={handleOpenSecretary}
-                  className="border-white/50 bg-white/15 text-white hover:bg-white/25 hover:text-white hover:border-white/70 rounded-xl px-8 py-6 text-base backdrop-blur-sm transition-all font-semibold shadow-lg"
+                  className="border-2 border-secondary bg-transparent text-secondary hover:bg-secondary/20 hover:text-secondary hover:border-secondary rounded-full px-10 py-7 text-lg backdrop-blur-sm transition-all font-bold shadow-xl hover:scale-105 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
                 >
-                  <MessageCircle className="h-5 w-5 mr-2" />
+                  <MessageCircle className="h-5 w-5 mr-2 text-secondary" />
                   Talk to Secretary
                 </Button>
               </div>
@@ -180,279 +256,258 @@ function App() {
           <div className="max-w-6xl mx-auto space-y-12">
             {/* Secretary Discoverability Nudge */}
             {showSecretaryNudge && (
-              <SecretaryDiscoverabilityNudge
-                onOpenSecretary={handleOpenSecretary}
-                onDismiss={handleDismissNudge}
-              />
+              <div className="motion-safe:animate-fade-in-up motion-reduce:opacity-100">
+                <SecretaryDiscoverabilityNudge
+                  onOpenSecretary={handleOpenSecretary}
+                  onDismiss={handleDismissNudge}
+                />
+              </div>
             )}
+
+            {/* Create Instance Section */}
+            <section ref={createInstanceRef} id="create-instance" className="scroll-mt-24">
+              {isCreateInstanceOpen ? (
+                <CreateInstancePlaceholderCard
+                  onClose={handleCloseCreateInstance}
+                  initialInstanceName={instanceNameInput}
+                />
+              ) : (
+                <div className="text-center">
+                  <h3 className="text-3xl font-bold text-white mb-3">Create Your Local Instance</h3>
+                  <p className="text-white/70 text-lg max-w-2xl mx-auto mb-6">
+                    Start a Whisper installation for your city, county, or state. Build transparency and accountability in your community.
+                  </p>
+                  <Button
+                    onClick={() => setIsCreateInstanceOpen(true)}
+                    className="bg-accent hover:bg-accent-hover text-white font-semibold rounded-full px-8 py-6 text-lg shadow-lg transition-all hover:scale-105"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create Instance
+                  </Button>
+                </div>
+              )}
+            </section>
 
             {/* Proposals Section */}
             {showProposals && (
-              <div ref={proposalsRef} id="proposals">
+              <section ref={proposalsRef} id="proposals" className="scroll-mt-24">
                 <ProposalsSection />
-                <Separator className="my-8" />
-              </div>
+              </section>
             )}
 
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Create Instance Card - Prominent */}
-              <div className="lg:col-span-2 space-y-6" ref={createInstanceRef} id="create-instance">
-                {isCreateInstanceOpen ? (
-                  <CreateInstancePlaceholderCard onClose={() => setIsCreateInstanceOpen(false)} />
-                ) : (
-                  <Card className="bg-card/80 backdrop-blur-sm border-accent/50 shadow-glow hover-lift">
-                    <CardHeader>
-                      <CardTitle className="text-2xl flex items-center gap-2 text-accent">
-                        <Plus className="h-6 w-6" />
-                        Create Instance
-                      </CardTitle>
-                      <CardDescription className="text-base">
-                        Start a new Whisper installation for your city, county, or state
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                          onClick={() => setIsCreateInstanceOpen(true)}
-                          className="cta-primary flex-1"
-                        >
-                          Create New Instance
-                        </Button>
-                      </div>
-                      
-                      {/* AI Secretary Bubble - Refined contrast */}
-                      <div className="mt-6 p-4 rounded-xl bg-slate-700/90 border border-slate-600/50 relative shadow-sm">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                            <MessageCircle className="h-5 w-5 text-accent" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-white mb-1">AI Secretary</p>
-                            <p className="text-base text-white/95 leading-relaxed">
-                              "How can I assist with civic issues today?"
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Core Principles */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Card className="border-border/50 hover-lift bg-card/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
-                    <CardHeader className="pb-3">
-                      <Shield className="h-8 w-8 text-accent mb-2" />
-                      <CardTitle className="text-lg">Equality</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Merit-based influence through verifiable contributions
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/50 hover-lift bg-card/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
-                    <CardHeader className="pb-3">
-                      <CheckCircle2 className="h-8 w-8 text-success mb-2" />
-                      <CardTitle className="text-lg">Transparency</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Immutable logs prevent manipulation
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/50 hover-lift bg-card/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
-                    <CardHeader className="pb-3">
-                      <Users className="h-8 w-8 text-warning mb-2" />
-                      <CardTitle className="text-lg">Accountability</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Same standard for all stakeholders
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Quick Actions Sidebar */}
-              <div className="space-y-4">
-                <Card className="border-accent/30 bg-card/50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button
-                      onClick={handleOpenSecretary}
-                      className="cta-primary w-full justify-start"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Report Issue
-                    </Button>
-                    <Button
-                      onClick={() => setIsCreateInstanceOpen(true)}
-                      className="cta-success w-full justify-start"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Join Campaign
-                    </Button>
-                    <Button
-                      onClick={() => setShowProposals(!showProposals)}
-                      variant={showProposals ? "default" : "outline"}
-                      className={showProposals 
-                        ? "cta-primary w-full justify-start"
-                        : "w-full rounded-xl justify-start border-accent/30 hover:bg-accent/10 shadow-sm hover:shadow-md transition-all font-medium"
-                      }
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      View Local Rankings
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Installation Hierarchy Preview */}
-                <Card className="border-border/50 bg-muted/30 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Hierarchy</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 font-mono text-xs">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-3 w-3 text-accent flex-shrink-0" />
-                        <span className="text-foreground">WhisperUSA</span>
-                      </div>
-                      <div className="ml-4 flex items-center gap-2">
-                        <ArrowUpRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-foreground">WhisperIowa</span>
-                      </div>
-                      <div className="ml-8 flex items-center gap-2">
-                        <ArrowUpRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-foreground">ScottCounty-IA</span>
-                      </div>
-                      <div className="ml-12 flex items-center gap-2">
-                        <ArrowUpRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-foreground">Davenport-IA</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <Separator className="my-12" />
-
-            {/* Architecture Overview */}
-            <section className="space-y-6">
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-semibold">Architecture Foundation</h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Built on the Internet Computer Protocol with comprehensive documentation and phased development plan
+            {/* Features Grid */}
+            <section id="features" className="py-12">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold text-white mb-3">Why Whisper?</h3>
+                <p className="text-white/70 text-lg max-w-2xl mx-auto">
+                  A platform built for citizens, by citizens. Transparent, decentralized, and designed to rebuild trust.
                 </p>
               </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="border-border/50 hover-lift bg-card/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="bg-[oklch(0.20_0.05_230)] border-white/10 hover:border-secondary/50 transition-all hover-lift">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-success" />
-                      Documentation
-                    </CardTitle>
-                    <CardDescription>
-                      Comprehensive architecture and planning
+                    <IconBubble size="lg" variant="secondary">
+                      <Shield className="h-6 w-6" />
+                    </IconBubble>
+                    <CardTitle className="text-white mt-4">Decentralized Trust</CardTitle>
+                    <CardDescription className="text-white/70">
+                      Built on the Internet Computer, ensuring transparency and immutability for all civic actions.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Architecture Overview</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Phased Development Plan</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Deployment Guide</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Style Guide</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                  </CardContent>
                 </Card>
 
-                <Card className="border-border/50 hover-lift bg-card/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+                <Card className="bg-[oklch(0.20_0.05_230)] border-white/10 hover:border-secondary/50 transition-all hover-lift">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-warning" />
-                      Current Phase
-                    </CardTitle>
-                    <CardDescription>
-                      Phase 4: Geography-driven instance creation
+                    <IconBubble size="lg" variant="secondary">
+                      <Users className="h-6 w-6" />
+                    </IconBubble>
+                    <CardTitle className="text-white mt-4">Community Driven</CardTitle>
+                    <CardDescription className="text-white/70">
+                      Collaborate with neighbors to identify and solve local issues together.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">U.S. Geography Data Model</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Cascading Selector UI</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Proposal System</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Secretary Navigation</span>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                        Complete
-                      </Badge>
-                    </div>
-                  </CardContent>
+                </Card>
+
+                <Card className="bg-[oklch(0.20_0.05_230)] border-white/10 hover:border-secondary/50 transition-all hover-lift">
+                  <CardHeader>
+                    <IconBubble size="lg" variant="secondary">
+                      <TrendingUp className="h-6 w-6" />
+                    </IconBubble>
+                    <CardTitle className="text-white mt-4">Earn Recognition</CardTitle>
+                    <CardDescription className="text-white/70">
+                      Contributions are tracked and rewarded, building reputation and trust in your community.
+                    </CardDescription>
+                  </CardHeader>
                 </Card>
               </div>
+            </section>
+
+            {/* Complaint Section */}
+            {showComplaint && (
+              <section ref={complaintRef} id="complaint" className="scroll-mt-24">
+                <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      <IconBubble size="lg" variant="warning">
+                        <AlertTriangle className="h-6 w-6" />
+                      </IconBubble>
+                      <CardTitle className="text-2xl text-white">File a Complaint</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/70">
+                      Report misconduct or issues with local authorities. Your complaint will be recorded on-chain for transparency.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="complaint-title" className="text-white">Complaint Title</Label>
+                      <Input
+                        id="complaint-title"
+                        placeholder="Brief description of the issue"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="complaint-details" className="text-white">Details</Label>
+                      <Textarea
+                        id="complaint-details"
+                        placeholder="Provide detailed information about the complaint..."
+                        rows={6}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <Button className="bg-warning hover:bg-warning/90 text-warning-foreground font-semibold">
+                      Submit Complaint
+                    </Button>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* FOIA Section */}
+            {showFOIA && (
+              <section ref={foiaRef} id="foia" className="scroll-mt-24">
+                <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      <IconBubble size="lg" variant="secondary">
+                        <FileText className="h-6 w-6" />
+                      </IconBubble>
+                      <CardTitle className="text-2xl text-white">Submit a FOIA Request</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/70">
+                      Request public information from government agencies. Track your request on-chain.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="foia-agency" className="text-white">Agency</Label>
+                      <Input
+                        id="foia-agency"
+                        placeholder="Which agency are you requesting from?"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="foia-request" className="text-white">Request Details</Label>
+                      <Textarea
+                        id="foia-request"
+                        placeholder="Describe the information you're requesting..."
+                        rows={6}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <Button className="bg-secondary hover:bg-secondary/90 text-white font-semibold">
+                      Submit FOIA Request
+                    </Button>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Support Section */}
+            {showSupport && (
+              <section ref={supportRef} id="support" className="scroll-mt-24">
+                <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      <IconBubble size="lg" variant="secondary">
+                        <HelpCircle className="h-6 w-6" />
+                      </IconBubble>
+                      <CardTitle className="text-2xl text-white">Get Support</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/70">
+                      Need help navigating Whisper? Ask a question or report an issue.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="support-subject" className="text-white">Subject</Label>
+                      <Input
+                        id="support-subject"
+                        placeholder="What do you need help with?"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="support-message" className="text-white">Message</Label>
+                      <Textarea
+                        id="support-message"
+                        placeholder="Describe your question or issue..."
+                        rows={6}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-secondary"
+                      />
+                    </div>
+                    <Button className="bg-secondary hover:bg-secondary/90 text-white font-semibold">
+                      Send Message
+                    </Button>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* CTA Section */}
+            <section className="py-12 text-center">
+              <Card className="bg-gradient-to-br from-[oklch(0.22_0.08_230)] to-[oklch(0.18_0.10_240)] border-secondary/50 shadow-glow">
+                <CardHeader>
+                  <CardTitle className="text-3xl text-white mb-3">Ready to Make a Difference?</CardTitle>
+                  <CardDescription className="text-white/80 text-lg">
+                    Join thousands of citizens rebuilding trust in local governance.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    size="lg"
+                    onClick={handleCreateClick}
+                    className="bg-accent hover:bg-accent-hover text-white font-bold rounded-full px-10 py-7 text-lg shadow-xl transition-all hover:scale-105"
+                  >
+                    Get Started Now
+                  </Button>
+                </CardContent>
+              </Card>
             </section>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border/50 py-8 mt-auto">
+      <footer className="bg-[oklch(0.12_0.05_230)] border-t border-white/10 py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="h-4 w-4 text-accent" />
-              <span>© {new Date().getFullYear()} Whisper. All rights reserved.</span>
+            <div className="flex items-center gap-2">
+              <IconBubble size="sm" variant="secondary">
+                <Shield className="h-4 w-4" />
+              </IconBubble>
+              <span className="text-white/80 text-sm">© {new Date().getFullYear()} Whisper</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-white/60 text-sm">
               <span>Built with</span>
-              <span className="text-destructive">♥</span>
+              <Heart className="h-4 w-4 text-secondary fill-secondary" />
               <span>using</span>
               <a
                 href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appIdentifier}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-accent hover:text-accent-hover transition-colors font-medium"
+                className="text-secondary hover:text-secondary/80 transition-colors font-medium"
               >
                 caffeine.ai
               </a>
@@ -461,8 +516,8 @@ function App() {
         </div>
       </footer>
 
-      {/* Secretary Widget */}
-      <SecretaryWidget
+      {/* Secretary Widget Portal */}
+      <SecretaryWidgetPortal
         open={isSecretaryOpen}
         onOpenChange={setIsSecretaryOpen}
         onOptionSelect={handleSecretaryOptionSelect}

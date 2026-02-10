@@ -56,38 +56,81 @@ export function createDeepLink(intent: NavigationIntent): string {
   return url.toString();
 }
 
-export function matchKeywordToOption(text: string): number | null {
+// Centralized Secretary option routing metadata
+export type SecretaryOption = {
+  number: number;
+  label: string;
+  description: string;
+  keywords: string[];
+  destinationId: string;
+  confirmationMessage: string;
+};
+
+export const SECRETARY_OPTIONS: SecretaryOption[] = [
+  {
+    number: 1,
+    label: 'Report an issue',
+    description: 'Potholes, streetlights, etc.',
+    keywords: ['report', 'issue', 'problem', 'pothole'],
+    destinationId: 'create-instance',
+    confirmationMessage: 'I\'ll help you report an issue. Taking you to the Create Instance form...',
+  },
+  {
+    number: 2,
+    label: 'File a complaint',
+    description: 'Police misconduct, etc.',
+    keywords: ['complaint', 'police', 'misconduct', 'file'],
+    destinationId: 'complaint',
+    confirmationMessage: 'I\'ll help you file a complaint. Taking you to the complaint form...',
+  },
+  {
+    number: 3,
+    label: 'Submit a FOIA request',
+    description: 'Request public information',
+    keywords: ['foia', 'information', 'request', 'freedom', 'public'],
+    destinationId: 'foia',
+    confirmationMessage: 'I\'ll help you submit a FOIA request. Taking you to the request form...',
+  },
+  {
+    number: 4,
+    label: 'Join a campaign',
+    description: 'Support local initiatives',
+    keywords: ['campaign', 'petition', 'join', 'support', 'initiative'],
+    destinationId: 'create-instance',
+    confirmationMessage: 'I\'ll help you join a campaign. Taking you to the Create Instance form...',
+  },
+  {
+    number: 5,
+    label: 'Browse local issues',
+    description: 'See what others are working on',
+    keywords: ['browse', 'issues', 'proposals', 'local', 'area', 'view'],
+    destinationId: 'proposals',
+    confirmationMessage: 'I\'ll show you local issues. Taking you to the proposals section...',
+  },
+  {
+    number: 6,
+    label: 'Get support',
+    description: 'Help with the platform',
+    keywords: ['support', 'help', 'question', 'assistance', 'how'],
+    destinationId: 'support',
+    confirmationMessage: 'I\'ll help you get support. Taking you to the support section...',
+  },
+];
+
+export function matchKeywordToOption(text: string): SecretaryOption | null {
   const lowerText = text.toLowerCase();
   
-  const keywordMap: Record<string, number> = {
-    'report': 1,
-    'issue': 1,
-    'problem': 1,
-    'pothole': 1,
-    'complaint': 2,
-    'police': 2,
-    'misconduct': 2,
-    'foia': 3,
-    'information': 3,
-    'request': 3,
-    'campaign': 4,
-    'petition': 4,
-    'join': 4,
-    'browse': 5,
-    'issues': 5,
-    'proposals': 5,
-    'local': 5,
-    'area': 5,
-    'support': 6,
-    'help': 6,
-    'question': 6,
-  };
-  
-  for (const [keyword, optionNumber] of Object.entries(keywordMap)) {
-    if (lowerText.includes(keyword)) {
-      return optionNumber;
+  for (const option of SECRETARY_OPTIONS) {
+    for (const keyword of option.keywords) {
+      if (lowerText.includes(keyword)) {
+        return option;
+      }
     }
   }
   
   return null;
+}
+
+export function getOptionByNumber(optionNumber: number): SecretaryOption | null {
+  return SECRETARY_OPTIONS.find(opt => opt.number === optionNumber) || null;
 }

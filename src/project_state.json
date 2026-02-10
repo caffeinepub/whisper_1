@@ -1,35 +1,45 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Landing page hero and CTA styling refinement: update hero image, adjust warmth/color balance with overlays, and improve button design/contrast.",
-  "architectural_notes": [],
-  "known_issues": [
-    "Hero image not updating as expected (possibly caching/deploy asset issue)."
+  "summary": "Whisper app frontend styling update: apply cohesive teal theme across UI elements and replace hero/header image with a community-collaboration-appropriate image, bottom-justified. No backend/canister/functionality changes.",
+  "architectural_notes": [
+    "Frontend-only changes: restrict updates to styling (CSS/Tailwind/design variables); do not modify backend logic, canisters, functionality, or non-style components."
   ],
-  "isFixRequest": true,
-  "imageRequirements": "## Edit Images\n- Adjust white balance toward warm/neutral, improve natural warmth without oversaturation, and keep the scene clearly real-life community collaboration (whisper-hero-community-real-v2.dim_1600x900.png > whisper-hero-community-real-warm-v3.dim_1600x900.png)",
+  "known_issues": [
+    "Build/deployment may intermittently fail due to a Caffeine configuration error (platform/internal mismatch), not caused by user changes."
+  ],
+  "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- Hero background photo (whisper-hero-community-collab.dim_2400x1350.jpg)",
   "existing_features": [
     {
-      "id": "feature-update-the-homepage-hero-background-image-to-a-real-life-community-collaboration-photograph-with-a-warmer-neutral-overall-color-balance-and-ensure-the-hero-section-renders-the-updated-asset-reliably-no-stale-cached-image-on-refresh",
-      "title": "Update the homepage hero background image to a real-life community collaboration photograph with a warmer/neutral overall color balance, and ensure the hero section renders the updated asset reliably (no stale/cached image on refresh).",
+      "id": "feature-fix-and-standardize-the-global-design-tokens-so-tailwind-color-utilities-e-g-text-secondary-bg-secondary-border-secondary-ring-secondary-bg-accent-reliably-resolve-to-the-intended-teal-values-across-the-app-eliminating-any-conflicting-duplicate-css-variable-definitions-that-prevent-teal-accents-from-appearing-consistently",
+      "title": "Fix and standardize the global design tokens so Tailwind color utilities (e.g., `text-secondary`, `bg-secondary`, `border-secondary`, `ring-secondary`, `bg-accent`) reliably resolve to the intended teal values across the app, eliminating any conflicting/duplicate CSS variable definitions that prevent teal accents from appearing consistently.",
       "reqIds": [
-        "REQ-1"
+        "REQ-6"
       ],
       "version": 1
     },
     {
-      "id": "feature-refine-the-hero-overlay-gradient-to-shift-tint-toward-warm-or-neutral-tones-and-adjust-overlay-opacity-so-the-new-photo-s-natural-colors-remain-visible-while-maintaining-strong-text-readability",
-      "title": "Refine the hero overlay gradient to shift tint toward warm or neutral tones and adjust overlay opacity so the new photo’s natural colors remain visible while maintaining strong text readability.",
+      "id": "feature-update-frontend-styling-tailwind-classes-and-or-design-variables-only-so-teal-accents-are-applied-consistently-to-the-site-logo-wordmark-lucide-icons-where-not-semantic-buttons-including-outline-secondary-variants-and-other-interactive-elements-without-changing-component-behavior-or-introducing-new-ui-components",
+      "title": "Update frontend styling (Tailwind classes and/or design variables only) so teal accents are applied consistently to the site logo/wordmark, Lucide icons (where not semantic), buttons (including outline/secondary variants), and other interactive elements, without changing component behavior or introducing new UI components.",
       "reqIds": [
-        "REQ-2"
+        "REQ-7"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-cta-button-styling-issues-so-the-header-get-started-button-is-never-white-text-on-a-white-or-near-white-background-and-refine-cta-buttons-to-a-colorful-teal-forward-palette-consistent-with-the-existing-accent-tokens-and-hover-focus-states",
-      "title": "Fix CTA/button styling issues so the header \"Get Started\" button is never white text on a white (or near-white) background, and refine CTA buttons to a colorful teal-forward palette consistent with the existing accent tokens and hover/focus states.",
+      "id": "feature-replace-the-hero-header-background-image-with-the-user-provided-image-url-and-adjust-the-hero-background-positioning-to-be-bottom-justified-e-g-background-position-bottom-center-bottom-while-preserving-existing-overlay-and-text-readability",
+      "title": "Replace the hero/header background image with the user-provided image URL and adjust the hero background positioning to be bottom-justified (e.g., `background-position: bottom` / `center bottom`) while preserving existing overlay and text readability.",
       "reqIds": [
-        "REQ-3"
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-the-new-hero-image-as-a-static-frontend-asset-under-frontend-public-assets-generated-and-reference-it-from-the-hero-section-implementation-do-not-serve-the-image-from-the-backend",
+      "title": "Add the new hero image as a static frontend asset under `frontend/public/assets/generated/` and reference it from the hero section implementation (do not serve the image from the backend).",
+      "reqIds": [
+        "REQ-9"
       ],
       "version": 1
     }
@@ -37,30 +47,19 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Adjust hero section warmth and color balance (swap to warmer/cooler photo, update overlay tint toward warm/neutral, and tune overlay opacity to preserve natural colors).",
+      "summary": "Apply teal styling consistently across logo, icons, buttons, and interactive components (CSS/Tailwind/variables only; no backend changes)",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Update hero image to a real-life community collaboration photograph.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Fix \"Get Started\" button styling so text/background have sufficient contrast (currently white on white).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Refine button styles with a colorful, teal-forward palette that fits the overall design.",
+      "summary": "Replace header/hero image with provided image and make it bottom-justified",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Warm/neutral hero image + overlay tuning and teal CTA contrast fixes",
+  "gameProjectType": "none",
+  "projectName": "Whisper",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

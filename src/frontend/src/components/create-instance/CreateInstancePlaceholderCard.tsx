@@ -1,452 +1,255 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
-import { X, CheckCircle2, AlertCircle, Loader2, MapPin, MessageCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { X, Loader2, AlertCircle, CheckCircle2, MapPin, Ruler } from 'lucide-react';
+import { SelectState } from './SelectState';
+import { SelectCounty } from './SelectCounty';
+import { SelectPlace } from './SelectPlace';
 import { useCheckInstanceName, useSubmitProposal } from '@/hooks/useCreateInstanceProposal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useGetAllStates, useGetCountiesForState, useGetPlacesForCounty } from '@/hooks/useUSGeography';
-import type { GeoId, USState, USCounty, USPlace } from '@/backend';
-import { USHierarchyLevel } from '@/backend';
+import { useGetAllStates } from '@/hooks/useUSGeography';
+import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
+import { IconBubble } from '@/components/common/IconBubble';
 
 interface CreateInstancePlaceholderCardProps {
-  onClose: () => void;
+  onClose?: () => void;
+  initialInstanceName?: string;
 }
 
-type Scope = 'place' | 'county' | 'state';
-
-export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceholderCardProps) {
-  const [scope, setScope] = useState<Scope>('place');
+export function CreateInstancePlaceholderCard({ onClose, initialInstanceName = '' }: CreateInstancePlaceholderCardProps) {
+  const [instanceName, setInstanceName] = useState(initialInstanceName);
+  const [description, setDescription] = useState('');
   const [selectedState, setSelectedState] = useState<USState | null>(null);
   const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
-  const [instanceName, setInstanceName] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const { data: states = [], isLoading: isLoadingStates, error: statesError } = useGetAllStates();
-  const { data: counties = [], isLoading: isLoadingCounties, error: countiesError } = useGetCountiesForState(
-    selectedState?.hierarchicalId || null
-  );
-  const { data: places = [], isLoading: isLoadingPlaces, error: placesError } = useGetPlacesForCounty(
-    selectedCounty?.hierarchicalId || null
-  );
-
-  // Auto-generate instance name and description
-  useEffect(() => {
-    let generatedName = '';
-
-    if (scope === 'place' && selectedPlace) {
-      const statePart = selectedState?.shortName || '';
-      generatedName = `Whisper${selectedPlace.shortName.replace(/\s+/g, '')}-${statePart}`;
-    } else if (scope === 'county' && selectedCounty) {
-      const statePart = selectedState?.shortName || '';
-      const countyName = selectedCounty.shortName.replace(/\s+/g, '');
-      generatedName = `Whisper${countyName}-${statePart}`;
-    } else if (scope === 'state' && selectedState) {
-      generatedName = `Whisper${selectedState.longName.replace(/\s+/g, '')}`;
-    }
-
-    setInstanceName(generatedName);
-  }, [scope, selectedState, selectedCounty, selectedPlace]);
+  const [geographyLevel, setGeographyLevel] = useState<'state' | 'county' | 'place'>('state');
 
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
-  const { 
-    data: isNameTaken, 
-    isLoading: isCheckingName,
-    error: nameCheckError 
+  const { data: states = [] } = useGetAllStates();
+
+  const {
+    data: isTaken,
+    isLoading: isCheckingAvailability,
+    error: availabilityError,
   } = useCheckInstanceName(debouncedInstanceName);
+
+  const isAvailable = isTaken === false;
 
   const submitProposal = useSubmitProposal();
 
   useEffect(() => {
-    if (submitProposal.isError) {
-      submitProposal.reset();
+    if (selectedState && !selectedCounty && !selectedPlace) {
+      setGeographyLevel('state');
+    } else if (selectedCounty && !selectedPlace) {
+      setGeographyLevel('county');
+    } else if (selectedPlace) {
+      setGeographyLevel('place');
     }
-  }, [selectedState, selectedCounty, selectedPlace, scope]);
+  }, [selectedState, selectedCounty, selectedPlace]);
 
   useEffect(() => {
-    setSelectedCounty(null);
-    setSelectedPlace(null);
-  }, [selectedState]);
+    if (selectedState && !instanceName) {
+      setInstanceName(`Whisper ${selectedState.shortName}`);
+    }
+  }, [selectedState, instanceName]);
 
   useEffect(() => {
-    setSelectedPlace(null);
+    if (selectedCounty) {
+      setInstanceName(`Whisper ${selectedCounty.shortName}`);
+    }
   }, [selectedCounty]);
 
-  // Generate preview description
-  const getPreviewDescription = () => {
-    if (scope === 'place' && selectedPlace && selectedCounty && selectedState) {
-      return `Create city/town instance: ${selectedPlace.fullName}, ${selectedCounty.shortName}, ${selectedState.shortName}`;
-    } else if (scope === 'county' && selectedCounty && selectedState) {
-      return `Create county instance: ${selectedCounty.fullName}, ${selectedState.shortName}`;
-    } else if (scope === 'state' && selectedState) {
-      return `Create state instance: ${selectedState.longName}`;
+  useEffect(() => {
+    if (selectedPlace) {
+      setInstanceName(`Whisper ${selectedPlace.shortName}`);
     }
-    return 'Select a location to see the description...';
-  };
+  }, [selectedPlace]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!instanceName.trim() || !selectedState) return;
 
-    if (!instanceName.trim() || isNameTaken) return;
+    let censusBoundaryId = '';
+    let squareMeters = BigInt(0);
+    let population2020 = 'N/A';
+    let state = '';
+    let county = '';
 
-    if (scope === 'place' && (!selectedState || !selectedCounty || !selectedPlace)) return;
-    if (scope === 'county' && (!selectedState || !selectedCounty)) return;
-    if (scope === 'state' && !selectedState) return;
+    state = selectedState.shortName;
 
-    try {
-      let description = '';
-      let geographyLevel: USHierarchyLevel;
-      let censusBoundaryId = '';
-      let squareMeters = BigInt(0);
-      let population2020 = '';
-      let stateName = '';
-      let countyName = '';
-
-      if (scope === 'place' && selectedPlace && selectedCounty && selectedState) {
-        description = `Create city/town instance: ${selectedPlace.fullName}, ${selectedCounty.shortName}, ${selectedState.shortName}`;
-        geographyLevel = USHierarchyLevel.place;
-        censusBoundaryId = selectedPlace.censusCensusFipsCode;
-        squareMeters = BigInt(selectedPlace.censusLandKm2) * BigInt(1000000);
-        population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'N/A';
-        stateName = selectedState.longName;
-        countyName = selectedCounty.fullName;
-      } else if (scope === 'county' && selectedCounty && selectedState) {
-        description = `Create county instance: ${selectedCounty.fullName}, ${selectedState.shortName}`;
-        geographyLevel = USHierarchyLevel.county;
-        censusBoundaryId = selectedCounty.fipsCode;
-        squareMeters = BigInt(selectedCounty.censusLandAreaSqMeters || '0');
-        population2020 = selectedCounty.population2010 || 'N/A';
-        stateName = selectedState.longName;
-        countyName = selectedCounty.fullName;
-      } else if (scope === 'state' && selectedState) {
-        description = `Create state instance: ${selectedState.longName}`;
-        geographyLevel = USHierarchyLevel.state;
-        censusBoundaryId = selectedState.fipsCode;
-        squareMeters = selectedState.censusLandAreaSqMeters;
-        population2020 = 'N/A';
-        stateName = selectedState.longName;
-        countyName = '';
-      } else {
-        return;
-      }
-
-      await submitProposal.mutateAsync({
-        description,
-        instanceName: instanceName.trim(),
-        status: 'Pending',
-        state: stateName,
-        county: countyName,
-        geographyLevel,
-        censusBoundaryId,
-        squareMeters,
-        population2020,
-      });
-
-      setShowSuccess(true);
-    } catch (error) {
-      console.error('Error submitting proposal:', error);
+    if (geographyLevel === 'state') {
+      censusBoundaryId = selectedState.hierarchicalId;
+      squareMeters = selectedState.censusLandAreaSqMeters;
+      population2020 = 'N/A';
+    } else if (geographyLevel === 'county' && selectedCounty) {
+      county = selectedCounty.shortName;
+      censusBoundaryId = selectedCounty.hierarchicalId;
+      squareMeters = BigInt(selectedCounty.censusLandAreaSqMeters);
+      population2020 = selectedCounty.population2010;
+    } else if (geographyLevel === 'place' && selectedPlace) {
+      if (!selectedCounty) return;
+      county = selectedCounty.shortName;
+      censusBoundaryId = selectedPlace.hierarchicalId;
+      // Convert censusLandKm2 (bigint) to square meters
+      squareMeters = selectedPlace.censusLandKm2 * BigInt(1_000_000);
+      population2020 = selectedPlace.population ? selectedPlace.population.toString() : 'N/A';
     }
+
+    const hierarchyLevel: USHierarchyLevel =
+      geographyLevel === 'state'
+        ? USHierarchyLevel.state
+        : geographyLevel === 'county'
+          ? USHierarchyLevel.county
+          : USHierarchyLevel.place;
+
+    await submitProposal.mutateAsync({
+      description: description.trim() || `Instance for ${instanceName}`,
+      instanceName: instanceName.trim(),
+      status: 'Pending',
+      state,
+      county,
+      geographyLevel: hierarchyLevel,
+      censusBoundaryId,
+      squareMeters,
+      population2020,
+    });
   };
 
-  const handleClose = () => {
-    setShowSuccess(false);
-    submitProposal.reset();
-    onClose();
-  };
-
-  if (showSuccess) {
-    return (
-      <Card className="border-success shadow-glow bg-card rounded-xl">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-success" />
-                Proposal Submitted Successfully
-              </CardTitle>
-              <CardDescription>
-                Your instance creation proposal has been recorded
-              </CardDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-8 w-8 rounded-lg"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert className="border-success/50 bg-success/5 rounded-xl">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <AlertDescription>
-              Your proposal for <span className="font-medium">{instanceName}</span> has been submitted.
-              The community will review your proposal in the next development phase.
-            </AlertDescription>
-          </Alert>
-          <div className="flex justify-end">
-            <Button onClick={handleClose} className="rounded-xl">
-              Close
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const canSubmit =
+    instanceName.trim() &&
+    selectedState &&
+    isAvailable === true &&
+    !isCheckingAvailability &&
+    !submitProposal.isPending;
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-accent/50 shadow-glow rounded-xl">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-xl flex items-center gap-2 text-accent">
-              <MapPin className="h-5 w-5" />
-              Create New Instance
-            </CardTitle>
-            <CardDescription>
-              Select a geographic location to propose a new Whisper installation
-            </CardDescription>
-          </div>
+    <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 shadow-[0_0_30px_rgba(20,184,166,0.3)] rounded-2xl">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div className="space-y-1.5">
+          <CardTitle className="text-3xl font-bold text-white">Create Instance</CardTitle>
+          <CardDescription className="text-lg text-white/80">
+            Configure your new Whisper installation
+          </CardDescription>
+        </div>
+        {onClose && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8 rounded-lg"
+            className="text-white/60 hover:text-white hover:bg-white/10 rounded-lg"
             aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <IconBubble size="sm" variant="muted" className="bg-white/10 text-white border-white/20">
+              <X className="h-4 w-4" />
+            </IconBubble>
           </Button>
-        </div>
+        )}
       </CardHeader>
       <CardContent>
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Form Column */}
-          <form onSubmit={handleSubmit} className="space-y-6 md:col-span-2">
-            <div className="space-y-2">
-              <Label htmlFor="scope">Geographic Scope</Label>
-              <Select value={scope} onValueChange={(value) => setScope(value as Scope)}>
-                <SelectTrigger id="scope" className="rounded-xl">
-                  <SelectValue placeholder="Select scope" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="place">City/Town</SelectItem>
-                  <SelectItem value="county">County</SelectItem>
-                  <SelectItem value="state">State</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
-                Choose the level of government for this Whisper instance
-              </p>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Form Section */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="state" className="text-white/90 font-semibold">
+                State *
+              </Label>
+              <SelectState value={selectedState} onChange={setSelectedState} />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              {statesError ? (
-                <Alert variant="destructive" className="rounded-xl">
-                  <AlertCircle className="h-4 w-4" />
+            <div className="space-y-3">
+              <Label htmlFor="county" className="text-white/90 font-semibold">
+                County (Optional)
+              </Label>
+              <SelectCounty
+                stateGeoId={selectedState?.hierarchicalId || null}
+                value={selectedCounty}
+                onChange={setSelectedCounty}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="place" className="text-white/90 font-semibold">
+                City/Town (Optional)
+              </Label>
+              <SelectPlace
+                countyGeoId={selectedCounty?.hierarchicalId || null}
+                value={selectedPlace}
+                onChange={setSelectedPlace}
+              />
+            </div>
+
+            <Separator className="bg-white/10" />
+
+            <div className="space-y-3">
+              <Label htmlFor="instance-name" className="text-white/90 font-semibold">
+                Instance Name *
+              </Label>
+              <Input
+                id="instance-name"
+                placeholder="e.g., Whisper California"
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                className="bg-[oklch(0.15_0.05_230)] border-white/20 text-white placeholder:text-white/40 rounded-xl h-12 text-base focus:border-accent focus:ring-accent"
+              />
+              {debouncedInstanceName && isCheckingAvailability && (
+                <div className="flex items-center gap-2 text-sm text-white/60">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Checking availability...</span>
+                </div>
+              )}
+              {debouncedInstanceName && !isCheckingAvailability && isAvailable === true && (
+                <div className="flex items-center gap-2 text-sm text-success">
+                  <IconBubble size="sm" variant="success">
+                    <CheckCircle2 className="h-3 w-3" />
+                  </IconBubble>
+                  <span>Name is available</span>
+                </div>
+              )}
+              {debouncedInstanceName && !isCheckingAvailability && isAvailable === false && (
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <IconBubble size="sm" variant="warning" className="bg-destructive/20 text-destructive border-destructive/30">
+                    <AlertCircle className="h-3 w-3" />
+                  </IconBubble>
+                  <span>Name is already taken</span>
+                </div>
+              )}
+              {availabilityError && (
+                <Alert variant="destructive" className="mt-2">
+                  <IconBubble size="sm" variant="warning" className="bg-destructive/20 text-destructive border-destructive/30">
+                    <AlertCircle className="h-3 w-3" />
+                  </IconBubble>
                   <AlertDescription>
-                    Failed to load states. Please refresh the page and try again.
+                    {availabilityError instanceof Error
+                      ? availabilityError.message
+                      : 'Failed to check name availability'}
                   </AlertDescription>
                 </Alert>
-              ) : (
-                <>
-                  <Select
-                    value={selectedState?.hierarchicalId || ''}
-                    onValueChange={(value) => {
-                      const state = states.find((s) => s.hierarchicalId === value);
-                      setSelectedState(state || null);
-                    }}
-                    disabled={isLoadingStates || states.length === 0}
-                  >
-                    <SelectTrigger id="state" className="rounded-xl">
-                      <SelectValue 
-                        placeholder={
-                          isLoadingStates 
-                            ? 'Loading states...' 
-                            : states.length === 0 
-                              ? 'No states available' 
-                              : 'Select a state'
-                        } 
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {states.map((state) => (
-                        <SelectItem key={state.hierarchicalId} value={state.hierarchicalId}>
-                          {state.longName} ({state.shortName})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!isLoadingStates && states.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No states found. Geography data may need to be loaded by an administrator.
-                    </p>
-                  )}
-                </>
               )}
             </div>
 
-            {(scope === 'place' || scope === 'county') && (
-              <div className="space-y-2">
-                <Label htmlFor="county">County</Label>
-                {countiesError ? (
-                  <Alert variant="destructive" className="rounded-xl">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Failed to load counties for the selected state.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    <Select
-                      value={selectedCounty?.hierarchicalId || ''}
-                      onValueChange={(value) => {
-                        const county = counties.find((c) => c.hierarchicalId === value);
-                        setSelectedCounty(county || null);
-                      }}
-                      disabled={!selectedState || isLoadingCounties}
-                    >
-                      <SelectTrigger id="county" className="rounded-xl">
-                        <SelectValue
-                          placeholder={
-                            !selectedState
-                              ? 'Select a state first'
-                              : isLoadingCounties
-                                ? 'Loading counties...'
-                                : counties.length === 0
-                                  ? 'No counties available'
-                                  : 'Select a county'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {counties.map((county) => (
-                          <SelectItem key={county.hierarchicalId} value={county.hierarchicalId}>
-                            {county.fullName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedState && !isLoadingCounties && counties.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No counties found for the selected state.
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {scope === 'place' && (
-              <div className="space-y-2">
-                <Label htmlFor="place">City/Town</Label>
-                {placesError ? (
-                  <Alert variant="destructive" className="rounded-xl">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Failed to load places for the selected county.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    <Select
-                      value={selectedPlace?.hierarchicalId || ''}
-                      onValueChange={(value) => {
-                        const place = places.find((p) => p.hierarchicalId === value);
-                        setSelectedPlace(place || null);
-                      }}
-                      disabled={!selectedCounty || isLoadingPlaces}
-                    >
-                      <SelectTrigger id="place" className="rounded-xl">
-                        <SelectValue
-                          placeholder={
-                            !selectedCounty
-                              ? 'Select a county first'
-                              : isLoadingPlaces
-                                ? 'Loading cities and towns...'
-                                : places.length === 0
-                                  ? 'No places available'
-                                  : 'Select a city or town'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {places.map((place) => (
-                          <SelectItem key={place.hierarchicalId} value={place.hierarchicalId}>
-                            {place.fullName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedCounty && !isLoadingPlaces && places.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No cities or towns found for the selected county.
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {instanceName && (
-              <div className="space-y-2">
-                <Label>Instance Name</Label>
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted border border-border">
-                  <span className="font-mono text-sm flex-1">{instanceName}</span>
-                  {isCheckingName && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                  {!isCheckingName && nameCheckError && (
-                    <AlertCircle className="h-4 w-4 text-warning" />
-                  )}
-                  {!isCheckingName && !nameCheckError && isNameTaken && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  {!isCheckingName && !nameCheckError && !isNameTaken && debouncedInstanceName && (
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                  )}
-                </div>
-                {isCheckingName && (
-                  <p className="text-sm text-muted-foreground">Checking availability...</p>
-                )}
-                {!isCheckingName && nameCheckError && (
-                  <p className="text-sm text-warning">
-                    Unable to verify name availability. Please try again.
-                  </p>
-                )}
-                {!isCheckingName && !nameCheckError && isNameTaken && (
-                  <p className="text-sm text-destructive">
-                    This instance name is already taken.
-                  </p>
-                )}
-                {!isCheckingName && !nameCheckError && !isNameTaken && debouncedInstanceName && (
-                  <p className="text-sm text-success">Name is available</p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Purpose / Description</Label>
-              <Textarea
-                value={getPreviewDescription()}
-                readOnly
-                className="rounded-xl bg-muted/50 resize-none"
-                rows={3}
+            <div className="space-y-3">
+              <Label htmlFor="description" className="text-white/90 font-semibold">
+                Description (Optional)
+              </Label>
+              <Input
+                id="description"
+                placeholder="Brief description of this instance..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-[oklch(0.15_0.05_230)] border-white/20 text-white placeholder:text-white/40 rounded-xl h-12 text-base focus:border-accent focus:ring-accent"
               />
-              <p className="text-sm text-muted-foreground">
-                Auto-generated from your selection
-              </p>
             </div>
 
             {submitProposal.isError && (
-              <Alert variant="destructive" className="rounded-xl">
-                <AlertCircle className="h-4 w-4" />
+              <Alert variant="destructive">
+                <IconBubble size="sm" variant="warning" className="bg-destructive/20 text-destructive border-destructive/30">
+                  <AlertCircle className="h-3 w-3" />
+                </IconBubble>
                 <AlertDescription>
                   {submitProposal.error instanceof Error
                     ? submitProposal.error.message
@@ -455,53 +258,138 @@ export function CreateInstancePlaceholderCard({ onClose }: CreateInstancePlaceho
               </Alert>
             )}
 
+            {submitProposal.isSuccess && (
+              <Alert className="border-success/50 bg-success/5">
+                <IconBubble size="sm" variant="success">
+                  <CheckCircle2 className="h-3 w-3" />
+                </IconBubble>
+                <AlertDescription>Proposal submitted successfully!</AlertDescription>
+              </Alert>
+            )}
+
             <Button
-              type="submit"
-              disabled={
-                !instanceName ||
-                isCheckingName ||
-                isNameTaken ||
-                submitProposal.isPending ||
-                (scope === 'place' && (!selectedState || !selectedCounty || !selectedPlace)) ||
-                (scope === 'county' && (!selectedState || !selectedCounty)) ||
-                (scope === 'state' && !selectedState)
-              }
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl font-medium"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="w-full bg-accent hover:bg-accent-hover text-white font-bold rounded-xl h-12 text-base shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitProposal.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Submitting...
                 </>
               ) : (
-                'Create Instance'
+                'Submit Proposal'
               )}
             </Button>
-          </form>
+          </div>
 
-          {/* Secretary Panel */}
-          <div className="hidden md:block">
-            <div className="sticky top-4 p-6 rounded-xl bg-accent/10 border border-accent/30 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <MessageCircle className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold text-accent">AI Secretary</p>
-                  <p className="text-xs text-muted-foreground">Here to help</p>
-                </div>
+          {/* Preview Section */}
+          <div className="space-y-4">
+            <div className="bg-[oklch(0.15_0.05_230)]/50 border border-white/10 rounded-xl p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <IconBubble size="md" variant="accent">
+                  <MapPin className="h-5 w-5" />
+                </IconBubble>
+                <h3 className="text-xl font-bold text-white">Preview</h3>
               </div>
+
               <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-card/50 border border-border/50">
-                  <p className="text-sm text-foreground">
-                    "How can I assist with civic issues today?"
+                <div>
+                  <p className="text-sm text-white/60 mb-1">Instance Name</p>
+                  <p className="text-lg font-semibold text-white">
+                    {instanceName || <span className="text-white/40">Not set</span>}
                   </p>
                 </div>
-                <div className="p-3 rounded-lg bg-card/50 border border-border/50">
-                  <p className="text-sm text-muted-foreground">
-                    I can help you understand the instance creation process and answer questions about Whisper.
-                  </p>
+
+                <Separator className="bg-white/10" />
+
+                <div>
+                  <p className="text-sm text-white/60 mb-1">Geography Level</p>
+                  <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30">
+                    {geographyLevel.charAt(0).toUpperCase() + geographyLevel.slice(1)}
+                  </Badge>
                 </div>
+
+                {selectedState && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div>
+                      <p className="text-sm text-white/60 mb-1">State</p>
+                      <p className="text-base font-medium text-white">{selectedState.longName}</p>
+                    </div>
+                  </>
+                )}
+
+                {selectedCounty && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div>
+                      <p className="text-sm text-white/60 mb-1">County</p>
+                      <p className="text-base font-medium text-white">{selectedCounty.fullName}</p>
+                    </div>
+                  </>
+                )}
+
+                {selectedPlace && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div>
+                      <p className="text-sm text-white/60 mb-1">City/Town</p>
+                      <p className="text-base font-medium text-white">{selectedPlace.fullName}</p>
+                    </div>
+                  </>
+                )}
+
+                {geographyLevel === 'state' && selectedState && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IconBubble size="sm" variant="success">
+                          <Ruler className="h-3 w-3" />
+                        </IconBubble>
+                        <p className="text-sm text-white/60">Land Area</p>
+                      </div>
+                      <p className="text-base font-medium text-white">
+                        {(Number(selectedState.censusLandAreaSqMeters) / 1_000_000).toFixed(2)} km²
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {geographyLevel === 'county' && selectedCounty && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IconBubble size="sm" variant="success">
+                          <Ruler className="h-3 w-3" />
+                        </IconBubble>
+                        <p className="text-sm text-white/60">Land Area</p>
+                      </div>
+                      <p className="text-base font-medium text-white">
+                        {(Number(selectedCounty.censusLandAreaSqMeters) / 1_000_000).toFixed(2)} km²
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {geographyLevel === 'place' && selectedPlace && (
+                  <>
+                    <Separator className="bg-white/10" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IconBubble size="sm" variant="success">
+                          <Ruler className="h-3 w-3" />
+                        </IconBubble>
+                        <p className="text-sm text-white/60">Land Area</p>
+                      </div>
+                      <p className="text-base font-medium text-white">
+                        {Number(selectedPlace.censusLandKm2).toFixed(2)} km²
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
