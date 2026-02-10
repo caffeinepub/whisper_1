@@ -1,22 +1,55 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Deployment docs: clean rebuild/redeploy procedure + draft deployment troubleshooting",
+  "title": "Remove editor-related frontend dependencies and lock permanent homepage hero strings",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Expand deployment documentation with a clear clean rebuild + redeploy procedure and troubleshooting notes for intermittent Caffeine draft deployment failures and the known draft preview disallowed-origin console error.",
+      "summary": "Remove any remaining editor-related frontend dependencies and code references so the frontend builds and runs without editor packages/imports/paths.",
       "acceptanceCriteria": [
-        "`frontend/docs/DEPLOYMENT.md` contains a clearly labeled section for performing a clean rebuild and redeploy, with concrete steps a developer can follow.",
-        "`frontend/docs/DEPLOYMENT.md` includes a troubleshooting section that mentions intermittent platform-level draft deployment failures and recommends retrying a clean rebuild/redeploy when they occur.",
-        "The troubleshooting section mentions the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue, without attributing it to application code.",
-        "All new/updated documentation text is written in English."
+        "A clean frontend build completes successfully after removing editor-related dependencies/references.",
+        "No remaining editor-related imports/usages exist in the frontend source (e.g., modules/components/utilities tied to an in-app editor).",
+        "No editor-related runtime errors occur when loading the app."
       ],
       "file_operations": [
         {
-          "path": "frontend/docs/DEPLOYMENT.md",
+          "path": "frontend/package.json",
           "operation": "modify",
-          "description": "Rewrite/extend the deployment guide to (1) add a clearly labeled “Clean rebuild and redeploy” section with concrete steps to clear local build artifacts/caches (e.g., dependency install artifacts, build outputs, tool caches as applicable) and then rebuild + redeploy using the project’s existing tooling/scripts; and (2) add a “Troubleshooting” section that explicitly covers intermittent Caffeine draft deployment failures with retry guidance and explicitly documents the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue (not application code). Ensure all documentation text is in English and avoid introducing new tools or workflows beyond what the repo already uses."
+          "description": "Remove any editor-related dependencies (and related scripts/config entries if present) so a clean install/build no longer pulls editor packages; ensure build scripts still succeed after the removal."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Audit and remove any remaining editor-related imports, lazy-loaded pages, routes, or runtime code paths (if present) while keeping existing non-editor routing behavior unchanged."
+        },
+        {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Remove any remaining editor-related provider/wrapper initialization or imports (if present) so app bootstrap has no editor runtime paths."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Permanently update the homepage hero headline and subtext strings in frontend/src/App.tsx with the required 'PERMANENT HERO TEXT' comment, without changing any layout/styling/buttons/functionality.",
+      "acceptanceCriteria": [
+        "In frontend/src/App.tsx, the homepage hero headline text is exactly: \"Of the People, By the People — Realized\"",
+        "In frontend/src/App.tsx, the homepage hero subtext is exactly: \"Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up.\"",
+        "The following two comment lines exist immediately above the hero text strings in code and match exactly:\n// PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS\n// This is the official mission statement and must remain exactly as written",
+        "No other homepage/UI text, layout, styling classes, colors, buttons, Secretary widget, routing, or functionality is changed as part of this update.",
+        "Provide a brief before/after note documenting the prior hero headline/subtext and the new headline/subtext.",
+        "Provide a demo preview URL snippet (as available in the deployment output) that shows the updated hero section with the new exact text."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Under the home route render, change ONLY the displayed hero headline and subtext strings to the exact provided new strings; add the two required permanent comment lines immediately above the strings; do not alter any existing classes/layout/colors/buttons/functionality."
+        },
+        {
+          "path": "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
+          "operation": "modify",
+          "description": "Add a brief before/after note documenting the prior hero headline/subtext and the new required strings, and include a small section to capture the deployment demo preview URL snippet once available."
         }
       ]
     }

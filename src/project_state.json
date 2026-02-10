@@ -1,26 +1,45 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Update the Whisper app frontend by removing remaining editor-related dependencies and permanently updating the homepage/national hub hero headline and subtext to the provided exact mission statement text without changing any other UI, styling, or functionality.",
   "architectural_notes": [
-    "Caffeine draft preview may inject internal draft-script.js (origin whitelist) which can prevent React app from mounting if editor-related dependencies are loaded."
+    "Hero headline and subtext must be hard-coded and treated as permanent official mission statement; include an explicit 'PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS' comment above the strings."
   ],
-  "known_issues": [
-    "Caffeine draft preview error: draft-editor:error disallowed origin (https://just-olive-eim-draft.caffeine.xyz) causing only static hero HTML to render.",
-    "Intermittent Caffeine platform-level draft deployment failures ('Deployment error') may require clean rebuild/redeploy or retry."
-  ],
-  "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Update the deployment documentation to include an explicit “clean rebuild and redeploy” procedure that clears local build artifacts/caches and then rebuilds + redeploys the project, including a short troubleshooting section for intermittent Caffeine draft deployment failures (e.g., retry guidance) and the known draft preview issue showing `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`. All user-facing text in the docs must be in English.",
+      "id": "feature-remove-any-remaining-editor-related-dependencies-and-references-from-the-frontend-codebase-then-ensure-the-frontend-rebuild-succeeds-without-editor-related-packages-imports-or-runtime-paths",
+      "title": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
       "reqIds": [
         "REQ-1"
       ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-existing-whisper-app-homepage-national-hub-hero-section-hero-headline-and-subtext-by-changing-only-the-displayed-strings-keeping-the-exact-existing-design-layout-colors-buttons-functionality-unchanged-in-the-component-that-renders-the-current-homepage-hero-text-currently-in-frontend-src-app-tsx-under-the-home-route-render-replace-the-headline-and-subtext-with-the-exact-new-strings-and-add-the-required-permanent-comment-immediately-above-the-strings",
+      "title": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Remove any remaining editor-related dependencies from the frontend and rebuild",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update Whisper homepage/national hub hero headline and subtext to the provided exact text and make it permanent with a DO NOT CHANGE comment (no other UI/behavior changes)",
+      "reqIds": [],
       "status": "pending"
     }
   ],
+  "gameProjectType": "none",
   "projectName": "Whisper",
   "clarification_mode": "instant",
   "clarification_rounds": 0

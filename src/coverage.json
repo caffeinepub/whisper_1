@@ -1,23 +1,40 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:29:21.336Z",
+  "generatedAt": "2026-02-10T22:06:55.872Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 0,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the deployment documentation to include an explicit “clean rebuild and redeploy” procedure that clears local build artifacts/caches and then rebuilds + redeploys the project, including a short troubleshooting section for intermittent Caffeine draft deployment failures (e.g., retry guidance) and the known draft preview issue showing `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`. All user-facing text in the docs must be in English.",
-        "status": "missing",
+        "summary": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/docs/DEPLOYMENT.md"
+          "frontend/package.json",
+          "frontend/src/App.tsx",
+          "frontend/src/main.tsx"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+        ],
+        "matchedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
+        ]
       }
     ]
   },
@@ -26,6 +43,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
+    "frontend/src/App.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

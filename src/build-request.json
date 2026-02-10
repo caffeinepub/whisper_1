@@ -1,48 +1,64 @@
 {
   "kind": "build_request",
-  "title": "Document clean rebuild + redeploy procedure and troubleshooting for draft deployment errors",
+  "title": "Remove remaining editor-related frontend dependencies and permanently update homepage hero headline/subtext",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the deployment documentation to include an explicit “clean rebuild and redeploy” procedure that clears local build artifacts/caches and then rebuilds + redeploys the project, including a short troubleshooting section for intermittent Caffeine draft deployment failures (e.g., retry guidance) and the known draft preview issue showing `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`. All user-facing text in the docs must be in English.",
+      "text": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4",
+          "msg-9"
         ],
         "quotes": [
-          "trigger a clean rebuild and redeploy"
+          "First strip out any last editor‑related dependencies in the frontend and rebuild again"
         ]
       },
       "acceptanceCriteria": [
-        "`frontend/docs/DEPLOYMENT.md` contains a clearly labeled section for performing a clean rebuild and redeploy, with concrete steps a developer can follow.",
-        "`frontend/docs/DEPLOYMENT.md` includes a troubleshooting section that mentions intermittent platform-level draft deployment failures and recommends retrying a clean rebuild/redeploy when they occur.",
-        "The troubleshooting section mentions the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue, without attributing it to application code.",
-        "All new/updated documentation text is written in English."
+        "A clean frontend build completes successfully after removing editor-related dependencies/references.",
+        "No remaining editor-related imports/usages exist in the frontend source (e.g., modules/components/utilities tied to an in-app editor).",
+        "No editor-related runtime errors occur when loading the app."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Update the existing Whisper app homepage (national hub hero section) hero headline and subtext by changing ONLY the displayed strings, keeping the exact existing design/layout/colors/buttons/functionality unchanged. In the component that renders the current homepage hero text (currently in frontend/src/App.tsx under the home route render), replace the headline and subtext with the exact new strings and add the required permanent comment immediately above the strings.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-9"
+        ],
+        "quotes": [
+          "Update the existing Whisper app's frontend (specifically the homepage / national hub hero section) to replace the current header text and subtext with the following exact content. Do NOT change anything else in the design, layout, colors, buttons, AI secretary, or any other functionality.",
+          "New Hero Text:\n- Main headline (large, bold, centered): \"Of the People, By the People — Realized\"\n- Subtext / description (smaller, below headline): \"Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up.\"\n\nMake this change permanent in the codebase:\n- Add a clear comment above the strings:\n  // PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS  \n  // This is the official mission statement and must remain exactly as written"
+        ]
+      },
+      "acceptanceCriteria": [
+        "In frontend/src/App.tsx, the homepage hero headline text is exactly: \"Of the People, By the People — Realized\"",
+        "In frontend/src/App.tsx, the homepage hero subtext is exactly: \"Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up.\"",
+        "The following two comment lines exist immediately above the hero text strings in code and match exactly:\n// PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS\n// This is the official mission statement and must remain exactly as written",
+        "No other homepage/UI text, layout, styling classes, colors, buttons, Secretary widget, routing, or functionality is changed as part of this update.",
+        "Provide a brief before/after note documenting the prior hero headline/subtext and the new headline/subtext.",
+        "Provide a demo preview URL snippet (as available in the deployment output) that shows the updated hero section with the new exact text."
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under the immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services."
+    "Do not modify backend canisters or Motoko code.",
+    "Limit UI changes to ONLY the hero headline and hero subtext strings; do not change layout, styling classes, colors, buttons, or any other UI/functionality.",
+    "Use the exact provided hero headline/subtext strings (including punctuation and em dash) with no rephrasing.",
+    "Add and keep the permanent 'DO NOT CHANGE' comment immediately above the strings in code."
   ],
   "nonGoals": [
-    "Do not implement new application features or change existing UI/UX behavior as part of this request.",
-    "Do not add third-party integrations or external deployment tooling beyond what is already used by the project."
+    "Homepage redesign or any visual/spacing/typography changes beyond what is strictly necessary to display the new strings.",
+    "Changing any other user-facing copy outside the homepage hero headline/subtext.",
+    "Adding new CMS/config/env-driven copy management for the hero text (unless already required by existing implementation)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

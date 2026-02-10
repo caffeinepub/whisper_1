@@ -1,38 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:29:21.333Z",
-  "summary": "REQ-1 asks for updates to `frontend/docs/DEPLOYMENT.md` documenting a clean rebuild/redeploy procedure and troubleshooting. The diff does not show any direct change to `frontend/docs/DEPLOYMENT.md`; only `frontend-file-summaries.txt` and `project_state.json` were modified. Therefore the requested documentation update is not evidenced as implemented. Additionally, the diff introduces/updates project metadata and a broad set of unrelated frontend/doc changes described inside `frontend-file-summaries.txt`, which were not requested in the BuildRequest.",
+  "generatedAt": "2026-02-10T22:06:55.869Z",
+  "summary": "REQ-2 hero headline/subtext strings and the required permanent comments appear to be implemented in frontend/src/App.tsx, and a before/after note is documented in frontend/docs/HOMEPAGE_REDESIGN_NOTES.md. However, the diff does not provide evidence that editor-related frontend dependencies/references were removed (REQ-1), nor does it include the requested demo preview URL snippet. Additional unrequested documentation content about broader homepage redesign details was added/updated.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Update `frontend/docs/DEPLOYMENT.md` to include an explicit clean rebuild and redeploy procedure (clearing local build artifacts/caches, then rebuild + redeploy) and a troubleshooting section covering intermittent Caffeine draft deployment failures (retry guidance) and the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`, written in English.",
-      "reason": "The diff shows no modification to `frontend/docs/DEPLOYMENT.md`. The only modified files are `frontend-file-summaries.txt` and `project_state.json`, so there is no direct evidence that the deployment documentation itself was updated.",
+      "requirement": "Remove any remaining editor-related dependencies and references from the frontend codebase, then ensure the frontend rebuild succeeds without editor-related packages, imports, or runtime paths.",
+      "reason": "The diff shows no changes to package/dependency files (e.g., package.json/lockfiles) and no explicit removal of editor-related imports/usages; only App.tsx and documentation/state files are shown as modified.",
       "evidence": [
-        "file-diff: MODIFIED FILES lists only `frontend-file-summaries.txt` and `project_state.json`",
-        "frontend-file-summaries.txt (truncated)"
+        "frontend/src/App.tsx",
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Provide a demo preview URL snippet (as available in the deployment output) that shows the updated hero section with the new exact text.",
+      "reason": "No deployment output or preview URL snippet is present in the modified files shown in the diff summary.",
+      "evidence": [
+        "frontend/src/App.tsx",
+        "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Updated/added extensive content across multiple docs and frontend code (e.g., `frontend/docs/ARCHITECTURE.md`, `frontend/docs/PHASED_PLAN.md`, `frontend/docs/STYLE_GUIDE.md`, various `frontend/src/*` and Tailwind/CSS changes) despite the BuildRequest only asking for deployment documentation changes.",
-      "reason": "These changes are not requested in the BuildRequest (which explicitly focuses on deployment documentation and lists non-goals about not changing UI/UX or adding new features). Even though they appear only as summaries within `frontend-file-summaries.txt`, they constitute unrequested scope in the diff evidence provided.",
+      "description": "Expanded homepage redesign documentation beyond the requested hero headline/subtext string update (e.g., hero image asset details, overlay color/opacity, CTA button styling, contrast fixes, secretary widget styling).",
+      "reason": "The BuildRequest explicitly constrained UI changes to ONLY the hero headline and hero subtext strings and did not request broader redesign documentation content.",
       "evidence": [
-        "frontend-file-summaries.txt (truncated)"
+        "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md"
       ]
     },
     {
-      "description": "Modified/introduced project tracking metadata in `project_state.json` (e.g., new_feature_requests, architectural_notes, known_issues).",
-      "reason": "The BuildRequest does not request updates to any project state/metadata files; it only requests documentation updates in `frontend/docs/DEPLOYMENT.md`.",
+      "description": "Project tracking/state updates marking new feature requests (AR-1..AR-4) as pending in project_state.json.",
+      "reason": "The BuildRequest did not ask for changes to project tracking metadata/state files.",
       "evidence": [
         "project_state.json"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/docs/HOMEPAGE_REDESIGN_NOTES.md",
+    "frontend/src/App.tsx",
     "project_state.json"
   ]
 }

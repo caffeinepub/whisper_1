@@ -1,11 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Update deployment documentation to include a clean rebuild + redeploy procedure and troubleshooting guidance for intermittent Caffeine draft deployment issues.
+**Goal:** Remove remaining editor-related frontend dependencies and permanently update the homepage hero headline/subtext strings (without changing design or functionality).
 
 **Planned changes:**
-- Update `frontend/docs/DEPLOYMENT.md` with a clearly labeled “clean rebuild and redeploy” section describing concrete steps to clear local build artifacts/caches, then rebuild and redeploy.
-- Add a troubleshooting section to `frontend/docs/DEPLOYMENT.md` covering intermittent platform-level draft deployment failures, including retry guidance via clean rebuild/redeploy.
-- Document the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue (not application code), ensuring all added/updated text is in English.
+- Remove any remaining editor-related frontend packages, imports, references, and runtime paths; verify a clean frontend rebuild and app load with no editor-related errors.
+- In `frontend/src/App.tsx` (home route hero), replace only the displayed hero headline and subtext with the exact provided strings and add the required permanent two-line comment immediately above them.
 
-**User-visible outcome:** Developers can follow updated deployment docs to perform a clean rebuild and redeploy, and can reference troubleshooting notes for intermittent draft deployment/preview issues.
+**User-visible outcome:** The app builds and loads without any editor-related code, and the homepage hero section shows the new official mission headline and subtext exactly as provided, with no other UI or behavior changes.
