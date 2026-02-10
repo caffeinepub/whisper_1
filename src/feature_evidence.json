@@ -2,15 +2,34 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-support-two-profile-routes-profile-read-only-profile-view-and-profile-edit-edit-form-routing-must-work-with-the-current-popstate-based-navigation-no-new-router-dependency-and-must-be-reachable-from-the-existing-header-user-menu-navigation",
-      "featureTitle": "Support two profile routes: /profile (read-only profile view) and /profile/edit (edit form). Routing must work with the current popstate-based navigation (no new router dependency) and must be reachable from the existing header/user menu navigation.",
+      "featureId": "feature-update-the-secretary-frontend-logic-to-check-whether-an-instance-exists-for-the-selected-or-matched-city-county-or-state-using-a-backend-call-rather-than-scanning-all-proposals-client-side-the-secretary-must-determine-instance-availability-based-on-the-canonical-computed-instance-name-for-the-selected-geography-and-then-route-the-user-either-to-view-an-existing-instance-or-to-the-create-instance-flow",
+      "featureTitle": "Update the Secretary frontend logic to check whether an instance exists for the selected (or matched) city, county, or state using a backend call rather than scanning all proposals client-side. The Secretary must determine instance availability based on the canonical computed instance name for the selected geography and then route the user either to view an existing instance or to the create-instance flow.",
+      "files": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+        "frontend/src/lib/uiCopy.ts",
+        "frontend/src/lib/whisperInstanceNaming.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-prevent-the-app-from-showing-a-blank-white-screen-when-a-runtime-error-occurs-by-adding-a-top-level-react-error-boundary-and-a-user-visible-fallback-screen-in-english-that-indicates-the-app-failed-to-load-and-instructs-the-user-to-refresh-ensure-the-fallback-renders-even-if-a-lazily-loaded-page-throws-during-import",
+      "featureTitle": "Prevent the app from showing a blank/white screen when a runtime error occurs by adding a top-level React error boundary and a user-visible fallback screen in English that indicates the app failed to load and instructs the user to refresh. Ensure the fallback renders even if a lazily loaded page throws during import.",
       "files": [
         "frontend/src/App.tsx",
-        "frontend/src/components/common/UserProfileMenu.tsx",
-        "frontend/src/pages/ProfilePage.tsx",
-        "frontend/src/pages/profile/ProfileEditPage.tsx",
-        "frontend/src/pages/profile/ProfileViewPage.tsx",
-        "frontend/src/utils/spaNavigate.ts"
+        "frontend/src/components/common/AppErrorBoundary.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,49 +41,7 @@
         "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-the-profile-ui-to-display-the-core-profile-fields-in-a-clean-mobile-first-layout-using-existing-tailwind-shadcn-components-and-whisper-styling-the-view-must-include-avatar-display-name-username-handle-bio-role-badges-location-join-date-contribution-stats-external-links-and-recent-activity-summary-for-any-fields-not-yet-available-from-the-backend-render-sensible-placeholders-empty-states-without-breaking-existing-functionality",
-      "featureTitle": "Implement the /profile UI to display the core profile fields in a clean, mobile-first layout using existing Tailwind + shadcn components and Whisper styling. The view must include: avatar, display name, username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. For any fields not yet available from the backend, render sensible placeholders/empty states without breaking existing functionality.",
-      "files": [
-        "frontend/src/pages/profile/ProfileViewPage.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-the-profile-edit-ui-as-an-edit-form-that-lets-the-authenticated-user-update-display-name-bio-avatar-upload-removal-external-links-1-3-and-preferences-at-minimum-provide-ui-controls-for-preferences-even-if-persistence-is-deferred-the-edit-page-must-provide-save-cancel-behavior-and-route-back-to-profile-on-cancel-and-on-successful-save",
-      "featureTitle": "Implement the /profile/edit UI as an edit form that lets the authenticated user update: display name, bio, avatar upload/removal, external links (1–3), and preferences (at minimum provide UI controls for preferences even if persistence is deferred). The edit page must provide Save/Cancel behavior and route back to /profile on cancel and on successful save.",
-      "files": [
-        "frontend/src/pages/profile/ProfileEditPage.tsx",
-        "frontend/src/pages/profile/ProfileViewPage.tsx",
-        "frontend/src/pages/profile/profileLocalState.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "confidence": "high"
     }

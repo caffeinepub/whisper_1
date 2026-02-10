@@ -59,18 +59,6 @@ export const UserProfile = IDL.Record({
   'profileImage' : IDL.Opt(ProfileImage),
   'name' : IDL.Text,
 });
-export const GeoId = IDL.Text;
-export const USCounty = IDL.Record({
-  'censusLandAreaSqMeters' : IDL.Text,
-  'fipsCode' : IDL.Text,
-  'hierarchicalId' : HierarchicalGeoId,
-  'censusFipsStateCode' : IDL.Text,
-  'censusAreaAcres' : IDL.Text,
-  'fullName' : IDL.Text,
-  'shortName' : IDL.Text,
-  'censusWaterAreaSqMeters' : IDL.Text,
-  'population2010' : IDL.Text,
-});
 export const USPlace = IDL.Record({
   'countyFullName' : IDL.Text,
   'hierarchicalId' : HierarchicalGeoId,
@@ -84,6 +72,22 @@ export const USPlace = IDL.Record({
   'population' : IDL.Opt(IDL.Nat),
   'censusPlaceType' : IDL.Text,
   'censusStateCode' : CensusStateCode,
+});
+export const GeoId = IDL.Text;
+export const USCounty = IDL.Record({
+  'censusLandAreaSqMeters' : IDL.Text,
+  'fipsCode' : IDL.Text,
+  'hierarchicalId' : HierarchicalGeoId,
+  'censusFipsStateCode' : IDL.Text,
+  'censusAreaAcres' : IDL.Text,
+  'fullName' : IDL.Text,
+  'shortName' : IDL.Text,
+  'censusWaterAreaSqMeters' : IDL.Text,
+  'population2010' : IDL.Text,
+});
+export const DeletionRequest = IDL.Record({
+  'user' : IDL.Principal,
+  'requestedAt' : IDL.Int,
 });
 export const SecretaryCategorySuggestion = IDL.Record({
   'statesByGeoId' : IDL.Vec(USState),
@@ -165,15 +169,26 @@ export const idlService = IDL.Service({
   'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCityById' : IDL.Func([HierarchicalGeoId], [IDL.Opt(USPlace)], ['query']),
   'getCityComplaintSuggestions' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Text)],
       ['query'],
     ),
   'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+  'getCountyById' : IDL.Func(
+      [HierarchicalGeoId],
+      [IDL.Opt(USCounty)],
+      ['query'],
+    ),
   'getCountyComplaintSuggestions' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
+  'getDeletionRequests' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, DeletionRequest))],
       ['query'],
     ),
   'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
@@ -184,6 +199,7 @@ export const idlService = IDL.Service({
       [SecretaryCategorySuggestion],
       ['query'],
     ),
+  'getStateById' : IDL.Func([HierarchicalGeoId], [IDL.Opt(USState)], ['query']),
   'getStateComplaintSuggestions' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Text)],
@@ -192,6 +208,11 @@ export const idlService = IDL.Service({
   'getTasks' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
+      ['query'],
+    ),
+  'getTop50IssuesForLocation' : IDL.Func(
+      [USHierarchyLevel, IDL.Opt(HierarchicalGeoId)],
+      [IDL.Vec(IDL.Text)],
       ['query'],
     ),
   'getUserProfile' : IDL.Func(
@@ -204,7 +225,14 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isParent' : IDL.Func([IDL.Principal, IDL.Principal], [IDL.Bool], ['query']),
+  'processDeletionRequest' : IDL.Func([IDL.Principal], [], []),
+  'requestDeletion' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'searchSimilarCityNames' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(USPlace)],
+      ['query'],
+    ),
   'submitProposal' : IDL.Func(
       [
         IDL.Text,
@@ -278,18 +306,6 @@ export const idlFactory = ({ IDL }) => {
     'profileImage' : IDL.Opt(ProfileImage),
     'name' : IDL.Text,
   });
-  const GeoId = IDL.Text;
-  const USCounty = IDL.Record({
-    'censusLandAreaSqMeters' : IDL.Text,
-    'fipsCode' : IDL.Text,
-    'hierarchicalId' : HierarchicalGeoId,
-    'censusFipsStateCode' : IDL.Text,
-    'censusAreaAcres' : IDL.Text,
-    'fullName' : IDL.Text,
-    'shortName' : IDL.Text,
-    'censusWaterAreaSqMeters' : IDL.Text,
-    'population2010' : IDL.Text,
-  });
   const USPlace = IDL.Record({
     'countyFullName' : IDL.Text,
     'hierarchicalId' : HierarchicalGeoId,
@@ -303,6 +319,22 @@ export const idlFactory = ({ IDL }) => {
     'population' : IDL.Opt(IDL.Nat),
     'censusPlaceType' : IDL.Text,
     'censusStateCode' : CensusStateCode,
+  });
+  const GeoId = IDL.Text;
+  const USCounty = IDL.Record({
+    'censusLandAreaSqMeters' : IDL.Text,
+    'fipsCode' : IDL.Text,
+    'hierarchicalId' : HierarchicalGeoId,
+    'censusFipsStateCode' : IDL.Text,
+    'censusAreaAcres' : IDL.Text,
+    'fullName' : IDL.Text,
+    'shortName' : IDL.Text,
+    'censusWaterAreaSqMeters' : IDL.Text,
+    'population2010' : IDL.Text,
+  });
+  const DeletionRequest = IDL.Record({
+    'user' : IDL.Principal,
+    'requestedAt' : IDL.Int,
   });
   const SecretaryCategorySuggestion = IDL.Record({
     'statesByGeoId' : IDL.Vec(USState),
@@ -384,15 +416,30 @@ export const idlFactory = ({ IDL }) => {
     'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCityById' : IDL.Func(
+        [HierarchicalGeoId],
+        [IDL.Opt(USPlace)],
+        ['query'],
+      ),
     'getCityComplaintSuggestions' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Text)],
         ['query'],
       ),
     'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+    'getCountyById' : IDL.Func(
+        [HierarchicalGeoId],
+        [IDL.Opt(USCounty)],
+        ['query'],
+      ),
     'getCountyComplaintSuggestions' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
+    'getDeletionRequests' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, DeletionRequest))],
         ['query'],
       ),
     'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
@@ -403,6 +450,11 @@ export const idlFactory = ({ IDL }) => {
         [SecretaryCategorySuggestion],
         ['query'],
       ),
+    'getStateById' : IDL.Func(
+        [HierarchicalGeoId],
+        [IDL.Opt(USState)],
+        ['query'],
+      ),
     'getStateComplaintSuggestions' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Text)],
@@ -411,6 +463,11 @@ export const idlFactory = ({ IDL }) => {
     'getTasks' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
+        ['query'],
+      ),
+    'getTop50IssuesForLocation' : IDL.Func(
+        [USHierarchyLevel, IDL.Opt(HierarchicalGeoId)],
+        [IDL.Vec(IDL.Text)],
         ['query'],
       ),
     'getUserProfile' : IDL.Func(
@@ -427,7 +484,14 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Bool],
         ['query'],
       ),
+    'processDeletionRequest' : IDL.Func([IDL.Principal], [], []),
+    'requestDeletion' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'searchSimilarCityNames' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(USPlace)],
+        ['query'],
+      ),
     'submitProposal' : IDL.Func(
         [
           IDL.Text,

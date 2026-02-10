@@ -1,6 +1,7 @@
 /**
  * Utility for generating and validating WHISPER- prefixed instance names.
  * All instances must start with "WHISPER-" followed by geography identifiers.
+ * Extended to support Secretary's instance availability checking.
  */
 
 import { USHierarchyLevel } from '@/backend';
@@ -70,4 +71,25 @@ export function extractGeographyFromWhisperName(instanceName: string): string | 
   }
   
   return instanceName.slice(WHISPER_PREFIX.length);
+}
+
+/**
+ * Computes the canonical instance name for a given geography selection.
+ * Used by Secretary to determine which instance to check/create.
+ */
+export function computeCanonicalInstanceName(
+  state: { longName: string } | null,
+  county: { fullName: string } | null,
+  place: { shortName: string } | null
+): string | null {
+  if (!state) return null;
+
+  // Most specific level takes precedence
+  if (place) {
+    return generateWhisperInstanceName(USHierarchyLevel.place, state.longName, undefined, place.shortName);
+  } else if (county) {
+    return generateWhisperInstanceName(USHierarchyLevel.county, state.longName, county.fullName);
+  } else {
+    return generateWhisperInstanceName(USHierarchyLevel.state, state.longName);
+  }
 }

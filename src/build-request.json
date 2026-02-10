@@ -1,79 +1,111 @@
 {
   "kind": "build_request",
-  "title": "Implement steps 1–3: Profile routes, profile view fields, and edit form UI",
+  "title": "Add Secretary-specific geography + issue endpoints, similar-city search, and instance-availability checks (plus prevent white-screen failures)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Support two profile routes: /profile (read-only profile view) and /profile/edit (edit form). Routing must work with the current popstate-based navigation (no new router dependency) and must be reachable from the existing header/user menu navigation.",
-      "target": "frontend",
+      "text": "Add Secretary-specific Motoko query endpoints that return a single geography record by its hierarchicalId: getStateById(hierarchicalId), getCountyById(hierarchicalId), and getCityById(hierarchicalId). These endpoints must be read-only queries and must not modify any existing geography data or change existing geography query endpoints.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-last"
+          "msg-1"
         ],
         "quotes": [
-          "Run prompts 1,2 and 3"
+          "Also run steps 1. \"Add Secretary‑specific Motoko query endpoints: getStateById, getCountyById, getCityById, getTop50IssuesForLocation\""
         ]
       },
       "acceptanceCriteria": [
-        "Navigating to /profile renders a profile view screen for the authenticated user.",
-        "Navigating to /profile/edit renders an edit form screen for the authenticated user.",
-        "Navigation to /profile and /profile/edit works via window.history.pushState + PopStateEvent (consistent with existing HomeHeader navigation).",
-        "Unauthenticated users visiting either /profile or /profile/edit see an authentication-required state with a login action."
+        "Calling getStateById with a valid state hierarchicalId returns that USState; invalid IDs return null (or an equivalent non-trapping 'not found' result).",
+        "Calling getCountyById with a valid county hierarchicalId returns that USCounty; invalid IDs return null (or equivalent).",
+        "Calling getCityById with a valid city/place hierarchicalId returns that USPlace; invalid IDs return null (or equivalent).",
+        "No existing geography data structures are mutated, and no existing geography endpoints are modified."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement the /profile UI to display the core profile fields in a clean, mobile-first layout using existing Tailwind + shadcn components and Whisper styling. The view must include: avatar, display name, username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. For any fields not yet available from the backend, render sensible placeholders/empty states without breaking existing functionality.",
-      "target": "frontend",
+      "text": "Add a Secretary-specific Motoko query endpoint getTop50IssuesForLocation that returns the top-50 issue/category strings for a given geography level (place/county/state) and optional hierarchicalId input. Use the existing stable in-canister category lists (city/county/state) as the data source.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-last"
+          "msg-1"
         ],
         "quotes": [
-          "Run prompts 1,2 and 3"
+          "Add Secretary‑specific Motoko query endpoints: getStateById, getCountyById, getCityById, getTop50IssuesForLocation"
         ]
       },
       "acceptanceCriteria": [
-        "The /profile page displays an avatar with fallback when no image is set.",
-        "The /profile page displays the saved display name from the existing profile data source when available.",
-        "The /profile page includes UI sections for: handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary.",
-        "If a field is missing/unavailable, the UI shows an empty/placeholder state (no crashes, no console errors from undefined access).",
-        "The page remains responsive on mobile and meets basic accessibility expectations (labels for key fields, accessible button text)."
+        "For level=place, getTop50IssuesForLocation returns the city/place complaint category list.",
+        "For level=county, getTop50IssuesForLocation returns the county complaint category list.",
+        "For level=state, getTop50IssuesForLocation returns the state complaint category list.",
+        "The function is a query and does not trap for normal 'not found/unsupported' inputs (returns an empty list or a safe default)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Implement the /profile/edit UI as an edit form that lets the authenticated user update: display name, bio, avatar upload/removal, external links (1–3), and preferences (at minimum provide UI controls for preferences even if persistence is deferred). The edit page must provide Save/Cancel behavior and route back to /profile on cancel and on successful save.",
-      "target": "frontend",
+      "text": "Add a Motoko query endpoint searchSimilarCityNames that takes a user-provided city search string and returns a short list of matching USPlace results from the existing geography data (case-insensitive match; safe behavior for empty/very short inputs).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-last"
+          "msg-1"
         ],
         "quotes": [
-          "Run prompts 1,2 and 3"
+          "searchSimilarCityNames"
         ]
       },
       "acceptanceCriteria": [
-        "The /profile/edit page includes form controls for display name, bio, avatar upload/removal, and 1–3 external links.",
-        "The existing avatar upload validations (image type and max size) remain enforced.",
-        "Cancel returns the user to /profile without saving changes.",
-        "Save persists at least the fields currently supported by the backend (display name + avatar) via the existing save hook; fields not yet supported by the backend must not break save and should have clear non-blocking behavior (e.g., remain local-only or show as 'not yet supported' without failing the save).",
-        "After a successful save, the /profile view reflects the updated name/avatar (via React Query invalidation or refetch)."
+        "Given a search term (e.g., \"Daven\"), searchSimilarCityNames returns a list of places whose shortName and/or fullName matches the term case-insensitively.",
+        "The endpoint is a query and does not modify state.",
+        "Empty/whitespace-only inputs return an empty list (and do not trap).",
+        "The returned list is bounded (e.g., max N results) to avoid excessive payload sizes."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the Secretary frontend logic to check whether an instance exists for the selected (or matched) city, county, or state using a backend call rather than scanning all proposals client-side. The Secretary must determine instance availability based on the canonical computed instance name for the selected geography and then route the user either to view an existing instance or to the create-instance flow.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Add secretary logic to check whether an instance exists for a selected or matched city, county, or state."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a user selects a state/county/city in the Secretary widget, the app performs an instance-existence check via a backend call (e.g., isInstanceNameTaken) for the computed instance name(s).",
+        "If an instance exists for the most-specific selected geography, the Secretary presents the “view instance” action path; otherwise it presents the “create proposal/instance” action path.",
+        "No UI flow relies on fetching all proposals just to determine existence."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Prevent the app from showing a blank/white screen when a runtime error occurs by adding a top-level React error boundary and a user-visible fallback screen in English that indicates the app failed to load and instructs the user to refresh. Ensure the fallback renders even if a lazily loaded page throws during import.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If a runtime error occurs during initial render or a lazy import, the UI shows a fallback error screen instead of a blank/white screen.",
+        "The fallback screen text is in English and does not expose stack traces.",
+        "Normal operation is unchanged when no errors occur."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files in frontend/src/components/ui (read-only UI component sources). Compose them instead.",
-    "Do not modify frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
-    "Do not introduce a new routing framework; use the existing popstate + pathname approach already used in frontend/src/App.tsx and frontend/src/components/common/HomeHeader.tsx.",
-    "Keep changes scoped to steps 1–3 only; do not implement backend schema expansions or admin deletion-request flows in this build."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional canisters/services).",
+    "Do not modify existing geography data or existing geography query endpoints; only add new Secretary-specific entry points.",
+    "Do not edit files under frontend/src/components/ui or any immutable hook paths listed in SYSTEM_CONTEXT.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Adding or changing Motoko backend types/methods for the additional profile fields (bio, handle, role, location, stats, links, activity).",
-    "Implementing the account deletion request flow or admin review UI.",
-    "Modifying unrelated Whisper subsystems (Secretary, geography DB, instance creation, proposals, moderation, tokenomics).",
-    "Implementing real messaging/DM functionality."
+    "Implementing automatic instance creation/founding-member proposal submission flow beyond checking existence (not requested in this build).",
+    "Changing Caffeine editor/preview infrastructure behavior for the 'draft-editor:error disallowed origin' message (treat as external; only ensure the app remains resilient)."
   ],
   "imageRequirements": {
     "required": [],

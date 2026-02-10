@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ArrowLeft, Upload, X, Loader2, Trash2 } from 'lucide-react';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '@/hooks/useCallerUserProfile';
+import { useRequestDeletion } from '@/hooks/useAccountDeletion';
 import { LoginButton } from '@/components/common/LoginButton';
 import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { uiCopy } from '@/lib/uiCopy';
@@ -15,60 +17,47 @@ import { toast } from 'sonner';
 import { spaNavigate } from '@/utils/spaNavigate';
 import { getProfileLocalState, saveProfileLocalState } from './profileLocalState';
 
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
 export default function ProfileEditPage() {
   const { identity } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
   const saveMutation = useSaveCallerUserProfile();
-
-  const [name, setName] = useState('');
-  const [bio, setBio] = useState('');
-  const [profileImage, setProfileImage] = useState<Uint8Array | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [externalLink1, setExternalLink1] = useState('');
-  const [externalLink2, setExternalLink2] = useState('');
-  const [externalLink3, setExternalLink3] = useState('');
+  const deletionMutation = useRequestDeletion();
 
   const isAuthenticated = !!identity;
 
-  // Initialize form with existing data
+  // Backend-supported fields
+  const [name, setName] = useState('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | undefined>(undefined);
+  const [removeImage, setRemoveImage] = useState(false);
+
+  // Local-only fields
+  const [bio, setBio] = useState('');
+  const [username, setUsername] = useState('');
+  const [location, setLocation] = useState('');
+  const [externalLinks, setExternalLinks] = useState<string[]>(['', '', '']);
+
+  // Load profile data
   useEffect(() => {
     if (userProfile) {
-      setName(userProfile.name);
-      if (userProfile.profileImage) {
-        const blob = new Blob([new Uint8Array(userProfile.profileImage)], { type: 'image/jpeg' });
-        const url = URL.createObjectURL(blob);
-        setImagePreview(url);
-        setProfileImage(new Uint8Array(userProfile.profileImage));
+      setName(userProfile.name || '');
+      
+      // Load profile image if exists
+      if (userProfile.profileImage && !removeImage) {
+        const imageUrl = getImageUrl(userProfile.profileImage);
+        setProfileImagePreview(imageUrl);
       }
     }
 
     // Load local-only fields
     const localState = getProfileLocalState();
     setBio(localState.bio);
-    if (localState.externalLinks.length > 0) {
-      setExternalLink1(localState.externalLinks[0] || '');
-      setExternalLink2(localState.externalLinks[1] || '');
-      setExternalLink3(localState.externalLinks[2] || '');
-    }
-  }, [userProfile]);
-
-  // Cleanup image preview URL on unmount
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
+    setUsername(localState.username);
+    setLocation(localState.location);
+    setExternalLinks(localState.externalLinks.length > 0 ? localState.externalLinks : ['', '', '']);
+  }, [userProfile, removeImage]);
 
   const handleBackToProfile = () => {
-    spaNavigate('/profile');
-  };
-
-  const handleCancel = () => {
     spaNavigate('/profile');
   };
 
@@ -77,40 +66,33 @@ export default function ProfileEditPage() {
     if (!file) return;
 
     // Validate file type
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
       toast.error(uiCopy.profile.imageInvalidType);
       return;
     }
 
-    // Validate file size
-    if (file.size > MAX_IMAGE_SIZE) {
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
       toast.error(uiCopy.profile.imageTooLarge);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const arrayBuffer = event.target?.result as ArrayBuffer;
-      const bytes = new Uint8Array(arrayBuffer);
-      setProfileImage(bytes);
+    setProfileImageFile(file);
+    setRemoveImage(false);
 
-      // Create preview URL
-      const blob = new Blob([bytes], { type: file.type });
-      const url = URL.createObjectURL(blob);
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-      setImagePreview(url);
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string);
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveImage = () => {
-    setProfileImage(null);
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setImagePreview(null);
+    setProfileImageFile(null);
+    setProfileImagePreview(undefined);
+    setRemoveImage(true);
   };
 
   const handleSave = async () => {
@@ -120,17 +102,36 @@ export default function ProfileEditPage() {
     }
 
     try {
-      // Save backend-supported fields (name + avatar)
+      // Prepare profile image bytes
+      let profileImageBytes: Uint8Array | undefined = undefined;
+
+      if (removeImage) {
+        // Explicitly remove image by setting to undefined
+        profileImageBytes = undefined;
+      } else if (profileImageFile) {
+        // New image uploaded
+        const arrayBuffer = await profileImageFile.arrayBuffer();
+        profileImageBytes = new Uint8Array(arrayBuffer);
+      } else if (userProfile?.profileImage) {
+        // Keep existing image
+        profileImageBytes = userProfile.profileImage instanceof Uint8Array 
+          ? userProfile.profileImage 
+          : new Uint8Array(userProfile.profileImage);
+      }
+
+      // Save backend-supported fields
       await saveMutation.mutateAsync({
         name: name.trim(),
-        profileImage: profileImage || undefined,
+        profileImage: profileImageBytes,
       });
 
       // Save local-only fields
-      const links = [externalLink1, externalLink2, externalLink3].filter(link => link.trim() !== '');
+      const filteredLinks = externalLinks.filter(link => link.trim() !== '');
       saveProfileLocalState({
         bio: bio.trim(),
-        externalLinks: links,
+        username: username.trim(),
+        location: location.trim(),
+        externalLinks: filteredLinks,
       });
 
       toast.success(uiCopy.profile.saveSuccess);
@@ -141,9 +142,31 @@ export default function ProfileEditPage() {
     }
   };
 
-  // Generate initials from name
+  const handleRequestDeletion = async () => {
+    try {
+      await deletionMutation.mutateAsync();
+      toast.success('Deletion request submitted. An admin will review your request.');
+      spaNavigate('/profile');
+    } catch (error) {
+      console.error('Failed to request deletion:', error);
+      toast.error('Failed to submit deletion request. Please try again.');
+    }
+  };
+
+  const getImageUrl = (imageBytes: Uint8Array | number[] | undefined): string | undefined => {
+    if (!imageBytes) return undefined;
+    try {
+      const bytes = imageBytes instanceof Uint8Array ? imageBytes : new Uint8Array(imageBytes);
+      const properBytes = new Uint8Array(bytes);
+      const blob = new Blob([properBytes], { type: 'image/jpeg' });
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Failed to create image URL:', error);
+      return undefined;
+    }
+  };
+
   const getInitials = (name: string): string => {
-    if (!name.trim()) return 'U';
     const parts = name.trim().split(/\s+/);
     if (parts.length === 1) {
       return parts[0].substring(0, 2).toUpperCase();
@@ -162,7 +185,7 @@ export default function ProfileEditPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <LoginButton />
-            <Button variant="outline" onClick={() => spaNavigate('/')} className="w-full">
+            <Button variant="outline" onClick={handleBackToProfile} className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
               {uiCopy.common.back}
             </Button>
@@ -181,7 +204,7 @@ export default function ProfileEditPage() {
     );
   }
 
-  const initials = getInitials(name);
+  const initials = getInitials(name || 'User');
 
   return (
     <div className="min-h-screen bg-background">
@@ -205,41 +228,41 @@ export default function ProfileEditPage() {
             <CardDescription>{uiCopy.profile.pageDescription}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Avatar Upload */}
+            {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-24 w-24">
-                {imagePreview && <AvatarImage src={imagePreview} alt={name} />}
+                {profileImagePreview && <AvatarImage src={profileImagePreview} alt={name} />}
                 <AvatarFallback className="bg-secondary text-white text-2xl font-medium">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex gap-2">
-                <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <Label htmlFor="image-upload" className="cursor-pointer">
                   <Button type="button" variant="outline" size="sm" asChild>
                     <span>
                       <Upload className="mr-2 h-4 w-4" />
-                      {imagePreview ? uiCopy.profile.changeImage : uiCopy.profile.uploadImage}
+                      {profileImagePreview ? uiCopy.profile.changeImage : uiCopy.profile.uploadImage}
                     </span>
                   </Button>
                 </Label>
-                <input
-                  id="avatar-upload"
+                <Input
+                  id="image-upload"
                   type="file"
-                  accept={ALLOWED_IMAGE_TYPES.join(',')}
+                  accept="image/jpeg,image/png,image/gif,image/webp"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
-                {imagePreview && (
+                {profileImagePreview && (
                   <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage}>
                     <X className="mr-2 h-4 w-4" />
                     {uiCopy.profile.removeImage}
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground text-center">{uiCopy.profile.imageHelper}</p>
+              <p className="text-xs text-muted-foreground">{uiCopy.profile.imageHelper}</p>
             </div>
 
-            {/* Name Field */}
+            {/* Display Name */}
             <div className="space-y-2">
               <Label htmlFor="name">{uiCopy.profile.nameLabel}</Label>
               <Input
@@ -247,55 +270,70 @@ export default function ProfileEditPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={uiCopy.profile.namePlaceholder}
-                maxLength={100}
               />
             </div>
 
-            {/* Bio Field */}
+            {/* Username (local only) */}
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="username">Username (optional)</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="@username"
+              />
+              <p className="text-xs text-muted-foreground">Stored locally only</p>
+            </div>
+
+            {/* Bio (local only) */}
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio (optional)</Label>
               <Textarea
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself (150-300 characters)"
-                maxLength={300}
+                placeholder="Tell us about yourself..."
                 rows={4}
               />
-              <p className="text-xs text-muted-foreground">{bio.length}/300 characters</p>
+              <p className="text-xs text-muted-foreground">Stored locally only</p>
             </div>
 
-            {/* External Links */}
-            <div className="space-y-4">
-              <Label>External Links (Optional, max 3)</Label>
-              <div className="space-y-2">
+            {/* Location (local only) */}
+            <div className="space-y-2">
+              <Label htmlFor="location">Location (optional)</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="City, State"
+              />
+              <p className="text-xs text-muted-foreground">Stored locally only</p>
+            </div>
+
+            {/* External Links (local only) */}
+            <div className="space-y-2">
+              <Label>External Links (optional)</Label>
+              {externalLinks.map((link, index) => (
                 <Input
-                  value={externalLink1}
-                  onChange={(e) => setExternalLink1(e.target.value)}
-                  placeholder="https://example.com"
-                  type="url"
+                  key={index}
+                  value={link}
+                  onChange={(e) => {
+                    const newLinks = [...externalLinks];
+                    newLinks[index] = e.target.value;
+                    setExternalLinks(newLinks);
+                  }}
+                  placeholder={`Link ${index + 1}`}
                 />
-                <Input
-                  value={externalLink2}
-                  onChange={(e) => setExternalLink2(e.target.value)}
-                  placeholder="https://example.com"
-                  type="url"
-                />
-                <Input
-                  value={externalLink3}
-                  onChange={(e) => setExternalLink3(e.target.value)}
-                  placeholder="https://example.com"
-                  type="url"
-                />
-              </div>
+              ))}
+              <p className="text-xs text-muted-foreground">Stored locally only</p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col gap-3 pt-4">
               <Button
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
-                className="flex-1"
+                className="w-full"
               >
                 {saveMutation.isPending ? (
                   <>
@@ -306,14 +344,47 @@ export default function ProfileEditPage() {
                   uiCopy.profile.saveButton
                 )}
               </Button>
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saveMutation.isPending}
-                className="flex-1"
-              >
+
+              <Button variant="outline" onClick={handleBackToProfile} className="w-full">
                 {uiCopy.common.cancel}
               </Button>
+
+              {/* Delete Account Section */}
+              <div className="pt-6 border-t border-border">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Request Account Deletion
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Request Account Deletion</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will submit a request to delete your account. An admin will review and process your request. This action cannot be undone once approved.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleRequestDeletion}
+                        disabled={deletionMutation.isPending}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deletionMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          'Submit Request'
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           </CardContent>
         </Card>

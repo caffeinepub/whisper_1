@@ -1,62 +1,58 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T20:22:39.419Z",
-  "summary": "Diff adds new /profile view and /profile/edit pages, localStorage-backed placeholders for unsupported profile fields, a pushState+popstate navigation helper, and wires routing via existing popstate approach. It also adds profile navigation from the user menu. However, several REQ-2 and REQ-3 acceptance details are not evidenced in the truncated diffs, and there appear to be unrelated changes referenced in the file summaries that go beyond steps 1–3.",
+  "generatedAt": "2026-02-10T21:16:30.565Z",
+  "summary": "Frontend adds a top-level React error boundary and new Secretary hooks for geography lookups, issue lists, similar-city search, and instance availability checks via backend calls. However, the diff summary does not show backend implementations of the new Secretary-specific Motoko query endpoints, and the Secretary widget’s full routing behavior (view vs create flow) cannot be confirmed from the truncated snippet.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Profile view UI must include sections for handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary with placeholders/empty states, plus mobile-first responsive + basic a11y.",
-      "reason": "ProfileViewPage.tsx is truncated before showing the actual body content/sections; the visible excerpt only shows auth-required state, loading state, and header actions. No evidence in the excerpt confirms the required sections, placeholders, or accessibility labeling.",
-      "evidence": [
-        "frontend/src/pages/profile/ProfileViewPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "/profile/edit must include UI controls for preferences (at minimum) even if persistence is deferred.",
-      "reason": "ProfileEditPage.tsx excerpt shows controls/state for name, bio, avatar upload/removal, and three external links, but no evidence of any preferences UI controls in the visible portion; file truncation prevents confirmation.",
-      "evidence": [
-        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Save/Cancel behavior: Cancel routes back to /profile without saving; Save persists backend-supported fields (display name + avatar) via existing save hook; unsupported fields must not break save and should be non-blocking; after successful save, /profile reflects updated name/avatar (query invalidation/refetch).",
-      "reason": "Cancel navigation to /profile is evidenced, but the save handler is truncated right after declaration (\"const handleSave = async ()\"); no evidence shows calling the existing save hook, handling unsupported fields non-blockingly, or invalidating/refetching so /profile updates after save.",
-      "evidence": [
-        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
-      ]
-    },
-    {
       "id": "REQ-1",
-      "requirement": "Unauthenticated users visiting /profile/edit see an authentication-required state with a login action.",
-      "reason": "Unauthenticated/login-required UI is clearly shown for /profile view, but ProfileEditPage.tsx is truncated before any auth gating render; cannot confirm a login-required state exists for /profile/edit.",
+      "requirement": "Add Secretary-specific Motoko query endpoints getStateById(hierarchicalId), getCountyById(hierarchicalId), and getCityById(hierarchicalId) as read-only queries returning null/not-found safely.",
+      "reason": "Frontend hooks call actor.getStateById/getCountyById/getCityById, but the backend diff snippet does not show these functions being added in backend/main.mo, so their implementation cannot be verified from the provided diff summary.",
       "evidence": [
-        "frontend/src/pages/profile/ProfileViewPage.tsx (truncated)",
-        "frontend/src/pages/profile/ProfileEditPage.tsx (truncated)"
+        "backend/main.mo (truncated; no visible getStateById/getCountyById/getCityById definitions)",
+        "frontend/src/hooks/useSecretaryGeography.ts (calls actor.getStateById / actor.getCountyById / actor.getCityById)"
       ]
-    }
-  ],
-  "hallucinated_features": [
+    },
     {
-      "description": "Unrelated changes outside steps 1–3 (e.g., React Query admin check behavior, Create Instance/geography proposal workflow enhancements, additional hooks/components/docs)",
-      "reason": "BuildRequest explicitly constrains scope to steps 1–3 (profile routes + profile view/edit UI) and calls out not modifying unrelated subsystems. The diff summary file indicates multiple non-profile files were changed beyond this scope.",
+      "id": "REQ-2",
+      "requirement": "Add a Secretary-specific Motoko query endpoint getTop50IssuesForLocation(level, hierarchicalId?) backed by existing stable category lists; safe defaults for unsupported inputs.",
+      "reason": "Frontend hook calls actor.getTop50IssuesForLocation, but the backend diff snippet does not show this query endpoint being added/implemented in backend/main.mo.",
       "evidence": [
-        "frontend-file-summaries.txt (truncated)"
+        "backend/main.mo (truncated; no visible getTop50IssuesForLocation definition)",
+        "frontend/src/hooks/useSecretaryGeography.ts (calls actor.getTop50IssuesForLocation)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Add Motoko query endpoint searchSimilarCityNames(searchString) returning bounded, case-insensitive USPlace matches; empty/short input returns empty list safely.",
+      "reason": "A frontend hook for similar-city search is added but the code is truncated and the backend implementation is not visible in backend/main.mo, so the required backend endpoint behavior cannot be confirmed.",
+      "evidence": [
+        "backend/main.mo (truncated; no visible searchSimilarCityNames definition)",
+        "frontend/src/hooks/useSecretaryGeography.ts (adds useSearchSimilarCityNames; implementation truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Update Secretary frontend logic to determine instance availability via backend call (no client-side scanning of all proposals) and route user to view-existing vs create-instance flow based on canonical instance name.",
+      "reason": "The diff clearly adds a backend-driven availability hook using actor.isInstanceNameTaken, but the SecretaryWidget.tsx changes are truncated and do not show the full decision + routing to 'view instance' vs 'create proposal/instance' flow; therefore full compliance cannot be verified from provided evidence.",
+      "evidence": [
+        "frontend/src/hooks/useSecretaryInstanceAvailability.ts (calls actor.isInstanceNameTaken with generated canonical name)",
+        "frontend/src/components/secretary/SecretaryWidget.tsx (truncated around useSecretaryInstanceAvailability usage; routing/actions not visible)"
       ]
     }
   ],
+  "hallucinated_features": [],
   "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
-    "frontend/src/components/common/UserProfileMenu.tsx",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/profile/ProfileEditPage.tsx",
-    "frontend/src/pages/profile/ProfileViewPage.tsx",
-    "frontend/src/pages/profile/profileLocalState.ts",
-    "frontend/src/utils/spaNavigate.ts",
+    "frontend/src/components/common/AppErrorBoundary.tsx",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/hooks/useSecretaryGeography.ts",
+    "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/lib/whisperInstanceNaming.ts",
     "project_state.json"
   ]
 }

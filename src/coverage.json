@@ -1,79 +1,86 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T20:22:39.423Z",
+  "generatedAt": "2026-02-10T21:16:30.569Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 5,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Support two profile routes: /profile (read-only profile view) and /profile/edit (edit form). Routing must work with the current popstate-based navigation (no new router dependency) and must be reachable from the existing header/user menu navigation.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/components/common/UserProfileMenu.tsx",
-          "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/utils/spaNavigate.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/components/common/UserProfileMenu.tsx",
-          "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/utils/spaNavigate.ts"
-        ]
+        "summary": "Add Secretary-specific Motoko query endpoints that return a single geography record by its hierarchicalId: getStateById(hierarchicalId), getCountyById(hierarchicalId), and getCityById(hierarchicalId). These endpoints must be read-only queries and must not modify any existing geography data or change existing geography query endpoints.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Implement the /profile UI to display the core profile fields in a clean, mobile-first layout using existing Tailwind + shadcn components and Whisper styling. The view must include: avatar, display name, username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. For any fields not yet available from the backend, render sensible placeholders/empty states without breaking existing functionality.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "frontend/src/hooks/useCallerUserProfile.ts",
-          "frontend/src/lib/uiCopy.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/profile/ProfileViewPage.tsx"
-        ]
+        "summary": "Add a Secretary-specific Motoko query endpoint getTop50IssuesForLocation that returns the top-50 issue/category strings for a given geography level (place/county/state) and optional hierarchicalId input. Use the existing stable in-canister category lists (city/county/state) as the data source.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Implement the /profile/edit UI as an edit form that lets the authenticated user update: display name, bio, avatar upload/removal, external links (1–3), and preferences (at minimum provide UI controls for preferences even if persistence is deferred). The edit page must provide Save/Cancel behavior and route back to /profile on cancel and on successful save.",
+        "summary": "Add a Motoko query endpoint searchSimilarCityNames that takes a user-provided city search string and returns a short list of matching USPlace results from the existing geography data (case-insensitive match; safe behavior for empty/very short inputs).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Update the Secretary frontend logic to check whether an instance exists for the selected (or matched) city, county, or state using a backend call rather than scanning all proposals client-side. The Secretary must determine instance availability based on the canonical computed instance name for the selected geography and then route the user either to view an existing instance or to the create-instance flow.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "frontend/src/pages/profile/profileLocalState.ts",
-          "frontend/src/pages/profile/ProfileViewPage.tsx",
+          "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/lib/whisperInstanceNaming.ts",
           "frontend/src/lib/uiCopy.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "frontend/src/pages/profile/profileLocalState.ts",
-          "frontend/src/pages/profile/ProfileViewPage.tsx"
+          "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/lib/whisperInstanceNaming.ts",
+          "frontend/src/lib/uiCopy.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Prevent the app from showing a blank/white screen when a runtime error occurs by adding a top-level React error boundary and a user-visible fallback screen in English that indicates the app failed to load and instructs the user to refresh. Ensure the fallback renders even if a lazily loaded page throws during import.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/common/AppErrorBoundary.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/main.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/common/AppErrorBoundary.tsx",
+          "frontend/src/App.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
-    "frontend/src/components/common/UserProfileMenu.tsx",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/profile/ProfileEditPage.tsx",
-    "frontend/src/pages/profile/ProfileViewPage.tsx",
-    "frontend/src/pages/profile/profileLocalState.ts",
-    "frontend/src/utils/spaNavigate.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/common/AppErrorBoundary.tsx",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useSecretaryGeography.ts",
+    "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/lib/whisperInstanceNaming.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

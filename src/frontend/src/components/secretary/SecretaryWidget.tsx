@@ -8,13 +8,14 @@ import { IconBubble } from '@/components/common/IconBubble';
 import { useSecretaryChat } from '@/hooks/useSecretaryChat';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
-import { useGetAllProposals } from '@/hooks/useQueries';
+import { useSecretaryInstanceAvailability } from '@/hooks/useSecretaryInstanceAvailability';
 import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
 import { useSetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
 import { signalProjectNavigation } from '@/utils/secretaryProjectNavigation';
+import { computeCanonicalInstanceName } from '@/lib/whisperInstanceNaming';
 import { uiCopy } from '@/lib/uiCopy';
 import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
 
@@ -25,7 +26,7 @@ interface SecretaryWidgetProps {
   initialFlow?: 'discovery' | null;
 }
 
-type DiscoveryStep = 'idle' | 'select-state' | 'select-county-or-city' | 'result';
+type DiscoveryStep = 'idle' | 'select-state' | 'select-county-or-city' | 'checking-availability' | 'result';
 type ReportIssueStep = 'idle' | 'collect-description' | 'show-suggestions' | 'custom-category' | 'complete';
 
 interface TypeaheadOption {
@@ -45,6 +46,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
   const [selectedState, setSelectedState] = useState<USState | null>(null);
   const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
+  const [instanceExists, setInstanceExists] = useState<boolean>(false);
   
   // Report issue flow state
   const [reportIssueStep, setReportIssueStep] = useState<ReportIssueStep>('idle');
@@ -57,7 +59,24 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
   const { data: states = [], isLoading: statesLoading } = useGetAllStates();
   const { data: counties = [], isLoading: countiesLoading } = useGetCountiesForState(selectedState?.hierarchicalId || null);
   const { data: places = [], isLoading: placesLoading } = useGetPlacesForState(selectedState?.hierarchicalId || null);
-  const { data: proposals = [] } = useGetAllProposals();
+  
+  // Determine which level to check based on current selection
+  const availabilityLevel = selectedPlace 
+    ? USHierarchyLevel.place 
+    : selectedCounty 
+    ? USHierarchyLevel.county 
+    : selectedState 
+    ? USHierarchyLevel.state 
+    : null;
+
+  const availabilityParams = availabilityLevel && selectedState ? {
+    level: availabilityLevel,
+    state: selectedState,
+    county: selectedCounty,
+    place: selectedPlace,
+  } : null;
+
+  const { data: instanceAvailable, isLoading: checkingAvailability } = useSecretaryInstanceAvailability(availabilityParams);
   
   const { data: suggestions = [], isLoading: suggestionsLoading } = useComplaintSuggestions(
     issueLevel,
@@ -86,6 +105,23 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
       }
     }
   }, [open, initialFlow]);
+
+  // Handle availability check completion
+  useEffect(() => {
+    if (discoveryStep === 'checking-availability' && !checkingAvailability && instanceAvailable !== undefined) {
+      setInstanceExists(instanceAvailable);
+      
+      if (instanceAvailable) {
+        addAssistantMessage(uiCopy.secretary.discoveryFoundInstance);
+      } else {
+        // Determine founding citizen message
+        const message = getFoundingCitizenMessage();
+        addAssistantMessage(message);
+      }
+      
+      setDiscoveryStep('result');
+    }
+  }, [discoveryStep, checkingAvailability, instanceAvailable]);
 
   const startDiscoveryFlow = () => {
     addAssistantMessage(uiCopy.secretary.discoveryPromptState);
@@ -120,14 +156,31 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     const county = option.data as USCounty;
     setSelectedCounty(county);
     addUserMessage(county.fullName);
-    evaluateInstanceAvailability('county', selectedState, county, null);
+    
+    // Start availability check
+    addAssistantMessage(uiCopy.secretary.checkingAvailability);
+    setDiscoveryStep('checking-availability');
   };
 
   const handlePlaceSelect = (option: TypeaheadOption) => {
     const place = option.data as USPlace;
     setSelectedPlace(place);
     addUserMessage(place.shortName);
-    evaluateInstanceAvailability('place', selectedState, selectedCounty, place);
+    
+    // Start availability check
+    addAssistantMessage(uiCopy.secretary.checkingAvailability);
+    setDiscoveryStep('checking-availability');
+  };
+
+  const getFoundingCitizenMessage = (): string => {
+    // This is a simplified version - in reality we'd check all levels
+    if (selectedPlace) {
+      return uiCopy.secretary.foundingCitizenCity;
+    } else if (selectedCounty) {
+      return uiCopy.secretary.foundingCitizenCounty;
+    } else {
+      return uiCopy.secretary.foundingCitizenState;
+    }
   };
 
   const handleDescriptionSubmit = () => {
@@ -144,7 +197,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     addAssistantMessage(uiCopy.secretary.reportIssueCategorySelected);
     
     // Find or create the appropriate proposal
-    const proposalName = getProposalNameForCurrentGeography();
+    const proposalName = computeCanonicalInstanceName(selectedState, selectedCounty, selectedPlace);
     
     if (proposalName) {
       // Save category
@@ -186,97 +239,8 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     setUserInput('');
   };
 
-  const getProposalNameForCurrentGeography = (): string | null => {
-    if (!selectedState) return null;
-    
-    if (selectedPlace) {
-      return `WHISPER-${selectedPlace.shortName},${selectedState.longName}`;
-    } else if (selectedCounty) {
-      return `WHISPER-${selectedCounty.fullName},${selectedState.longName}`;
-    } else {
-      return `WHISPER-${selectedState.longName}`;
-    }
-  };
-
-  const evaluateInstanceAvailability = (
-    level: 'state' | 'county' | 'place',
-    state: USState | null,
-    county: USCounty | null,
-    place: USPlace | null
-  ) => {
-    if (!state) return;
-
-    // Build instance name patterns to check
-    const statePattern = `WHISPER-${state.longName}`;
-    const countyPattern = county ? `WHISPER-${county.fullName},${state.longName}` : null;
-    const placePattern = place ? `WHISPER-${place.shortName},${state.longName}` : null;
-
-    // Check which instances exist
-    const existingInstances = proposals.map(([name]) => name);
-    const hasState = existingInstances.some(name => name === statePattern);
-    const hasCounty = countyPattern ? existingInstances.some(name => name === countyPattern) : false;
-    const hasPlace = placePattern ? existingInstances.some(name => name === placePattern) : false;
-
-    // Determine what to show
-    if (level === 'place' && hasPlace) {
-      // Show result with explicit action
-      addAssistantMessage(uiCopy.secretary.discoveryFoundInstance);
-      setDiscoveryStep('result');
-    } else if (level === 'county' && hasCounty) {
-      // Show result with explicit action
-      addAssistantMessage(uiCopy.secretary.discoveryFoundInstance);
-      setDiscoveryStep('result');
-    } else if (hasState && !hasCounty && !hasPlace) {
-      // Only state exists
-      addAssistantMessage(uiCopy.secretary.discoveryFoundInstance);
-      setDiscoveryStep('result');
-    } else {
-      // Show founding citizen message with explicit action
-      let message = '';
-      const missing: string[] = [];
-      
-      if (!hasPlace && level === 'place') missing.push('City');
-      if (!hasCounty && level !== 'state') missing.push('County');
-      if (!hasState) missing.push('State');
-      
-      if (missing.length === 3) {
-        message = uiCopy.secretary.foundingCitizenAll;
-      } else if (missing.length === 2) {
-        if (missing.includes('City') && missing.includes('County')) {
-          message = uiCopy.secretary.foundingCitizenCityCounty;
-        } else if (missing.includes('City') && missing.includes('State')) {
-          message = uiCopy.secretary.foundingCitizenCityState;
-        } else {
-          message = uiCopy.secretary.foundingCitizenCountyState;
-        }
-      } else if (missing.length === 1) {
-        if (missing.includes('City')) {
-          message = uiCopy.secretary.foundingCitizenCity;
-        } else if (missing.includes('County')) {
-          message = uiCopy.secretary.foundingCitizenCounty;
-        } else {
-          message = uiCopy.secretary.foundingCitizenState;
-        }
-      }
-      
-      addAssistantMessage(message);
-      setDiscoveryStep('result');
-    }
-  };
-
   const handleDiscoveryAction = () => {
-    // Check if instance exists
-    const existingInstances = proposals.map(([name]) => name);
-    const statePattern = selectedState ? `WHISPER-${selectedState.longName}` : null;
-    const countyPattern = selectedCounty && selectedState ? `WHISPER-${selectedCounty.fullName},${selectedState.longName}` : null;
-    const placePattern = selectedPlace && selectedState ? `WHISPER-${selectedPlace.shortName},${selectedState.longName}` : null;
-    
-    const hasInstance = 
-      (placePattern && existingInstances.includes(placePattern)) ||
-      (countyPattern && existingInstances.includes(countyPattern)) ||
-      (statePattern && existingInstances.includes(statePattern));
-    
-    if (hasInstance) {
+    if (instanceExists) {
       navigate('proposals');
     } else {
       navigate('create-instance');
@@ -297,6 +261,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
       setIssueLevel(null);
       setSelectedCategory(null);
       setUserInput('');
+      setInstanceExists(false);
     }, 300);
   };
 
@@ -416,24 +381,24 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     }
 
     if (discoveryStep === 'result') {
-      // Check if instance exists
-      const existingInstances = proposals.map(([name]) => name);
-      const statePattern = selectedState ? `WHISPER-${selectedState.longName}` : null;
-      const countyPattern = selectedCounty && selectedState ? `WHISPER-${selectedCounty.fullName},${selectedState.longName}` : null;
-      const placePattern = selectedPlace && selectedState ? `WHISPER-${selectedPlace.shortName},${selectedState.longName}` : null;
-      
-      const hasInstance = 
-        (placePattern && existingInstances.includes(placePattern)) ||
-        (countyPattern && existingInstances.includes(countyPattern)) ||
-        (statePattern && existingInstances.includes(statePattern));
-      
       return (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Button
             onClick={handleDiscoveryAction}
-            className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
+            className="w-full"
+            size="lg"
           >
-            {hasInstance ? uiCopy.secretary.discoveryViewInstanceButton : uiCopy.secretary.discoveryCreateProposalButton}
+            {instanceExists ? (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                View Existing Instance
+              </>
+            ) : (
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Instance Proposal
+              </>
+            )}
           </Button>
         </div>
       );
@@ -442,7 +407,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     // Report issue flow UI
     if (reportIssueStep === 'collect-description') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Input
             value={issueDescription}
             onChange={(e) => setIssueDescription(e.target.value)}
@@ -453,10 +418,9 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
           <Button
             onClick={handleDescriptionSubmit}
             disabled={!issueDescription.trim()}
-            className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
+            className="w-full"
           >
-            <Send className="h-4 w-4 mr-2" />
-            Submit
+            Continue
           </Button>
         </div>
       );
@@ -466,7 +430,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
       return (
         <div className="space-y-2">
           {suggestionsLoading ? (
-            <div className="text-sm text-muted-foreground">Loading suggestions...</div>
+            <p className="text-sm text-muted-foreground">Loading suggestions...</p>
           ) : suggestions.length > 0 ? (
             <>
               {suggestions.map((category, index) => (
@@ -474,7 +438,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
                   key={index}
                   onClick={() => handleCategorySelect(category)}
                   variant="outline"
-                  className="w-full justify-start text-left"
+                  className="w-full justify-start"
                 >
                   {category}
                 </Button>
@@ -484,7 +448,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
                 variant="ghost"
                 className="w-full"
               >
-                {uiCopy.secretary.reportIssueSomethingElse}
+                Something else
               </Button>
             </>
           ) : (
@@ -493,7 +457,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
               variant="outline"
               className="w-full"
             >
-              {uiCopy.secretary.reportIssueSomethingElse}
+              Enter custom category
             </Button>
           )}
         </div>
@@ -502,7 +466,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
 
     if (reportIssueStep === 'custom-category') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Input
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
@@ -513,9 +477,8 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
           <Button
             onClick={handleCustomCategorySubmit}
             disabled={!userInput.trim()}
-            className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
+            className="w-full"
           >
-            <Send className="h-4 w-4 mr-2" />
             Submit
           </Button>
         </div>
@@ -526,49 +489,24 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     if (isMenuVisible) {
       return (
         <div className="space-y-3">
-          <Button
-            onClick={() => handleOptionSelect(1)}
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3"
-          >
-            <IconBubble size="sm">
-              <MapPin className="h-4 w-4" />
-            </IconBubble>
-            <span className="text-left">Discover Your City</span>
-          </Button>
-          
-          <Button
-            onClick={() => handleOptionSelect(2)}
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3"
-          >
-            <IconBubble size="sm">
-              <AlertTriangle className="h-4 w-4" />
-            </IconBubble>
-            <span className="text-left">Report an Issue</span>
-          </Button>
-          
-          <Button
-            onClick={() => handleOptionSelect(3)}
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3"
-          >
-            <IconBubble size="sm">
-              <FileText className="h-4 w-4" />
-            </IconBubble>
-            <span className="text-left">View Proposals</span>
-          </Button>
-          
-          <Button
-            onClick={() => handleOptionSelect(4)}
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3"
-          >
-            <IconBubble size="sm">
-              <Plus className="h-4 w-4" />
-            </IconBubble>
-            <span className="text-left">Create Instance</span>
-          </Button>
+          {uiCopy.secretary.menuOptions.map((option, index) => (
+            <Button
+              key={index}
+              onClick={() => handleOptionSelect(index + 1)}
+              variant="outline"
+              className="w-full justify-start text-left h-auto py-3"
+            >
+              <span className="flex items-center gap-3">
+                <IconBubble size="sm" variant="secondary">
+                  {index === 0 && <MapPin className="h-4 w-4" />}
+                  {index === 1 && <AlertTriangle className="h-4 w-4" />}
+                  {index === 2 && <FileText className="h-4 w-4" />}
+                  {index === 3 && <Plus className="h-4 w-4" />}
+                </IconBubble>
+                <span>{option}</span>
+              </span>
+            </Button>
+          ))}
         </div>
       );
     }
@@ -579,82 +517,80 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
   if (!open) return null;
 
   return (
-    <Card className="w-full max-w-md shadow-2xl border-2 border-accent/20">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
-        <div className="flex items-center gap-3">
-          <IconBubble size="md">
-            <MessageCircle className="h-5 w-5" />
-          </IconBubble>
-          <CardTitle className="text-xl font-bold">{uiCopy.secretary.widgetTitle}</CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          {!isMenuVisible && (
-            <Button
-              onClick={returnToMenu}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
+    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
+      <Card className="w-full max-w-md shadow-2xl pointer-events-auto">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-3">
+            {!isMenuVisible && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={returnToMenu}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="flex items-center gap-2">
+              <IconBubble size="sm" variant="secondary">
+                <MessageCircle className="h-4 w-4" />
+              </IconBubble>
+              <CardTitle className="text-lg">{uiCopy.secretary.title}</CardTitle>
+            </div>
+          </div>
           <Button
-            onClick={handleClose}
             variant="ghost"
             size="icon"
+            onClick={handleClose}
             className="h-8 w-8"
           >
             <X className="h-4 w-4" />
           </Button>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="p-4">
-        <ScrollArea ref={scrollRef} className="h-[400px] pr-4 mb-4">
-          <div className="space-y-4">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ScrollArea ref={scrollRef} className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {messages.map((msg, index) => (
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.role === 'user'
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
+                  key={index}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+              ))}
+            </div>
+          </ScrollArea>
 
-        {renderContent()}
+          {renderContent()}
 
-        {isMenuVisible && (
-          <div className="mt-4 pt-4 border-t">
+          {isMenuVisible && (
             <div className="flex gap-2">
               <Input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={uiCopy.secretary.inputPlaceholder}
+                placeholder="Or type your request..."
                 className="flex-1"
               />
               <Button
                 onClick={handleFreeTextSubmit}
                 size="icon"
                 disabled={!userInput.trim()}
-                className="shrink-0"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

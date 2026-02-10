@@ -1,108 +1,62 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Profile routing + profile view + profile edit form UI (steps 1–3)",
+  "title": "Secretary instance-availability checks and top-level error boundary fallback",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Add popstate-based routes for /profile (read-only) and /profile/edit (edit form), reachable from existing header/user menu navigation, with auth-required gating.",
+      "id": "REQ-4",
+      "summary": "Update Secretary discovery flow to determine instance availability via backend instance-name checks (no client-side proposal scanning).",
       "acceptanceCriteria": [
-        "Navigating to /profile renders a profile view screen for the authenticated user.",
-        "Navigating to /profile/edit renders an edit form screen for the authenticated user.",
-        "Navigation to /profile and /profile/edit works via window.history.pushState + PopStateEvent (consistent with existing HomeHeader navigation).",
-        "Unauthenticated users visiting either /profile or /profile/edit see an authentication-required state with a login action."
+        "When a user selects a state/county/city in the Secretary widget, the app performs an instance-existence check via a backend call (e.g., isInstanceNameTaken) for the computed instance name(s).",
+        "If an instance exists for the most-specific selected geography, the Secretary presents the “view instance” action path; otherwise it presents the “create proposal/instance” action path.",
+        "No UI flow relies on fetching all proposals just to determine existence."
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
+          "operation": "create",
+          "description": "Create a React Query hook that computes the canonical Whisper instance name (using existing naming utilities) and checks availability via the backend capability for instance-name existence (isInstanceNameTaken). Include safe loading/error handling suitable for Secretary UX."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Replace proposal-list scanning logic with the new backend-backed instance availability hook. Use the canonical computed instance name for the selected geography (state/county/place) and drive the “View Existing Instance” vs “Create Instance Proposal” action path based on the backend check. Remove or avoid any dependency on fetching all proposals solely for existence checks."
+        },
+        {
+          "path": "frontend/src/lib/whisperInstanceNaming.ts",
+          "operation": "modify",
+          "description": "Ensure instance-name generation covers Secretary’s usage consistently (state/county/place) and can be reused without duplicating string concatenation logic in the widget."
+        },
+        {
+          "path": "frontend/src/lib/uiCopy.ts",
+          "operation": "modify",
+          "description": "Add/adjust any needed English user-facing copy for Secretary instance-availability states (e.g., checking availability / unavailable due to connection error) without exposing technical details."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add a top-level React error boundary with an English fallback screen to prevent blank/white screens on runtime or lazy-import errors.",
+      "acceptanceCriteria": [
+        "If a runtime error occurs during initial render or a lazy import, the UI shows a fallback error screen instead of a blank/white screen.",
+        "The fallback screen text is in English and does not expose stack traces.",
+        "Normal operation is unchanged when no errors occur."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/common/AppErrorBoundary.tsx",
+          "operation": "create",
+          "description": "Implement a top-level React error boundary component that renders a simple, user-visible English fallback screen (no stack traces) instructing the user that the app failed to load and to refresh."
+        },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Extend existing popstate + pathname handling to distinguish /profile vs /profile/edit and render the correct page component (no new routing dependency). Wire both routes into the current lazy-loading/page switching logic."
+          "description": "Wrap the lazily loaded routing/render logic in the top-level error boundary so that failures during lazy imports/rendering show the fallback screen rather than a blank/white screen."
         },
         {
-          "path": "frontend/src/components/common/UserProfileMenu.tsx",
+          "path": "frontend/src/main.tsx",
           "operation": "modify",
-          "description": "Add a menu item to navigate to /profile/edit (in addition to existing /profile link) using the provided onNavigate pushState+popstate navigation, keeping profile routes reachable from the header/user menu. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "operation": "create",
-          "description": "Create a dedicated /profile read-only page component with auth-required gating and a login action, using existing Tailwind + shadcn composed components (do not edit frontend/src/components/ui). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "operation": "create",
-          "description": "Create a dedicated /profile/edit page component with auth-required gating and a login action, using existing Tailwind + shadcn composed components (do not edit frontend/src/components/ui). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "modify",
-          "description": "Refactor the existing ProfilePage to avoid being the sole handler for both read-only and edit experiences (e.g., convert to a thin wrapper/re-export, or keep as legacy but route App.tsx to the new ProfileViewPage/ProfileEditPage). Ensure no broken imports from App.tsx lazy loading."
-        },
-        {
-          "path": "frontend/src/utils/spaNavigate.ts",
-          "operation": "create",
-          "description": "Add a small helper to perform SPA navigation via window.history.pushState + PopStateEvent with BASE_URL normalization, so profile pages can navigate back to /profile (and other locations) consistently with HomeHeader."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Implement /profile read-only UI showing core profile sections (with placeholders/empty states for unavailable fields) in a clean, mobile-first layout using Tailwind + shadcn + Whisper styling.",
-      "acceptanceCriteria": [
-        "The /profile page displays an avatar with fallback when no image is set.",
-        "The /profile page displays the saved display name from the existing profile data source when available.",
-        "The /profile page includes UI sections for: handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary.",
-        "If a field is missing/unavailable, the UI shows an empty/placeholder state (no crashes, no console errors from undefined access).",
-        "The page remains responsive on mobile and meets basic accessibility expectations (labels for key fields, accessible button text)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "operation": "modify",
-          "description": "Build the read-only profile layout: avatar + name (from useGetCallerUserProfile), plus sections for username/handle, bio, role/badges, location, join date, contribution stats, external links, and recent activity summary. Use composed shadcn components (e.g., Card, Avatar, Badge, Separator, Button) and Tailwind for a mobile-first responsive layout; render placeholders/empty states for fields not in the backend. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useCallerUserProfile.ts",
-          "operation": "modify",
-          "description": "Add any small non-breaking ergonomics needed by the new /profile view (e.g., exported helper for identity-scoped query key or a shared type guard) while keeping existing behavior intact (no changes to immutable hooks). Ensure missing data is handled safely without undefined access."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add/adjust profile-related UI copy strings needed for the new read-only profile sections (labels like handle, bio, location, join date, stats, links, recent activity; empty-state copy), reusing the existing uiCopy.profile namespace."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Implement /profile/edit UI with form controls for display name, bio, avatar upload/removal, external links (1–3), and preferences UI; provide Save/Cancel, persist supported fields via existing save hook, and navigate back to /profile with updated data.",
-      "acceptanceCriteria": [
-        "The /profile/edit page includes form controls for display name, bio, avatar upload/removal, and 1–3 external links.",
-        "The existing avatar upload validations (image type and max size) remain enforced.",
-        "Cancel returns the user to /profile without saving changes.",
-        "Save persists at least the fields currently supported by the backend (display name + avatar) via the existing save hook; fields not yet supported by the backend must not break save and should have clear non-blocking behavior (e.g., remain local-only or show as 'not yet supported' without failing the save).",
-        "After a successful save, the /profile view reflects the updated name/avatar (via React Query invalidation or refetch)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/profile/ProfileEditPage.tsx",
-          "operation": "modify",
-          "description": "Implement the edit form UI using composed shadcn components (Card, Input, Textarea (if available), Label, Button, Avatar, etc.) and Tailwind. Include controls for display name, bio, avatar upload/removal, 1–3 external links, and preferences (UI controls even if persistence is deferred). Enforce the same avatar validations as the current ProfilePage (image type + max size). Provide Cancel (navigate to /profile without saving) and Save (call useSaveCallerUserProfile for name+avatar; treat other fields as local-only or clearly marked not-yet-supported without blocking save). On successful save, navigate back to /profile. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/profileLocalState.ts",
-          "operation": "create",
-          "description": "Add a small local-only state helper for non-backend fields (bio, external links, preferences) using localStorage (via existing patterns) so fields can be edited without breaking save; include clear defaults/empty states."
-        },
-        {
-          "path": "frontend/src/pages/profile/ProfileViewPage.tsx",
-          "operation": "modify",
-          "description": "Wire an \"Edit profile\" action in the /profile view to navigate to /profile/edit via the SPA navigation helper, and optionally display local-only fields (bio, links, preferences summary) from the local state helper with safe placeholders when absent. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add/adjust edit-form UI copy (Save, Cancel, avatar help text, external link labels, preferences labels, and any 'not yet supported' helper text), keeping wording accessible and concise."
+          "description": "Wire the top-level error boundary into the app bootstrap so errors during initial render are caught and the fallback screen reliably renders."
         }
       ]
     }

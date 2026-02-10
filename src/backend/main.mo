@@ -7,12 +7,11 @@ import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
-
-// Specify the data migration function in with-clause
 
 actor {
   include MixinStorage();
@@ -41,7 +40,7 @@ actor {
   public type USHierarchyLevel = { #country; #state; #county; #place };
   type Effect = { installation : Text; canister : Principal };
   type USCountry = { name : Text; countryGeoId : Text };
-  type USState = {
+  public type USState = {
     hierarchicalId : HierarchicalGeoId;
     shortName : Text;
     longName : Text;
@@ -51,7 +50,7 @@ actor {
     censusLandAreaSqMeters : Nat;
     censusWaterAreaSqMeters : Nat;
   };
-  type USCounty = {
+  public type USCounty = {
     hierarchicalId : HierarchicalGeoId;
     fullName : Text;
     shortName : Text;
@@ -62,7 +61,7 @@ actor {
     censusWaterAreaSqMeters : Text;
     population2010 : Text;
   };
-  type USPlace = {
+  public type USPlace = {
     hierarchicalId : HierarchicalGeoId;
     fullName : Text;
     shortName : Text;
@@ -128,6 +127,11 @@ actor {
     };
   };
 
+  type DeletionRequest = {
+    user : Principal;
+    requestedAt : Int;
+  };
+
   func emptyUSGeographyData() : USGeography {
     {
       country = { name = "United States of America"; countryGeoId = "US" };
@@ -174,6 +178,7 @@ actor {
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let deletionRequests = Map.empty<Principal, DeletionRequest>();
   let geoIdToCensusIdMap = Map.empty<GeoId, CensusId>();
   let censusIdToGeoIdMap = Map.empty<CensusId, GeoId>();
   let hierarchicalGeoIdToGeoIdMap = Map.empty<HierarchicalGeoId, GeoId>();
@@ -385,6 +390,32 @@ actor {
     userProfiles.add(caller, profile);
   };
 
+  public shared ({ caller }) func requestDeletion() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can request account deletion");
+    };
+    let request : DeletionRequest = {
+      user = caller;
+      requestedAt = 0; // In production, use Time.now()
+    };
+    deletionRequests.add(caller, request);
+  };
+
+  public query ({ caller }) func getDeletionRequests() : async [(Principal, DeletionRequest)] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view deletion requests");
+    };
+    deletionRequests.toArray();
+  };
+
+  public shared ({ caller }) func processDeletionRequest(user : Principal) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can process deletion requests");
+    };
+    userProfiles.remove(user);
+    deletionRequests.remove(user);
+  };
+
   public query ({ caller }) func isParent(_childId : Principal, parentId : Principal) : async Bool {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can check parent relationships");
@@ -543,6 +574,52 @@ actor {
   };
 
   // Geography query functions - accessible to all users including guests
+  // Secretary-specific functions for Motoko backend
+  public query ({ caller }) func getStateById(hierarchicalId : HierarchicalGeoId) : async ?USState {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
+    usGeography.states.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func getCountyById(hierarchicalId : HierarchicalGeoId) : async ?USCounty {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
+    usGeography.counties.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func getCityById(hierarchicalId : HierarchicalGeoId) : async ?USPlace {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
+    usGeography.places.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func getTop50IssuesForLocation(_level : USHierarchyLevel, _hierarchicalId : ?HierarchicalGeoId) : async [Text] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
+    let sortedCityIssues = complaintCategoriesCity.sort(
+      func(a, b) { Nat.compare(a.size(), b.size()) }
+    );
+    sortedCityIssues.sliceToArray(0, 50);
+  };
+
+  public query ({ caller }) func searchSimilarCityNames(searchTerm : Text) : async [USPlace] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
+    if (searchTerm.trim(#char ' ').size() < 3) {
+      Runtime.trap("No results for search term: " # searchTerm);
+    };
+    let matchingCities = usGeography.places.filter(
+      func(_hierarchicalId, place) { place.fullName.toLower().contains(#text(searchTerm.toLower())) }
+    );
+    let toArrayFiltered = matchingCities.values().toArray();
+    toArrayFiltered.sliceToArray(0, Nat.min(toArrayFiltered.size(), 8));
+  };
+
   public query ({ caller }) func getAllStates() : async [USState] {
     usGeography.states.values().toArray();
   };
@@ -569,7 +646,6 @@ actor {
     } else { placesArray };
   };
 
-  // New Backend Support: Fetch Places for State
   public query ({ caller }) func getPlacesForState(stateGeoId : GeoId) : async [USPlace] {
     let filteredPlacesList = List.empty<USPlace>();
     for ((placeGeoId, place) in usGeography.places.entries()) {

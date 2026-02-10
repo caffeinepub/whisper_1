@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import { Principal } from '@icp-sdk/core/principal';
-import type { Proposal } from '@/backend';
+import type { Proposal, DeletionRequest } from '@/backend';
 
 /**
  * Example query hook for checking parent-child installation relationships.
@@ -127,4 +127,31 @@ export function useIsCallerAdmin() {
     // Expose authentication state for UI gating
     isAuthenticated,
   };
+}
+
+/**
+ * Hook to fetch all deletion requests (admin only).
+ * Returns array of [Principal, DeletionRequest] tuples.
+ */
+export function useGetDeletionRequests() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+
+  return useQuery<Array<[Principal, DeletionRequest]>>({
+    queryKey: ['deletionRequests'],
+    queryFn: async () => {
+      if (!actor) {
+        throw new Error('Backend connection not available');
+      }
+      try {
+        const result = await actor.getDeletionRequests();
+        return result;
+      } catch (error) {
+        console.error('Error fetching deletion requests:', error);
+        throw new Error('Failed to load deletion requests. Please try again.');
+      }
+    },
+    enabled: !!actor && !!identity && !isFetching,
+    retry: 2,
+  });
 }

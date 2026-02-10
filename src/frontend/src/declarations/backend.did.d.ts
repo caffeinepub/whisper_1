@@ -11,6 +11,7 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export type CensusStateCode = string;
+export interface DeletionRequest { 'user' : Principal, 'requestedAt' : bigint }
 export type GeoId = string;
 export type HierarchicalGeoId = string;
 export type ProfileImage = Uint8Array;
@@ -129,9 +130,12 @@ export interface _SERVICE {
   'getAllStates' : ActorMethod<[], Array<USState>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCityById' : ActorMethod<[HierarchicalGeoId], [] | [USPlace]>,
   'getCityComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
+  'getCountyById' : ActorMethod<[HierarchicalGeoId], [] | [USCounty]>,
   'getCountyComplaintSuggestions' : ActorMethod<[string], Array<string>>,
+  'getDeletionRequests' : ActorMethod<[], Array<[Principal, DeletionRequest]>>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getPlacesForState' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
@@ -139,8 +143,13 @@ export interface _SERVICE {
     [string, USHierarchyLevel],
     SecretaryCategorySuggestion
   >,
+  'getStateById' : ActorMethod<[HierarchicalGeoId], [] | [USState]>,
   'getStateComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
+  'getTop50IssuesForLocation' : ActorMethod<
+    [USHierarchyLevel, [] | [HierarchicalGeoId]],
+    Array<string>
+  >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'hideProposal' : ActorMethod<[string], boolean>,
   'ingestUSGeographyData' : ActorMethod<
@@ -150,7 +159,10 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
+  'processDeletionRequest' : ActorMethod<[Principal], undefined>,
+  'requestDeletion' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'searchSimilarCityNames' : ActorMethod<[string], Array<USPlace>>,
   'submitProposal' : ActorMethod<
     [
       string,
