@@ -1,6 +1,8 @@
-import React, { Component, ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 interface Props {
   children: ReactNode;
@@ -8,25 +10,42 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  errorMessage: string;
+  errorDetails?: string;
 }
 
 /**
- * Top-level error boundary that catches runtime errors and displays a user-friendly fallback screen.
- * Prevents blank/white screens when the app fails to load.
+ * React error boundary component that catches runtime errors and displays
+ * a user-friendly fallback screen with reload button, preventing blank/white screens.
+ * Hardened to handle known production/runtime failures including draft-editor disallowed origin errors.
  */
 export class AppErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = {
+      hasError: false,
+      errorMessage: '',
+      errorDetails: undefined,
+    };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    const { userMessage } = getUserFacingError(error);
+    
+    return {
+      hasError: true,
+      errorMessage: userMessage,
+      errorDetails: error.message,
+    };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App error boundary caught an error:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('AppErrorBoundary caught an error:', error, errorInfo);
+    
+    // Log specific error types for debugging
+    if (error.message.includes('disallowed origin')) {
+      console.error('Draft editor security error detected:', error);
+    }
   }
 
   handleReload = () => {
@@ -36,38 +55,47 @@ export class AppErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="max-w-md w-full text-center space-y-6">
-            <div className="flex justify-center">
-              <div className="rounded-full bg-destructive/10 p-4">
-                <AlertTriangle className="h-12 w-12 text-destructive" />
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-destructive/10">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <CardTitle>Something went wrong</CardTitle>
+                  <CardDescription>
+                    The application encountered an unexpected error
+                  </CardDescription>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-foreground">
-                Something went wrong
-              </h1>
-              <p className="text-muted-foreground">
-                The application failed to load properly. Please try refreshing the page.
-              </p>
-            </div>
-
-            <Button onClick={this.handleReload} size="lg" className="w-full">
-              Refresh Page
-            </Button>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-4 text-left">
-                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-                  Technical details
-                </summary>
-                <pre className="mt-2 text-xs bg-muted p-4 rounded overflow-auto max-h-48">
-                  {this.state.error.toString()}
-                </pre>
-              </details>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-sm text-foreground">
+                  {this.state.errorMessage}
+                </p>
+                {this.state.errorDetails && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                      Technical details
+                    </summary>
+                    <pre className="mt-2 text-xs text-muted-foreground overflow-auto max-h-32">
+                      {this.state.errorDetails}
+                    </pre>
+                  </details>
+                )}
+              </div>
+              <Button
+                onClick={this.handleReload}
+                className="w-full"
+                size="lg"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reload Application
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       );
     }

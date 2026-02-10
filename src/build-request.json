@@ -1,114 +1,48 @@
 {
   "kind": "build_request",
-  "title": "Add Secretary-specific geography + issue endpoints, similar-city search, and instance-availability checks (plus prevent white-screen failures)",
+  "title": "Document clean rebuild + redeploy procedure and troubleshooting for draft deployment errors",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add Secretary-specific Motoko query endpoints that return a single geography record by its hierarchicalId: getStateById(hierarchicalId), getCountyById(hierarchicalId), and getCityById(hierarchicalId). These endpoints must be read-only queries and must not modify any existing geography data or change existing geography query endpoints.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Also run steps 1. \"Add Secretary‑specific Motoko query endpoints: getStateById, getCountyById, getCityById, getTop50IssuesForLocation\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "Calling getStateById with a valid state hierarchicalId returns that USState; invalid IDs return null (or an equivalent non-trapping 'not found' result).",
-        "Calling getCountyById with a valid county hierarchicalId returns that USCounty; invalid IDs return null (or equivalent).",
-        "Calling getCityById with a valid city/place hierarchicalId returns that USPlace; invalid IDs return null (or equivalent).",
-        "No existing geography data structures are mutated, and no existing geography endpoints are modified."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Add a Secretary-specific Motoko query endpoint getTop50IssuesForLocation that returns the top-50 issue/category strings for a given geography level (place/county/state) and optional hierarchicalId input. Use the existing stable in-canister category lists (city/county/state) as the data source.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Add Secretary‑specific Motoko query endpoints: getStateById, getCountyById, getCityById, getTop50IssuesForLocation"
-        ]
-      },
-      "acceptanceCriteria": [
-        "For level=place, getTop50IssuesForLocation returns the city/place complaint category list.",
-        "For level=county, getTop50IssuesForLocation returns the county complaint category list.",
-        "For level=state, getTop50IssuesForLocation returns the state complaint category list.",
-        "The function is a query and does not trap for normal 'not found/unsupported' inputs (returns an empty list or a safe default)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add a Motoko query endpoint searchSimilarCityNames that takes a user-provided city search string and returns a short list of matching USPlace results from the existing geography data (case-insensitive match; safe behavior for empty/very short inputs).",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "searchSimilarCityNames"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Given a search term (e.g., \"Daven\"), searchSimilarCityNames returns a list of places whose shortName and/or fullName matches the term case-insensitively.",
-        "The endpoint is a query and does not modify state.",
-        "Empty/whitespace-only inputs return an empty list (and do not trap).",
-        "The returned list is bounded (e.g., max N results) to avoid excessive payload sizes."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update the Secretary frontend logic to check whether an instance exists for the selected (or matched) city, county, or state using a backend call rather than scanning all proposals client-side. The Secretary must determine instance availability based on the canonical computed instance name for the selected geography and then route the user either to view an existing instance or to the create-instance flow.",
+      "text": "Update the deployment documentation to include an explicit “clean rebuild and redeploy” procedure that clears local build artifacts/caches and then rebuilds + redeploys the project, including a short troubleshooting section for intermittent Caffeine draft deployment failures (e.g., retry guidance) and the known draft preview issue showing `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`. All user-facing text in the docs must be in English.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Add secretary logic to check whether an instance exists for a selected or matched city, county, or state."
+          "trigger a clean rebuild and redeploy"
         ]
       },
       "acceptanceCriteria": [
-        "When a user selects a state/county/city in the Secretary widget, the app performs an instance-existence check via a backend call (e.g., isInstanceNameTaken) for the computed instance name(s).",
-        "If an instance exists for the most-specific selected geography, the Secretary presents the “view instance” action path; otherwise it presents the “create proposal/instance” action path.",
-        "No UI flow relies on fetching all proposals just to determine existence."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Prevent the app from showing a blank/white screen when a runtime error occurs by adding a top-level React error boundary and a user-visible fallback screen in English that indicates the app failed to load and instructs the user to refresh. Ensure the fallback renders even if a lazily loaded page throws during import.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If a runtime error occurs during initial render or a lazy import, the UI shows a fallback error screen instead of a blank/white screen.",
-        "The fallback screen text is in English and does not expose stack traces.",
-        "Normal operation is unchanged when no errors occur."
+        "`frontend/docs/DEPLOYMENT.md` contains a clearly labeled section for performing a clean rebuild and redeploy, with concrete steps a developer can follow.",
+        "`frontend/docs/DEPLOYMENT.md` includes a troubleshooting section that mentions intermittent platform-level draft deployment failures and recommends retrying a clean rebuild/redeploy when they occur.",
+        "The troubleshooting section mentions the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue, without attributing it to application code.",
+        "All new/updated documentation text is written in English."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional canisters/services).",
-    "Do not modify existing geography data or existing geography query endpoints; only add new Secretary-specific entry points.",
-    "Do not edit files under frontend/src/components/ui or any immutable hook paths listed in SYSTEM_CONTEXT.",
-    "Use English for any user-facing text."
+    "Do not edit any files under the immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services."
   ],
   "nonGoals": [
-    "Implementing automatic instance creation/founding-member proposal submission flow beyond checking existence (not requested in this build).",
-    "Changing Caffeine editor/preview infrastructure behavior for the 'draft-editor:error disallowed origin' message (treat as external; only ensure the app remains resilient)."
+    "Do not implement new application features or change existing UI/UX behavior as part of this request.",
+    "Do not add third-party integrations or external deployment tooling beyond what is already used by the project."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

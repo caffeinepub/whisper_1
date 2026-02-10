@@ -91,7 +91,7 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
     if (!instanceName.trim()) {
       errors.push('Instance name is required');
     } else if (!isValidWhisperInstanceName(instanceName)) {
-      errors.push('Instance name must start with "WHISPER-"');
+      errors.push('Instance name must start with "Whisper-"');
     }
 
     if (!description.trim()) {
@@ -297,7 +297,7 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
             {checkingName && <p className="text-xs text-white/60">{uiCopy.createInstance.checkingAvailability}</p>}
             {!checkingName && isNameAvailable && <p className="text-xs text-success">{uiCopy.createInstance.nameAvailable}</p>}
             {!checkingName && showNameTaken && <p className="text-xs text-destructive">{uiCopy.createInstance.nameTaken}</p>}
-            {!checkingName && showInvalidFormat && <p className="text-xs text-destructive">Name must start with "WHISPER-"</p>}
+            {!checkingName && showInvalidFormat && <p className="text-xs text-destructive">Name must start with "Whisper-"</p>}
           </div>
 
           <div className="space-y-2">
@@ -319,23 +319,23 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
           <Button
             onClick={onClose}
             variant="outline"
-            disabled={isSubmitting}
             className="flex-1 border-white/20 text-white hover:bg-white/10"
+            disabled={isSubmitting}
           >
-            {uiCopy.createInstance.cancelButton}
+            {uiCopy.createInstance.cancel}
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || checkingName || !selectedState}
-            className="flex-1 bg-secondary hover:bg-secondary/90 text-white"
+            className="flex-1"
+            disabled={isSubmitting || checkingName || !instanceName || !description || !selectedState}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {uiCopy.createInstance.submitting}
               </>
             ) : (
-              uiCopy.createInstance.submitButton
+              uiCopy.createInstance.submit
             )}
           </Button>
         </div>

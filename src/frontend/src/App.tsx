@@ -55,9 +55,13 @@ function App() {
       default:
         return (
           <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold mb-4">Whisper</h1>
-              <p className="text-muted-foreground">Decentralized civic engagement platform</p>
+            <div className="text-center max-w-4xl px-4">
+              {/* PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS */}
+              {/* This is the official mission statement and must remain exactly as written */}
+              <h1 className="text-4xl font-bold mb-4">Of the People, By the People — Realized</h1>
+              <p className="text-muted-foreground">
+                Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up.
+              </p>
             </div>
           </div>
         );

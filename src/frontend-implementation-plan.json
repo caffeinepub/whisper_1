@@ -1,62 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Secretary instance-availability checks and top-level error boundary fallback",
+  "title": "Deployment docs: clean rebuild/redeploy procedure + draft deployment troubleshooting",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Update Secretary discovery flow to determine instance availability via backend instance-name checks (no client-side proposal scanning).",
+      "id": "REQ-1",
+      "summary": "Expand deployment documentation with a clear clean rebuild + redeploy procedure and troubleshooting notes for intermittent Caffeine draft deployment failures and the known draft preview disallowed-origin console error.",
       "acceptanceCriteria": [
-        "When a user selects a state/county/city in the Secretary widget, the app performs an instance-existence check via a backend call (e.g., isInstanceNameTaken) for the computed instance name(s).",
-        "If an instance exists for the most-specific selected geography, the Secretary presents the “view instance” action path; otherwise it presents the “create proposal/instance” action path.",
-        "No UI flow relies on fetching all proposals just to determine existence."
+        "`frontend/docs/DEPLOYMENT.md` contains a clearly labeled section for performing a clean rebuild and redeploy, with concrete steps a developer can follow.",
+        "`frontend/docs/DEPLOYMENT.md` includes a troubleshooting section that mentions intermittent platform-level draft deployment failures and recommends retrying a clean rebuild/redeploy when they occur.",
+        "The troubleshooting section mentions the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue, without attributing it to application code.",
+        "All new/updated documentation text is written in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useSecretaryInstanceAvailability.ts",
-          "operation": "create",
-          "description": "Create a React Query hook that computes the canonical Whisper instance name (using existing naming utilities) and checks availability via the backend capability for instance-name existence (isInstanceNameTaken). Include safe loading/error handling suitable for Secretary UX."
-        },
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/docs/DEPLOYMENT.md",
           "operation": "modify",
-          "description": "Replace proposal-list scanning logic with the new backend-backed instance availability hook. Use the canonical computed instance name for the selected geography (state/county/place) and drive the “View Existing Instance” vs “Create Instance Proposal” action path based on the backend check. Remove or avoid any dependency on fetching all proposals solely for existence checks."
-        },
-        {
-          "path": "frontend/src/lib/whisperInstanceNaming.ts",
-          "operation": "modify",
-          "description": "Ensure instance-name generation covers Secretary’s usage consistently (state/county/place) and can be reused without duplicating string concatenation logic in the widget."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add/adjust any needed English user-facing copy for Secretary instance-availability states (e.g., checking availability / unavailable due to connection error) without exposing technical details."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Add a top-level React error boundary with an English fallback screen to prevent blank/white screens on runtime or lazy-import errors.",
-      "acceptanceCriteria": [
-        "If a runtime error occurs during initial render or a lazy import, the UI shows a fallback error screen instead of a blank/white screen.",
-        "The fallback screen text is in English and does not expose stack traces.",
-        "Normal operation is unchanged when no errors occur."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/common/AppErrorBoundary.tsx",
-          "operation": "create",
-          "description": "Implement a top-level React error boundary component that renders a simple, user-visible English fallback screen (no stack traces) instructing the user that the app failed to load and to refresh."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wrap the lazily loaded routing/render logic in the top-level error boundary so that failures during lazy imports/rendering show the fallback screen rather than a blank/white screen."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Wire the top-level error boundary into the app bootstrap so errors during initial render are caught and the fallback screen reliably renders."
+          "description": "Rewrite/extend the deployment guide to (1) add a clearly labeled “Clean rebuild and redeploy” section with concrete steps to clear local build artifacts/caches (e.g., dependency install artifacts, build outputs, tool caches as applicable) and then rebuild + redeploy using the project’s existing tooling/scripts; and (2) add a “Troubleshooting” section that explicitly covers intermittent Caffeine draft deployment failures with retry guidance and explicitly documents the known draft preview console error `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz` as a platform preview issue (not application code). Ensure all documentation text is in English and avoid introducing new tools or workflows beyond what the repo already uses."
         }
       ]
     }

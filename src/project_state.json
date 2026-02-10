@@ -1,72 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Whisper decentralized civic engagement platform: add Secretary-specific geography/issue query endpoints, add similar-city-name search, and add secretary logic to verify whether a city/county/state instance exists; current build shows a white screen likely related to a draft-editor 'disallowed origin' error from draft-script.js.",
+  "summary": "New project",
   "architectural_notes": [
-    "Secretary features should be added via new clean entry points (do not modify existing geography data or existing query endpoints)."
+    "Caffeine draft preview may inject internal draft-script.js (origin whitelist) which can prevent React app from mounting if editor-related dependencies are loaded."
   ],
   "known_issues": [
-    "App shows white screen; console error from draft-script.js: 'draft-editor:error disallowed origin' for https://just-olive-eim-draft.caffeine.xyz (postMessage/EditCommunicator/initEditor stack)."
+    "Caffeine draft preview error: draft-editor:error disallowed origin (https://just-olive-eim-draft.caffeine.xyz) causing only static hero HTML to render.",
+    "Intermittent Caffeine platform-level draft deployment failures ('Deployment error') may require clean rebuild/redeploy or retry."
   ],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-update-the-secretary-frontend-logic-to-check-whether-an-instance-exists-for-the-selected-or-matched-city-county-or-state-using-a-backend-call-rather-than-scanning-all-proposals-client-side-the-secretary-must-determine-instance-availability-based-on-the-canonical-computed-instance-name-for-the-selected-geography-and-then-route-the-user-either-to-view-an-existing-instance-or-to-the-create-instance-flow",
-      "title": "Update the Secretary frontend logic to check whether an instance exists for the selected (or matched) city, county, or state using a backend call rather than scanning all proposals client-side. The Secretary must determine instance availability based on the canonical computed instance name for the selected geography and then route the user either to view an existing instance or to the create-instance flow.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-prevent-the-app-from-showing-a-blank-white-screen-when-a-runtime-error-occurs-by-adding-a-top-level-react-error-boundary-and-a-user-visible-fallback-screen-in-english-that-indicates-the-app-failed-to-load-and-instructs-the-user-to-refresh-ensure-the-fallback-renders-even-if-a-lazily-loaded-page-throws-during-import",
-      "title": "Prevent the app from showing a blank/white screen when a runtime error occurs by adding a top-level React error boundary and a user-visible fallback screen in English that indicates the app failed to load and instructs the user to refresh. Ensure the fallback renders even if a lazily loaded page throws during import.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add Secretary-specific Motoko query endpoints: getStateById, getCountyById, getCityById, getTop50IssuesForLocation",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add Motoko query endpoint searchSimilarCityNames for secretary flow",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add secretary logic to check whether an instance exists for a selected or matched city/county/state",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add Secretary-specific Motoko query endpoints that return a single geography record by its hierarchicalId: getStateById(hierarchicalId), getCountyById(hierarchicalId), and getCityById(hierarchicalId). These endpoints must be read-only queries and must not modify any existing geography data or change existing geography query endpoints.",
+      "summary": "Update the deployment documentation to include an explicit “clean rebuild and redeploy” procedure that clears local build artifacts/caches and then rebuilds + redeploys the project, including a short troubleshooting section for intermittent Caffeine draft deployment failures (e.g., retry guidance) and the known draft preview issue showing `draft-editor:error disallowed origin: https://just-olive-eim-draft.caffeine.xyz`. All user-facing text in the docs must be in English.",
       "reqIds": [
         "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Add a Secretary-specific Motoko query endpoint getTop50IssuesForLocation that returns the top-50 issue/category strings for a given geography level (place/county/state) and optional hierarchicalId input. Use the existing stable in-canister category lists (city/county/state) as the data source.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add a Motoko query endpoint searchSimilarCityNames that takes a user-provided city search string and returns a short list of matching USPlace results from the existing geography data (case-insensitive match; safe behavior for empty/very short inputs).",
-      "reqIds": [
-        "REQ-3"
       ],
       "status": "pending"
     }

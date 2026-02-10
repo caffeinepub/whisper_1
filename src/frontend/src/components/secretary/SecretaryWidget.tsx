@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, ArrowLeft, FileText, AlertTriangle, MapPin, Plus } from 'lucide-react';
+import { MessageCircle, X, Send, ArrowLeft, FileText, AlertTriangle, MapPin, Plus, Loader2 } from 'lucide-react';
 import { IconBubble } from '@/components/common/IconBubble';
 import { useSecretaryChat } from '@/hooks/useSecretaryChat';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
 import { useSecretaryInstanceAvailability } from '@/hooks/useSecretaryInstanceAvailability';
+import { useSecretaryAutoCreateInstance } from '@/hooks/useSecretaryAutoCreateInstance';
 import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
 import { useSetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -16,6 +17,7 @@ import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
 import { signalProjectNavigation } from '@/utils/secretaryProjectNavigation';
 import { computeCanonicalInstanceName } from '@/lib/whisperInstanceNaming';
+import { composeSecretaryMessage, getFoundingMemberMessage, getInstanceFoundMessage } from '@/lib/secretaryFriendlyMessages';
 import { uiCopy } from '@/lib/uiCopy';
 import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
 
@@ -26,7 +28,7 @@ interface SecretaryWidgetProps {
   initialFlow?: 'discovery' | null;
 }
 
-type DiscoveryStep = 'idle' | 'select-state' | 'select-county-or-city' | 'checking-availability' | 'result';
+type DiscoveryStep = 'idle' | 'select-state' | 'select-county-or-city' | 'checking-availability' | 'result' | 'creating-instance';
 type ReportIssueStep = 'idle' | 'collect-description' | 'show-suggestions' | 'custom-category' | 'complete';
 
 interface TypeaheadOption {
@@ -47,6 +49,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
   const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
   const [instanceExists, setInstanceExists] = useState<boolean>(false);
+  const [createdInstanceName, setCreatedInstanceName] = useState<string | null>(null);
   
   // Report issue flow state
   const [reportIssueStep, setReportIssueStep] = useState<ReportIssueStep>('idle');
@@ -77,6 +80,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
   } : null;
 
   const { data: instanceAvailable, isLoading: checkingAvailability } = useSecretaryInstanceAvailability(availabilityParams);
+  const autoCreateMutation = useSecretaryAutoCreateInstance();
   
   const { data: suggestions = [], isLoading: suggestionsLoading } = useComplaintSuggestions(
     issueLevel,
@@ -111,17 +115,32 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     if (discoveryStep === 'checking-availability' && !checkingAvailability && instanceAvailable !== undefined) {
       setInstanceExists(instanceAvailable);
       
+      // Use friendly message helper
+      const geographyLabel = getGeographyLabel();
+      
       if (instanceAvailable) {
-        addAssistantMessage(uiCopy.secretary.discoveryFoundInstance);
+        const message = getInstanceFoundMessage(geographyLabel);
+        addAssistantMessage(message);
       } else {
-        // Determine founding citizen message
-        const message = getFoundingCitizenMessage();
+        const level = availabilityLevel || USHierarchyLevel.state;
+        const message = getFoundingMemberMessage(level, geographyLabel);
         addAssistantMessage(message);
       }
       
       setDiscoveryStep('result');
     }
   }, [discoveryStep, checkingAvailability, instanceAvailable]);
+
+  const getGeographyLabel = (): string => {
+    if (selectedPlace && selectedState) {
+      return `${selectedPlace.shortName}, ${selectedState.shortName}`;
+    } else if (selectedCounty && selectedState) {
+      return `${selectedCounty.shortName}, ${selectedState.shortName}`;
+    } else if (selectedState) {
+      return selectedState.longName;
+    }
+    return 'your selected location';
+  };
 
   const startDiscoveryFlow = () => {
     addAssistantMessage(uiCopy.secretary.discoveryPromptState);
@@ -170,17 +189,6 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     // Start availability check
     addAssistantMessage(uiCopy.secretary.checkingAvailability);
     setDiscoveryStep('checking-availability');
-  };
-
-  const getFoundingCitizenMessage = (): string => {
-    // This is a simplified version - in reality we'd check all levels
-    if (selectedPlace) {
-      return uiCopy.secretary.foundingCitizenCity;
-    } else if (selectedCounty) {
-      return uiCopy.secretary.foundingCitizenCounty;
-    } else {
-      return uiCopy.secretary.foundingCitizenState;
-    }
   };
 
   const handleDescriptionSubmit = () => {
@@ -239,13 +247,48 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     setUserInput('');
   };
 
+  const handleAutoCreateInstance = async () => {
+    if (!selectedState || !availabilityLevel) {
+      addAssistantMessage('Unable to create instance. Please try again.');
+      return;
+    }
+
+    setDiscoveryStep('creating-instance');
+    addAssistantMessage('Creating your Whisper instance...');
+
+    try {
+      const result = await autoCreateMutation.mutateAsync({
+        level: availabilityLevel,
+        state: selectedState,
+        county: selectedCounty,
+        place: selectedPlace,
+        description: `Whisper instance for ${getGeographyLabel()}`,
+      });
+
+      setCreatedInstanceName(result.instanceName);
+      addAssistantMessage(`Success! Your Whisper instance "${result.instanceName}" has been created. Navigating to your new instance...`);
+      
+      // Navigate to the newly created proposal
+      setTimeout(() => {
+        navigate('proposals');
+        handleClose();
+      }, 2000);
+    } catch (error: any) {
+      console.error('Auto-create failed:', error);
+      const errorMessage = error?.message || 'Failed to create instance. Please try again.';
+      addAssistantMessage(errorMessage);
+      setDiscoveryStep('result');
+    }
+  };
+
   const handleDiscoveryAction = () => {
     if (instanceExists) {
       navigate('proposals');
+      handleClose();
     } else {
-      navigate('create-instance');
+      // Trigger automatic instance creation
+      handleAutoCreateInstance();
     }
-    handleClose();
   };
 
   const handleClose = () => {
@@ -262,6 +305,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
       setSelectedCategory(null);
       setUserInput('');
       setInstanceExists(false);
+      setCreatedInstanceName(null);
     }, 300);
   };
 
@@ -380,6 +424,17 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
       );
     }
 
+    if (discoveryStep === 'creating-instance') {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Creating instance...</p>
+          </div>
+        </div>
+      );
+    }
+
     if (discoveryStep === 'result') {
       return (
         <div className="space-y-3">
@@ -387,8 +442,14 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
             onClick={handleDiscoveryAction}
             className="w-full"
             size="lg"
+            disabled={autoCreateMutation.isPending}
           >
-            {instanceExists ? (
+            {autoCreateMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : instanceExists ? (
               <>
                 <FileText className="mr-2 h-4 w-4" />
                 View Existing Instance
@@ -396,7 +457,7 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
             ) : (
               <>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Instance Proposal
+                Create Instance
               </>
             )}
           </Button>
@@ -547,22 +608,23 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <ScrollArea ref={scrollRef} className="h-[400px] pr-4">
-            <div className="space-y-3">
-              {messages.map((msg, index) => (
+            <div className="space-y-4">
+              {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === 'user'
+                      message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-foreground'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
@@ -572,12 +634,12 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
           {renderContent()}
 
           {isMenuVisible && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2 border-t">
               <Input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Or type your request..."
+                placeholder={uiCopy.secretary.inputPlaceholder}
                 className="flex-1"
               />
               <Button
