@@ -1,16 +1,45 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T22:06:29.010Z",
-  "summary": "REQ-46 appears implemented: a small Secretary greeting/tooltip (nudge) is added to the main app shell, includes an explicit English CTA and an action to open the Secretary widget, is dismissible with persistence via localStorage, uses existing Tailwind + shadcn components, and includes accessibility labeling for the dismiss control.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.86,
+  "generatedAt": "2026-02-10T00:44:11.066Z",
+  "summary": "Diff implements a Secretary navigation registry/deep-link mechanism (hook + parsing + docs) and refines Secretary widget styling. Hero/CTA polish appears partially addressed via global CSS utilities and App updates, but the actual new hero image asset under the required public assets path is not evidenced in the diff summary. Several unrelated UI/theme and feature-area styling changes also appear beyond the BuildRequest scope.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Hero section loads the updated photorealistic image asset from the static assets directory under frontend/public/assets/generated (whisper-hero-community-real-v2.dim_1600x900.png) and uses it as the homepage hero background.",
+      "reason": "The diff summary mentions App.tsx uses an updated hero image, but there is no evidence of the actual new image file being added under frontend/public/assets/generated (no added/modified files under frontend/public are shown). Without the asset change in the static directory, the acceptance criteria for loading the updated image from that location is not verified.",
+      "evidence": [
+        "frontend/src/App.tsx (mentions updated hero image in summary, but asset file change not shown)",
+        "File diff summary: ADDED files do not include any frontend/public/assets/generated image"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Global theme/token overhaul to a navy/teal civic-tech palette and addition of multiple new global utility styles (glow shadows, hover lift, hero gradient, etc.).",
+      "reason": "BuildRequest focuses on hero visual treatment, Secretary widget readability, and navigation hooks. A broad global color-token/theme shift is not explicitly requested and may affect unrelated UI across the app.",
+      "evidence": [
+        "frontend/src/index.css"
+      ]
+    },
+    {
+      "description": "Restyling and feature-scope updates to Create Instance and proposals-related UI beyond the Secretary/hero requirements.",
+      "reason": "BuildRequest does not request redesign/restyling of instance creation placeholder cards or proposals list/detail components; these appear to be additional UI work outside the specified requirements.",
+      "evidence": [
+        "frontend-file-summaries.txt (entries for frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx, frontend/src/components/proposals/ProposalsSection.tsx, frontend/src/components/proposals/ProposalDetailDialog.tsx)"
+      ]
+    }
+  ],
+  "confidence": 0.66,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md",
     "frontend/src/App.tsx",
-    "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
-    "frontend/src/hooks/useLocalStorageState.ts",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/hooks/useSecretaryChat.ts",
+    "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
+    "frontend/src/index.css",
+    "frontend/src/lib/secretaryNavigation.ts",
     "project_state.json"
   ]
 }

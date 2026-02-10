@@ -1,13 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Improve discoverability of the existing Secretary widget by adding a small, non-intrusive greeting/tooltip with a clear action to open it.
+**Goal:** Improve the homepage hero’s visual impact and readability, refine the Secretary widget UI for clearer hierarchy, and add an extensible navigation/deep-link hook system so the Secretary can route users to pages or in-page features.
 
 **Planned changes:**
-- Add a front-page greeting/tooltip in the main app shell (e.g., near header actions and/or near the floating Secretary button) that appears on first visit or until dismissed.
-- Include an explicit English call-to-action referencing the Secretary feature and a clickable control that opens the existing Secretary widget.
-- Add a user-dismissible close control with accessible labeling, keyboard operability, and visible focus states.
-- Persist the dismissed state client-side so the greeting/tooltip stays dismissed across page reloads.
-- Implement styling using existing Tailwind + shadcn components/tokens to match the established civic theme (no new color palette).
+- Replace the homepage hero background with an updated photorealistic real-life community collaboration/efficiency image from `frontend/public/assets/generated`, ensuring responsive `object-cover` behavior without hiding key subjects.
+- Refine the hero overlay gradient and any subtle image treatment so the photo remains recognizable while preserving strong headline/subtext readability across breakpoints.
+- Apply hero/UI polish: improve headline contrast/pop, adjust hero spacing/layout, and refine CTA button styling (hover, shadows, borders) consistent with the existing style system.
+- Refine the Secretary widget’s readability and hierarchy: tune background/blur, improve assistant vs user bubble contrast, and adjust typographic hierarchy (header, quick actions label, message text).
+- Add a documented, extensible hook + registry pattern for navigation/deep-link destinations so the Secretary can trigger URL-based deep links and in-page section toggles, and demonstrate it end-to-end with at least one existing Secretary action.
 
-**User-visible outcome:** First-time visitors see a subtle tip pointing them to the Secretary feature and can click it to open the widget; once dismissed, the tip will no longer appear for that user on reload.
+**User-visible outcome:** The homepage hero looks more photorealistic and clear with readable text and polished CTAs; the Secretary widget is easier to read with clearer message hierarchy; and the Secretary can direct users to supported pages or in-page sections via a reusable navigation hook system.

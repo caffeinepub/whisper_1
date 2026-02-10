@@ -1,52 +1,121 @@
 {
   "kind": "build_request",
-  "title": "Add front-page greeting/tooltip to improve Secretary widget discoverability",
+  "title": "Refine hero visual treatment and add extensible navigation hooks for the Secretary chatbot",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-46",
-      "text": "Add a small, non-intrusive front-page greeting/tooltip that helps users notice the existing Secretary widget and provides an obvious action to open it.",
+      "id": "REQ-1",
+      "text": "Update the homepage hero background to use a real-life (photorealistic) image that clearly conveys community collaboration and efficiency, and ensure the hero section uses the updated asset.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-4"
         ],
         "quotes": [
-          "yes"
+          "Make sure the hero image is changed to a real life image that represents community collaboration and efficiency"
         ]
       },
       "acceptanceCriteria": [
-        "A small greeting/tooltip is visible somewhere in the main app shell (e.g., near the header actions area and/or near the floating Secretary button) when the user first visits or until dismissed.",
-        "The greeting/tooltip includes an explicit, English call-to-action that references the existing Secretary feature (e.g., \"Need help? Click Secretary to get started.\") and provides a clickable control that opens the Secretary widget.",
-        "The greeting/tooltip can be dismissed by the user and stays dismissed for that user across page reloads (client-side persistence is acceptable).",
-        "All user-facing text in the greeting/tooltip is in English.",
-        "The greeting/tooltip styling uses existing Tailwind + shadcn components/tokens and matches the established civic theme (no new color palette).",
-        "The greeting/tooltip is accessible: keyboard-operable controls, visible focus states, and appropriate aria-labels for icon-only dismiss/close controls (if used)."
+        "Hero background image is a photorealistic real-life scene representing community collaboration and efficiency",
+        "Hero section loads the updated image from the static assets directory under frontend/public/assets/generated",
+        "Image remains responsive (object-cover) across mobile/desktop without obvious cropping issues that hide key subjects"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Refine the hero overlay and overall hero tone so the hero image remains visibly recognizable while maintaining strong text readability (adjust gradient colors/opacities and/or add subtle image treatment if needed).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "refine the hero image to be more visible with the overlay color"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Hero image details are visibly discernible behind the overlay on common viewport sizes",
+        "Hero headline and subtext remain clearly readable over the image",
+        "Overlay remains a gradient (not a flat color) and is applied consistently across breakpoints"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Apply the listed UI refinements across the hero and key interactive elements: hero headline contrast/pop, hero spacing/layout, and CTA button polish (hover, shadows, borders) while staying consistent with the existing style system.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-3",
+          "msg-4"
+        ],
+        "quotes": [
+          "List out would you like to refine in the hero image and tone and any other design elements.",
+          "accomplish all that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Hero headline has improved visual separation from background (e.g., tuned shadow/contrast) without reducing readability",
+        "Spacing between headline, description, and CTAs is visually balanced on mobile and desktop",
+        "Primary/secondary hero buttons have consistent hover/focus styling and feel cohesive with the rest of the page"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Refine the Secretary widget and related UI for readability and hierarchy: background/blur level, assistant/user bubble contrast, and typographic hierarchy (title, quick actions label, message text).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-3",
+          "msg-4"
+        ],
+        "quotes": [
+          "Secretary popup: adjust 50% black background, blur level, and bubble contrast.",
+          "Secretary text hierarchy: weights, spacing, and white/gray balance.",
+          "accomplish all that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Secretary widget remains readable over both light and dark page areas",
+        "Assistant and user message bubbles have clearly distinguishable surfaces and consistent text contrast",
+        "Widget header, quick-actions label, and message text show clear hierarchy (size/weight/opacity)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add an extensible navigation/deep-link hook system that current and future pages/features can register with, so the Secretary chatbot can direct the user to the correct page/feature when invoked (including from menu option selection and free-text routing).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "incorporate hooks in current and future site pages and features so the chat bot secretary is able to direct to that page or feature when it is called upon"
+        ]
+      },
+      "acceptanceCriteria": [
+        "There is a clear, documented pattern (hook + registry) that pages/features can use to register a navigable destination/action for the Secretary",
+        "Existing Secretary option selection can trigger navigation/directing behavior using the new hook system (at minimum, one or more current actions demonstrate the mechanism end-to-end)",
+        "The system supports both (a) opening/toggling in-page sections (e.g., reveal an existing section) and (b) URL-based deep links (e.g., via query/hash parameters) without requiring edits to immutable hook files",
+        "A short developer note is added describing how to register new destinations for future pages/features"
       ]
     }
   ],
   "constraints": [
-    "Frontend must remain React + TypeScript with Tailwind, shadcn components, and React Query patterns.",
-    "Do not edit files under frontend/src/components/ui (read-only); compose existing components instead.",
-    "Keep all user-facing text in English."
+    "Backend must remain a single Motoko actor (no new backend services).",
+    "Do not modify files under frontend/src/components/ui (read-only shadcn components).",
+    "Do not modify immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+    "All user-facing text must be in English."
   ],
   "nonGoals": [
-    "Do not change the Secretary widget conversation flows, option routing behavior, or backend logic.",
-    "Do not introduce AI/LLM integrations or any external services.",
-    "Do not add new authentication or authorization behavior."
+    "Implementing a real AI/LLM-based Secretary (the Secretary remains a prototype navigation assistant).",
+    "Adding third-party authentication providers beyond Internet Identity.",
+    "Introducing new backend data models or persistence solely for chat routing.",
+    "Building real-time chat infrastructure (no websockets/push/email/SMS)."
   ],
   "imageRequirements": {
     "required": [],
-    "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
+    "edits": [
+      "Improve photorealism/clarity and better convey collaboration + efficiency; adjust exposure/contrast for visibility (whisper-hero-community-real.dim_1600x900.png > whisper-hero-community-real-v2.dim_1600x900.png)"
+    ]
   }
 }

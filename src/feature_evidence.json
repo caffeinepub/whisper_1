@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-small-non-intrusive-front-page-greeting-tooltip-that-helps-users-notice-the-existing-secretary-widget-and-provides-an-obvious-action-to-open-it",
-      "featureTitle": "Add a small, non-intrusive front-page greeting/tooltip that helps users notice the existing Secretary widget and provides an obvious action to open it.",
+      "featureId": "feature-update-the-homepage-hero-background-to-use-a-real-life-photorealistic-image-that-clearly-conveys-community-collaboration-and-efficiency-and-ensure-the-hero-section-uses-the-updated-asset",
+      "featureTitle": "Update the homepage hero background to use a real-life (photorealistic) image that clearly conveys community collaboration and efficiency, and ensure the hero section uses the updated asset.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/secretary/SecretaryDiscoverabilityNudge.tsx",
-        "frontend/src/hooks/useLocalStorageState.ts"
+        "frontend/src/App.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -18,7 +16,91 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-46"
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refine-the-hero-overlay-and-overall-hero-tone-so-the-hero-image-remains-visibly-recognizable-while-maintaining-strong-text-readability-adjust-gradient-colors-opacities-and-or-add-subtle-image-treatment-if-needed",
+      "featureTitle": "Refine the hero overlay and overall hero tone so the hero image remains visibly recognizable while maintaining strong text readability (adjust gradient colors/opacities and/or add subtle image treatment if needed).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-the-listed-ui-refinements-across-the-hero-and-key-interactive-elements-hero-headline-contrast-pop-hero-spacing-layout-and-cta-button-polish-hover-shadows-borders-while-staying-consistent-with-the-existing-style-system",
+      "featureTitle": "Apply the listed UI refinements across the hero and key interactive elements: hero headline contrast/pop, hero spacing/layout, and CTA button polish (hover, shadows, borders) while staying consistent with the existing style system.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refine-the-secretary-widget-and-related-ui-for-readability-and-hierarchy-background-blur-level-assistant-user-bubble-contrast-and-typographic-hierarchy-title-quick-actions-label-message-text",
+      "featureTitle": "Refine the Secretary widget and related UI for readability and hierarchy: background/blur level, assistant/user bubble contrast, and typographic hierarchy (title, quick actions label, message text).",
+      "files": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-extensible-navigation-deep-link-hook-system-that-current-and-future-pages-features-can-register-with-so-the-secretary-chatbot-can-direct-the-user-to-the-correct-page-feature-when-invoked-including-from-menu-option-selection-and-free-text-routing",
+      "featureTitle": "Add an extensible navigation/deep-link hook system that current and future pages/features can register with, so the Secretary chatbot can direct the user to the correct page/feature when invoked (including from menu option selection and free-text routing).",
+      "files": [
+        "frontend/docs/SECRETARY_NAVIGATION_HOOKS.md",
+        "frontend/src/App.tsx",
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/hooks/useSecretaryChat.ts",
+        "frontend/src/hooks/useSecretaryNavigationRegistry.ts",
+        "frontend/src/lib/secretaryNavigation.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
       ],
       "confidence": "high"
     }

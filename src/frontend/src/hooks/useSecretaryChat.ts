@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { matchKeywordToOption } from '@/lib/secretaryNavigation';
 
 export type MessageRole = 'assistant' | 'user';
 
@@ -132,7 +133,19 @@ export function useSecretaryChat() {
         return handleOptionClick(optionNumber);
       }
 
-      // Otherwise, treat as free text
+      // Try keyword matching for free-text routing
+      const matchedOption = matchKeywordToOption(trimmedText);
+      if (matchedOption !== null) {
+        addUserMessage(trimmedText);
+        setTimeout(() => {
+          addAssistantMessage(
+            `I understand you're interested in option ${matchedOption}. Let me direct you there...`
+          );
+        }, 300);
+        return matchedOption;
+      }
+
+      // Otherwise, treat as free text with fallback
       addUserMessage(trimmedText);
       
       // Add fallback response
