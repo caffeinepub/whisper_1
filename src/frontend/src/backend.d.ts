@@ -7,17 +7,27 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface ContributionLogEntry {
+    id: bigint;
+    pointsAwarded: bigint;
+    actionType: string;
+    referenceId?: string;
+    rewardType: string;
+    timestamp: bigint;
+    details?: string;
+    contributor: Principal;
+}
 export interface SecretaryCategorySuggestion {
     statesByGeoId: Array<USState>;
     searchTerm: string;
     locationLevel: USHierarchyLevel;
     proposedCategories: Array<string>;
 }
-export type CensusStateCode = string;
-export interface Task {
-    id: bigint;
-    completed: boolean;
-    description: string;
+export interface ContributionCriteria {
+    actionType: string;
+    rewardType: string;
+    eligibilityCriteria: string;
+    points: bigint;
 }
 export type SubmitProposalResult = {
     __kind__: "error";
@@ -30,6 +40,17 @@ export type SubmitProposalResult = {
         proposal: Proposal;
     };
 };
+export interface Task {
+    id: bigint;
+    completed: boolean;
+    description: string;
+}
+export interface ContributionPoints {
+    token: bigint;
+    city: bigint;
+    voting: bigint;
+    bounty: bigint;
+}
 export interface Proposal {
     status: string;
     geographyLevel: USHierarchyLevel;
@@ -42,6 +63,7 @@ export interface Proposal {
     censusBoundaryId: string;
     population2020: string;
 }
+export type CensusStateCode = string;
 export type GeoId = string;
 export interface USGeographyDataChunk {
     states: Array<USState>;
@@ -61,6 +83,14 @@ export interface USPlace {
     population?: bigint;
     censusPlaceType: string;
     censusStateCode: CensusStateCode;
+}
+export interface ContributionSummary {
+    totalCityPoints: bigint;
+    totalBountyPoints: bigint;
+    totalVotingPoints: bigint;
+    totalTokenPoints: bigint;
+    totalPoints: bigint;
+    contributor: Principal;
 }
 export interface USCounty {
     censusLandAreaSqMeters: string;
@@ -85,9 +115,17 @@ export interface USState {
 }
 export type ProfileImage = Uint8Array;
 export type HierarchicalGeoId = string;
+export interface TokenBalance {
+    staked: bigint;
+    total: bigint;
+    voting: bigint;
+    bounty: bigint;
+}
 export interface UserProfile {
     profileImage?: ProfileImage;
     name: string;
+    tokenBalance: TokenBalance;
+    contributionPoints: ContributionPoints;
 }
 export enum USHierarchyLevel {
     country = "country",
@@ -101,7 +139,10 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addContributionPoints(points: bigint, rewardType: string, actionType: string): Promise<void>;
     addOrUpdateLocationBasedIssues(locationLevel: USHierarchyLevel, locationId: string | null, issues: Array<string>): Promise<void>;
+    adminGetContributionLogs(offset: bigint, limit: bigint): Promise<Array<[Principal, Array<ContributionLogEntry>]>>;
+    adminGetUserContributionLogs(user: Principal, limit: bigint): Promise<Array<ContributionLogEntry>>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     backend_getIssueCategoriesByHierarchyLevel(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     backend_getUSCountyByHierarchicalId(hierarchicalId: string): Promise<USCounty | null>;
@@ -115,10 +156,13 @@ export interface backendInterface {
     getAllProposals(): Promise<Array<[string, Proposal]>>;
     getAllStateComplaintCategories(): Promise<Array<string>>;
     getAllStates(): Promise<Array<USState>>;
+    getCallerContributionHistory(limit: bigint): Promise<Array<ContributionLogEntry>>;
+    getCallerContributionSummary(): Promise<ContributionSummary>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCityById(cityId: string): Promise<USPlace | null>;
     getCityComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
+    getContributionCriteria(): Promise<Array<[string, ContributionCriteria]>>;
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
     getCountyById(countyId: string): Promise<USCounty | null>;
     getCountyComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
@@ -137,7 +181,9 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
+    recordContribution(actionType: string, points: bigint, rewardType: string, referenceId: string | null, details: string | null): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
     updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;

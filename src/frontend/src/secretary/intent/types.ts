@@ -13,6 +13,7 @@ export type SecretaryIntent =
   | 'find_instance'
   | 'create_instance'
   | 'ask_category'
+  | 'top_issues'
   | null;
 
 /**

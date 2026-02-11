@@ -1,29 +1,26 @@
 /**
- * Intent/slot mini-runner that:
- * 1. Determines the next missing slot from the active flow
- * 2. Emits a prompt/view-model request
- * 3. Consumes user input/actions to fill slots
- * 4. Triggers completion when all required slots are filled
+ * Intent/slot mini-runner that determines next missing slots, emits prompts,
+ * consumes user input to fill slots, and triggers completion when all required slots are filled.
  */
 
-import type { SecretaryContext } from '../flow/types';
 import type { SecretaryIntent, SecretarySlot, SlotBag } from './types';
-import { getFlow } from './flowRegistry';
+import type { SecretaryContext } from '../flow/types';
+import { getFlowDefinition, getNavigationHandler } from './flowRegistry';
 import { isSlotFilled, setSlot } from './slotState';
-import { addMessage } from '../state/secretaryContext';
+import { buildSlotPrompt } from '../copy/secretaryPrompts';
 
 /**
- * Get the next missing required slot for the active intent
+ * Get the next missing required slot for an intent
  */
 export function getNextMissingSlot(
   intent: SecretaryIntent,
   slots: SlotBag
 ): SecretarySlot | null {
-  const flow = getFlow(intent);
+  const flow = getFlowDefinition(intent);
   if (!flow) return null;
 
-  // Check required slots in prompt order
-  for (const slot of flow.promptOrder) {
+  // Check required slots in order
+  for (const slot of flow.slotOrder) {
     if (flow.requiredSlots.includes(slot) && !isSlotFilled(slots, slot)) {
       return slot;
     }
@@ -33,64 +30,66 @@ export function getNextMissingSlot(
 }
 
 /**
- * Check if all required slots are filled for the active intent
+ * Check if all required slots are filled
  */
 export function areAllRequiredSlotsFilled(
   intent: SecretaryIntent,
   slots: SlotBag
 ): boolean {
-  const flow = getFlow(intent);
+  const flow = getFlowDefinition(intent);
   if (!flow) return false;
 
-  return flow.requiredSlots.every((slot) => isSlotFilled(slots, slot));
-}
-
-/**
- * Get a prompt for the next missing slot
- */
-export function getSlotPrompt(slot: SecretarySlot, context: SecretaryContext): string {
-  switch (slot) {
-    case 'state':
-      return 'Which state would you like to explore?';
-    case 'county':
-      if (context.slots.state) {
-        return `Great! Now, which county in ${context.slots.state.longName} would you like to explore?`;
-      }
-      return 'Which county would you like to explore?';
-    case 'place':
-      if (context.slots.county) {
-        return `Which city or town in ${context.slots.county.fullName}?`;
-      }
-      return 'Which city or town would you like to explore?';
-    case 'issue_description':
-      return 'Please describe the issue you\'d like to report:';
-    case 'issue_category':
-      return 'Based on your description, here are some suggested categories:';
-    default:
-      return 'Please provide more information:';
-  }
+  return flow.requiredSlots.every(slot => isSlotFilled(slots, slot));
 }
 
 /**
  * Fill a slot with a value
  */
-export function fillSlot(
+export function fillSlot<K extends SecretarySlot>(
   slots: SlotBag,
-  slot: SecretarySlot,
-  value: any
+  slotName: K,
+  value: SlotBag[K]
 ): void {
-  setSlot(slots, slot, value);
+  setSlot(slots, slotName, value);
 }
 
 /**
- * Execute the completion action for an intent
+ * Get a prompt for a slot
  */
-export function executeCompletion(
-  intent: SecretaryIntent,
-  context: SecretaryContext
-): void {
-  const flow = getFlow(intent);
-  if (!flow) return;
+export function getSlotPrompt(slot: SecretarySlot, context: SecretaryContext): string {
+  return buildSlotPrompt(slot, context.slots.state, context.slots.county);
+}
 
-  flow.completionAction(context);
+/**
+ * Execute completion action for an intent
+ */
+export function executeCompletion(intent: SecretaryIntent, context: SecretaryContext): void {
+  const handler = getNavigationHandler();
+  
+  switch (intent) {
+    case 'report_issue':
+      // Navigate to proposals with category
+      if (handler) {
+        handler({ destinationId: 'proposals', shouldClose: true });
+      }
+      break;
+      
+    case 'create_instance':
+      if (handler) {
+        handler({ destinationId: 'create-instance', shouldClose: true });
+      }
+      break;
+      
+    case 'find_instance':
+      // Already handled in brain
+      break;
+      
+    case 'ask_category':
+      // Show categories (already displayed)
+      break;
+      
+    case 'top_issues':
+      // Already handled in brain
+      break;
+  }
 }

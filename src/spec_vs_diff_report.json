@@ -1,61 +1,40 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T16:19:08.625Z",
-  "summary": "The diff adds a new intent/slot mini-flow engine (types, classifier, flow registry/runner, slot state + repair utilities) and wires parts of it into the existing Secretary brain/widget. However, several required completion actions appear stubbed (no real navigation/flow trigger), and there are multiple additional/unrelated frontend changes called out in the diff summary that were not requested by the BuildRequest.",
+  "generatedAt": "2026-02-11T22:51:27.611Z",
+  "summary": "Diff adds a new Motoko migration module and wires a migration hook into backend/main.mo, plus updates project_state.json. However, the diff summary does not provide evidence that the contribution log itself is now stored in stable memory (stable vars / preupgrade+postupgrade / stable structure) or that the existing contribution log APIs preserve behavior while persisting entries and nextLogEntryId across upgrades.",
   "missing_requirements": [
     {
-      "id": "REQ-6",
-      "requirement": "Add completion rules so that once all required slots for an intent are filled, the intent’s completion action triggers the existing downstream navigation/flows (report_issue -> existing issue-project navigation; create_instance navigates+closes; find_instance routes to discovery/top-issues).",
-      "reason": "Completion actions for several intents are present but appear to be placeholders without actually triggering the required existing downstream behaviors (especially report_issue and find_instance).",
+      "id": "REQ-1",
+      "requirement": "Implement a stable-memory backed Contribution Log so contribution log entries and the next log entry ID persist across canister upgrades, covering existing APIs (recordContribution, addContributionPoints, getCallerContributionHistory, getCallerContributionSummary) without changing externally observable behavior other than persistence.",
+      "reason": "The diff summary shows a migration wrapper and a migration module, but does not show any stable-memory persistence implementation for contributionLogs/nextLogEntryId (e.g., stable vars, preupgrade/postupgrade serialization) nor modifications to the contribution logging APIs to use stable-backed state. The backend/main.mo content is truncated before any contribution log state or function implementations are visible.",
       "evidence": [
-        "frontend/src/secretary/intent/flowRegistry.ts (report_issue completionAction contains only comments; find_instance completionAction contains only comments; ask_category completionAction contains only comments)"
+        "backend/main.mo (truncated)",
+        "backend/migration.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Broad unrelated documentation and styling/app-shell changes (architecture/phased plan/deployment/style guide, global CSS, Tailwind config, App shell changes) beyond implementing the Secretary intent/slot flows.",
-      "reason": "BuildRequest is focused on Secretary intent/slot mini-flow engine integration; these additional changes are not requested requirements and risk violating the \"Changing unrelated app pages/routing architecture\" non-goal.",
+      "description": "Introduced a separate Motoko module backend/migration.mo and wired actor migration via `(with migration = Migration.run)`.",
+      "reason": "The BuildRequest constraints state that the backend must remain a single-actor architecture with all Motoko logic in backend/main.mo. Adding a new Motoko file for migration logic appears to violate this constraint and was not explicitly requested.",
       "evidence": [
-        "frontend-file-summaries.txt (ARCHITECTURE.md, PHASED_PLAN.md, DEPLOYMENT.md, STYLE_GUIDE.md, src/index.css, tailwind.config.js, src/App.tsx summaries indicate substantial changes)"
+        "backend/migration.mo",
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "description": "Changes to proposals and create-instance UI/components (e.g., ProposalsSection/ProposalDetailDialog, CreateInstancePlaceholderCard) not directly required to support Secretary flows.",
-      "reason": "Not explicitly requested by any REQ; BuildRequest cautions against changing unrelated pages beyond what’s required for Secretary flows.",
+      "description": "Updated project_state.json to add new_feature_requests entries (AR-1/AR-2) and change tracking metadata.",
+      "reason": "No requirement requests changes to repository tracking/metadata files; the BuildRequest focuses on implementing stable-memory persistence for the contribution log.",
       "evidence": [
-        "frontend-file-summaries.txt (src/components/proposals/ProposalsSection.tsx, src/components/proposals/ProposalDetailDialog.tsx, src/components/create-instance/CreateInstancePlaceholderCard.tsx summaries)"
-      ]
-    },
-    {
-      "description": "Added hook to fetch all complaint categories (useGetAllComplaintCategories) with separate backend calls (getAllCity/County/StateComplaintCategories).",
-      "reason": "REQ-5 requests integrating category suggestions into the intent/slot flow; fetching *all* categories via extra endpoints is not explicitly requested (and may require backend support not specified in the diff excerpt).",
-      "evidence": [
-        "frontend/src/hooks/useComplaintSuggestions.ts (adds useGetAllComplaintCategories and calls actor.getAllCityComplaintCategories/getAllCountyComplaintCategories/getAllStateComplaintCategories)"
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
-    "frontend-file-summaries.txt",
-    "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md",
-    "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useComplaintSuggestions.ts",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryCopy.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/flow/types.ts",
-    "frontend/src/secretary/intent/flowRegistry.ts",
-    "frontend/src/secretary/intent/flowRunner.ts",
-    "frontend/src/secretary/intent/index.ts",
-    "frontend/src/secretary/intent/intentClassifier.ts",
-    "frontend/src/secretary/intent/repair.ts",
-    "frontend/src/secretary/intent/slotState.ts",
-    "frontend/src/secretary/intent/types.ts",
-    "frontend/src/secretary/state/secretaryContext.ts",
+    "backend/migration.mo",
     "project_state.json"
   ]
 }

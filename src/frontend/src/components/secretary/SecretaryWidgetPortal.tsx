@@ -28,6 +28,12 @@ export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, init
     return () => setMounted(false);
   }, []);
 
+  const handleClose = () => {
+    if (onOpenChange) {
+      onOpenChange(false);
+    }
+  };
+
   // Don't render anything if not open
   if (!open || !mounted || !overlayRoot) {
     return null;
@@ -36,9 +42,7 @@ export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, init
   return createPortal(
     <SecretaryWidget 
       open={open} 
-      onOpenChange={onOpenChange} 
-      onOptionSelect={onOptionSelect}
-      initialFlow={initialFlow}
+      onClose={handleClose}
     />,
     overlayRoot
   );

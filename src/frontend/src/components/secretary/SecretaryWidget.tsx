@@ -1,120 +1,93 @@
-import { useEffect, useRef, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useRef, useState } from 'react';
+import { X, Send, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, ArrowLeft, FileText, AlertTriangle, MapPin, Plus } from 'lucide-react';
-import { IconBubble } from '@/components/common/IconBubble';
-import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
-import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
-import { useGetAllProposals } from '@/hooks/useQueries';
-import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
-import { useSetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useActor } from '@/hooks/useActor';
-import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
-import { signalProjectNavigation } from '@/utils/secretaryProjectNavigation';
 import { FlowEngineBrain } from '@/secretary/brain/FlowEngineBrain';
-import { prepareUIViewModel } from '@/secretary/ui/secretaryViewModel';
-import type { Action } from '@/secretary/flow/types';
+import { useActor } from '@/hooks/useActor';
+import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
+import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
 import { USHierarchyLevel } from '@/backend';
+import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
+import type { NavigationHandler } from '@/secretary/brain/SecretaryBrain';
+import type { USState, USCounty, USPlace } from '@/backend';
 
 interface SecretaryWidgetProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  onOptionSelect?: (optionNumber: number) => void;
-  initialFlow?: 'discovery' | null;
+  open: boolean;
+  onClose: () => void;
+  navigationHandler?: NavigationHandler;
+  findByKeyword?: (text: string) => { id: string } | null;
 }
 
-interface TypeaheadOption {
-  id: string;
-  label: string;
-  data: any;
-}
-
-export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, initialFlow }: SecretaryWidgetProps) {
-  const { findByKeyword, navigate } = useSecretaryNavigationRegistry();
+export function SecretaryWidget({
+  open,
+  onClose,
+  navigationHandler,
+  findByKeyword,
+}: SecretaryWidgetProps) {
   const { actor } = useActor();
-  const [userInput, setUserInput] = useState('');
+  const [brain] = useState(() => new FlowEngineBrain(actor));
+  const [inputValue, setInputValue] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const brainRef = useRef<FlowEngineBrain | null>(null);
-  const [, setForceUpdate] = useState(0);
 
-  // Initialize brain
-  if (!brainRef.current) {
-    brainRef.current = new FlowEngineBrain(actor);
-    brainRef.current.setKeywordFinder(findByKeyword);
-    brainRef.current.setNavigationHandler((request) => {
-      navigate(request.destinationId);
-      if (request.shouldClose) {
-        onOpenChange?.(false);
-      }
-    });
-  }
-
-  const brain = brainRef.current;
-
-  // Update actor when it changes
-  useEffect(() => {
-    if (brain) {
-      brain.setActor(actor);
-    }
-  }, [actor, brain]);
-
-  // Geography queries
+  // Geography queries for typeahead/discovery (REQ-3)
   const { data: allStates = [] } = useGetAllStates();
-  const context = brain.getContext();
   
-  // Use slots for intent/slot filling, fallback to discovery state
-  const stateForQuery = context.activeIntent ? context.slots.state : context.selectedState;
+  // Get current slots to determine which geography queries to enable
+  const context = brain.getContext();
+  const stateSlot = context.slots.state as USState | null;
   
   const { data: countiesForState = [] } = useGetCountiesForState(
-    stateForQuery?.hierarchicalId || null
+    stateSlot?.hierarchicalId || null
   );
+  
   const { data: placesForState = [] } = useGetPlacesForState(
-    stateForQuery?.hierarchicalId || null
+    stateSlot?.hierarchicalId || null
   );
 
-  // Update brain with geography data
+  // Complaint suggestions
+  const locationLevel = context.slots.place
+    ? USHierarchyLevel.place
+    : context.slots.county
+    ? USHierarchyLevel.county
+    : context.slots.state
+    ? USHierarchyLevel.state
+    : USHierarchyLevel.country;
+
+  const { data: complaintSuggestions = [] } = useComplaintSuggestions(locationLevel, '');
+
+  // Update brain with actor and geography data
   useEffect(() => {
-    if (brain) {
-      brain.setGeographyData(allStates, countiesForState, placesForState);
+    brain.setActor(actor);
+  }, [actor, brain]);
+
+  useEffect(() => {
+    if (navigationHandler) {
+      brain.setNavigationHandler(navigationHandler);
     }
+  }, [navigationHandler, brain]);
+
+  useEffect(() => {
+    if (findByKeyword) {
+      brain.setKeywordFinder(findByKeyword);
+    }
+  }, [findByKeyword, brain]);
+
+  // Update geography data for typeahead (REQ-3)
+  useEffect(() => {
+    brain.setGeographyData(allStates, countiesForState, placesForState);
   }, [allStates, countiesForState, placesForState, brain]);
 
-  // Proposals query
-  const { data: allProposals = [] } = useGetAllProposals();
-
-  // Complaint suggestions - use slots for intent/slot filling
-  const descriptionForQuery = context.activeIntent 
-    ? context.slots.issue_description 
-    : context.reportIssueDescription;
-  const levelForQuery = context.activeIntent && context.slots.state
-    ? USHierarchyLevel.state
-    : context.reportIssueGeographyLevel;
-    
-  const debouncedSearchTerm = useDebouncedValue(descriptionForQuery, 300);
-  const { data: complaintSuggestions = [] } = useComplaintSuggestions(
-    levelForQuery,
-    debouncedSearchTerm,
-    context.currentNode === 'report-show-suggestions' ||
-    (!!context.activeIntent && context.currentNode === 'intent-slot-filling')
-  );
-
-  // Update brain with suggestions
   useEffect(() => {
-    if (brain) {
-      brain.setComplaintSuggestions(complaintSuggestions);
-    }
+    brain.setComplaintSuggestions(complaintSuggestions);
   }, [complaintSuggestions, brain]);
 
-  const { mutate: setIssueProjectCategory } = useSetIssueProjectCategory();
-
-  // Get view model from brain
-  const viewModel = brain.getViewModel();
-  const uiViewModel = prepareUIViewModel(viewModel);
+  // Get messages and view model
   const messages = brain.getMessages();
-  const isMenuVisible = brain.isShowingMenu();
+  const viewModel = brain.getViewModel();
+  const typeaheadOptions = brain.getTypeaheadOptions();
+  const suggestions = brain.getSuggestions();
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -123,231 +96,202 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
     }
   }, [messages]);
 
-  // Initialize discovery flow if requested
-  useEffect(() => {
-    if (open && initialFlow === 'discovery' && isMenuVisible) {
-      handleAction({ type: 'menu-option', payload: 1 });
-    }
-  }, [open, initialFlow]);
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isProcessing) return;
 
-  // Don't render if not open (after all hooks are called)
-  if (!open) {
-    return null;
-  }
+    const text = inputValue.trim();
+    setInputValue('');
+    setIsProcessing(true);
 
-  const handleAction = async (action: Action) => {
-    await brain.handleAction(action);
-    setForceUpdate((n) => n + 1);
-
-    // Handle special actions
-    if (action.type === 'menu-option') {
-      onOptionSelect?.(action.payload);
-    }
-
-    if (action.type === 'custom-category-submitted' || action.type === 'top-issue-selected' || action.type === 'suggestion-selected') {
-      const category = action.payload;
-      const proposalName = 'temp-proposal-id';
-      setIssueProjectCategory({ proposalId: proposalName, category });
-
-      setTimeout(() => {
-        signalProjectNavigation({ proposalName, category });
-        onOpenChange?.(false);
-      }, 1000);
+    try {
+      await brain.handleUserText(text);
+    } catch (error) {
+      console.error('Error processing message:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleUserMessageSubmit = async () => {
-    if (!userInput.trim()) return;
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
-    const message = userInput.trim();
-    setUserInput('');
+  const handleButtonClick = async (action: any) => {
+    setIsProcessing(true);
+    try {
+      await brain.handleAction(action);
+    } catch (error) {
+      console.error('Error handling button action:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-    await brain.handleUserText(message);
-    setForceUpdate((n) => n + 1);
+  const handleTypeaheadSelect = async (option: { id: string; label: string; data: any }) => {
+    setIsProcessing(true);
+    try {
+      const data = option.data;
+      // Determine if it's a state, county, or place
+      if (data.longName && data.shortName && data.fipsCode) {
+        // It's a state
+        await brain.handleAction({ type: 'state-selected', payload: data });
+      } else {
+        // It's a county or place
+        await brain.handleAction({ type: 'location-selected', payload: data });
+      }
+    } catch (error) {
+      console.error('Error selecting typeahead option:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSuggestionSelect = async (suggestion: string) => {
+    setIsProcessing(true);
+    try {
+      await brain.handleAction({ type: 'suggestion-selected', payload: suggestion });
+    } catch (error) {
+      console.error('Error selecting suggestion:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBackToMenu = async () => {
-    await handleAction({ type: 'back-to-menu' });
-  };
-
-  const handleClose = () => {
-    onOpenChange?.(false);
-  };
-
-  const handleTypeaheadSelect = async (option: TypeaheadOption) => {
-    if (context.currentNode === 'discovery-select-state') {
-      await handleAction({ type: 'state-selected', payload: option.data });
-    } else if (context.currentNode === 'discovery-select-location') {
-      await handleAction({ type: 'location-selected', payload: option.data });
-    } else if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
-      // Handle intent/slot filling typeahead
-      if (option.data.fipsCode && option.data.longName) {
-        // State
-        await handleAction({ type: 'state-selected', payload: option.data });
-      } else {
-        // County or place
-        await handleAction({ type: 'location-selected', payload: option.data });
-      }
+    setIsProcessing(true);
+    try {
+      await brain.handleAction({ type: 'back-to-menu', payload: null });
+    } catch (error) {
+      console.error('Error going back to menu:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const typeaheadOptions = brain.getTypeaheadOptions();
-  const suggestions = brain.getSuggestions();
+  if (!open) return null;
+
+  const showBackButton = !brain.isShowingMenu();
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] shadow-2xl z-overlay">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
-        <div className="flex items-center gap-3">
-          <IconBubble size="sm">
-            <MessageCircle className="h-4 w-4" />
-          </IconBubble>
-          <CardTitle className="text-lg font-semibold">Secretary</CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          {!isMenuVisible && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBackToMenu}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="h-8 w-8"
-          >
+    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
+      <div className="w-full max-w-md h-[600px] bg-background border border-border rounded-lg shadow-lg flex flex-col pointer-events-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            {showBackButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToMenu}
+                disabled={isProcessing}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <h2 className="text-lg font-semibold">Secretary</h2>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-0">
-        <ScrollArea ref={scrollRef} className="h-96 p-4">
-          {isMenuVisible ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                How can I help you today?
-              </p>
-              <div className="grid gap-2">
-                {uiViewModel.buttons.map((button, idx) => {
-                  const Icon = button.icon === 'MapPin' ? MapPin : button.icon === 'AlertTriangle' ? AlertTriangle : button.icon === 'FileText' ? FileText : Plus;
-                  return (
-                    <Button
-                      key={idx}
-                      variant={button.variant || 'outline'}
-                      className="justify-start h-auto py-3 px-4"
-                      onClick={() => handleAction(button.action)}
-                    >
-                      <Icon className="mr-3 h-5 w-5 shrink-0" />
-                      <span className="text-left">{button.label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg, idx) => (
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <div className="space-y-4">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
                 <div
-                  key={idx}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === 'user'
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+
+            {/* Action buttons */}
+            {viewModel.buttons && viewModel.buttons.length > 0 && (
+              <div className="space-y-2">
+                {viewModel.buttons.map((button, idx) => (
+                  <Button
+                    key={idx}
+                    variant={button.variant || 'outline'}
+                    className="w-full justify-start"
+                    onClick={() => handleButtonClick(button.action)}
+                    disabled={isProcessing}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
+                    {button.label}
+                  </Button>
+                ))}
+              </div>
+            )}
 
-              {uiViewModel.shouldShowTypeahead && (
-                <div className="mt-4">
-                  <SecretaryLocationTypeahead
-                    options={typeaheadOptions}
-                    onSelect={handleTypeaheadSelect}
-                    placeholder={uiViewModel.typeaheadPlaceholder}
-                  />
-                </div>
-              )}
+            {/* Typeahead */}
+            {viewModel.showTypeahead && typeaheadOptions.length > 0 && (
+              <SecretaryLocationTypeahead
+                options={typeaheadOptions}
+                onSelect={handleTypeaheadSelect}
+                placeholder={viewModel.typeaheadPlaceholder || 'Search...'}
+                isLoading={isProcessing}
+              />
+            )}
 
-              {uiViewModel.shouldShowTopIssues && uiViewModel.topIssues.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {uiViewModel.topIssues.map((issue, idx) => (
-                    <Button
-                      key={idx}
-                      variant="outline"
-                      className="w-full justify-start text-left h-auto py-2 px-3"
-                      onClick={() => handleAction({ type: 'top-issue-selected', payload: issue })}
-                    >
-                      <span className="text-sm">{issue}</span>
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {uiViewModel.shouldShowSuggestions && suggestions.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {suggestions.map((suggestion, idx) => (
-                    <Button
-                      key={idx}
-                      variant="outline"
-                      className="w-full justify-start text-left h-auto py-2 px-3"
-                      onClick={() => handleAction({ type: 'suggestion-selected', payload: suggestion })}
-                    >
-                      <span className="text-sm">{suggestion}</span>
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {!isMenuVisible && uiViewModel.buttons.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {uiViewModel.buttons.map((button, idx) => (
-                    <Button
-                      key={idx}
-                      variant={button.variant || 'outline'}
-                      className="w-full"
-                      onClick={() => handleAction(button.action)}
-                    >
-                      {button.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            {/* Suggestions */}
+            {viewModel.showSuggestions && suggestions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Select a category:</p>
+                {suggestions.map((suggestion, idx) => (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                    disabled={isProcessing}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         </ScrollArea>
 
-        {!isMenuVisible && uiViewModel.shouldShowTextInput && (
-          <div className="p-4 border-t">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleUserMessageSubmit();
-              }}
-              className="flex gap-2"
-            >
+        {/* Input */}
+        {viewModel.showTextInput && (
+          <div className="p-4 border-t border-border">
+            <div className="flex gap-2">
               <Input
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder={uiViewModel.textInputPlaceholder || 'Type your message...'}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={viewModel.textInputPlaceholder || 'Type a message...'}
+                disabled={isProcessing}
                 className="flex-1"
               />
-              <Button type="submit" size="icon" disabled={!userInput.trim()}>
-                <Send className="h-4 w-4" />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isProcessing}
+                size="icon"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
-            </form>
+            </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

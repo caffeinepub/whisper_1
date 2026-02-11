@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { USHierarchyLevel } from '@/backend';
+import { USHierarchyLevel } from '@/backend';
 
 export function useComplaintSuggestions(
   level: USHierarchyLevel | null,
@@ -33,11 +33,11 @@ export function useGetAllComplaintCategories(level: USHierarchyLevel | null) {
       if (!actor || !level) return [];
 
       switch (level) {
-        case 'place':
+        case USHierarchyLevel.place:
           return actor.getAllCityComplaintCategories();
-        case 'county':
+        case USHierarchyLevel.county:
           return actor.getAllCountyComplaintCategories();
-        case 'state':
+        case USHierarchyLevel.state:
           return actor.getAllStateComplaintCategories();
         default:
           return [];

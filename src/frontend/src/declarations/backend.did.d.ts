@@ -11,6 +11,36 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export type CensusStateCode = string;
+export interface ContributionCriteria {
+  'actionType' : string,
+  'rewardType' : string,
+  'eligibilityCriteria' : string,
+  'points' : bigint,
+}
+export interface ContributionLogEntry {
+  'id' : bigint,
+  'pointsAwarded' : bigint,
+  'actionType' : string,
+  'referenceId' : [] | [string],
+  'rewardType' : string,
+  'timestamp' : bigint,
+  'details' : [] | [string],
+  'contributor' : Principal,
+}
+export interface ContributionPoints {
+  'token' : bigint,
+  'city' : bigint,
+  'voting' : bigint,
+  'bounty' : bigint,
+}
+export interface ContributionSummary {
+  'totalCityPoints' : bigint,
+  'totalBountyPoints' : bigint,
+  'totalVotingPoints' : bigint,
+  'totalTokenPoints' : bigint,
+  'totalPoints' : bigint,
+  'contributor' : Principal,
+}
 export type GeoId = string;
 export type HierarchicalGeoId = string;
 export type ProfileImage = Uint8Array;
@@ -38,6 +68,12 @@ export interface Task {
   'id' : bigint,
   'completed' : boolean,
   'description' : string,
+}
+export interface TokenBalance {
+  'staked' : bigint,
+  'total' : bigint,
+  'voting' : bigint,
+  'bounty' : bigint,
 }
 export interface USCounty {
   'censusLandAreaSqMeters' : string,
@@ -86,6 +122,8 @@ export interface USState {
 export interface UserProfile {
   'profileImage' : [] | [ProfileImage],
   'name' : string,
+  'tokenBalance' : TokenBalance,
+  'contributionPoints' : ContributionPoints,
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -118,9 +156,18 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addContributionPoints' : ActorMethod<[bigint, string, string], undefined>,
   'addOrUpdateLocationBasedIssues' : ActorMethod<
     [USHierarchyLevel, [] | [string], Array<string>],
     undefined
+  >,
+  'adminGetContributionLogs' : ActorMethod<
+    [bigint, bigint],
+    Array<[Principal, Array<ContributionLogEntry>]>
+  >,
+  'adminGetUserContributionLogs' : ActorMethod<
+    [Principal, bigint],
+    Array<ContributionLogEntry>
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'backend_getIssueCategoriesByHierarchyLevel' : ActorMethod<
@@ -141,10 +188,19 @@ export interface _SERVICE {
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
   'getAllStateComplaintCategories' : ActorMethod<[], Array<string>>,
   'getAllStates' : ActorMethod<[], Array<USState>>,
+  'getCallerContributionHistory' : ActorMethod<
+    [bigint],
+    Array<ContributionLogEntry>
+  >,
+  'getCallerContributionSummary' : ActorMethod<[], ContributionSummary>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCityById' : ActorMethod<[string], [] | [USPlace]>,
   'getCityComplaintSuggestions' : ActorMethod<[string], Array<string>>,
+  'getContributionCriteria' : ActorMethod<
+    [],
+    Array<[string, ContributionCriteria]>
+  >,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
   'getCountyById' : ActorMethod<[string], [] | [USCounty]>,
   'getCountyComplaintSuggestions' : ActorMethod<[string], Array<string>>,
@@ -175,7 +231,15 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
+  'recordContribution' : ActorMethod<
+    [string, bigint, string, [] | [string], [] | [string]],
+    bigint
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setContributionCriteria' : ActorMethod<
+    [string, ContributionCriteria],
+    undefined
+  >,
   'submitProposal' : ActorMethod<
     [
       string,

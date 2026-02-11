@@ -6,21 +6,71 @@ import Principal "mo:core/Principal";
 import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
-
+import Time "mo:core/Time";
+import Migration "migration";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
+// Use migration on upgrade
+
+(with migration = Migration.run)
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   public type ProfileImage = Storage.ExternalBlob;
+
+  public type ContributionPoints = {
+    city : Nat;
+    voting : Nat;
+    bounty : Nat;
+    token : Nat;
+  };
+
+  public type TokenBalance = {
+    staked : Nat;
+    voting : Nat;
+    bounty : Nat;
+    total : Nat;
+  };
+
   public type UserProfile = {
     name : Text;
     profileImage : ?ProfileImage;
+    tokenBalance : TokenBalance;
+    contributionPoints : ContributionPoints;
+  };
+
+  public type ContributionReward = {
+    points : Nat;
+    rewardType : Text;
+  };
+  public type ContributionLogEntry = {
+    id : Nat;
+    contributor : Principal;
+    timestamp : Int;
+    actionType : Text;
+    pointsAwarded : Nat;
+    rewardType : Text;
+    referenceId : ?Text;
+    details : ?Text;
+  };
+  public type ContributionCriteria = {
+    actionType : Text;
+    points : Nat;
+    rewardType : Text;
+    eligibilityCriteria : Text;
+  };
+  public type ContributionSummary = {
+    contributor : Principal;
+    totalPoints : Nat;
+    totalCityPoints : Nat;
+    totalVotingPoints : Nat;
+    totalBountyPoints : Nat;
+    totalTokenPoints : Nat;
   };
 
   type GeoId = Text;
@@ -354,6 +404,11 @@ actor {
   // New Map to store location-based complaints
   let locationBasedComplaintMap = Map.empty<Text, [Text]>();
 
+  // Contribution Points and Token Accounting
+  var nextLogEntryId : Nat = 0;
+  let contributionLogs = Map.empty<Principal, List.List<ContributionLogEntry>>();
+  let contributionCriteria = Map.empty<Text, ContributionCriteria>();
+
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
     switch (level) {
       case (#country) { "country" };
@@ -396,6 +451,219 @@ actor {
     userProfiles.add(caller, profile);
   };
 
+  public shared ({ caller }) func recordContribution(
+    actionType : Text,
+    points : Nat,
+    rewardType : Text,
+    referenceId : ?Text,
+    details : ?Text,
+  ) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can record contributions");
+    };
+
+    let now = Time.now();
+    let logEntry : ContributionLogEntry = {
+      id = nextLogEntryId;
+      contributor = caller;
+      timestamp = now;
+      actionType;
+      pointsAwarded = points;
+      rewardType;
+      referenceId;
+      details;
+    };
+
+    let entryId = nextLogEntryId;
+    nextLogEntryId += 1;
+
+    let newLog : List.List<ContributionLogEntry> = switch (contributionLogs.get(caller)) {
+      case (null) {
+        let newList = List.empty<ContributionLogEntry>();
+        newList.add(logEntry);
+        newList;
+      };
+      case (?logs) {
+        let logsWithEntry = List.empty<ContributionLogEntry>();
+        logsWithEntry.addAll(logs.values());
+        logsWithEntry.add(logEntry);
+        logsWithEntry;
+      };
+    };
+    contributionLogs.add(caller, newLog);
+
+    entryId;
+  };
+
+  public shared ({ caller }) func addContributionPoints(points : Nat, rewardType : Text, actionType : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can add contribution points");
+    };
+    let now = Time.now();
+    let pointsMap : { var city : Nat; var voting : Nat; var bounty : Nat; var token : Nat } = {
+      var city = 0;
+      var voting = 0;
+      var bounty = 0;
+      var token = 0;
+    };
+    switch (rewardType) {
+      case ("city") { pointsMap.city := pointsMap.city + points };
+      case ("voting") { pointsMap.voting := pointsMap.voting + points };
+      case ("bounty") { pointsMap.bounty := pointsMap.bounty + points };
+      case ("token") { pointsMap.token := pointsMap.token + points };
+      case (_) { pointsMap.city := pointsMap.city + points };
+    };
+    let pointsUpdate = {
+      city = pointsMap.city : Nat;
+      voting = pointsMap.voting : Nat;
+      bounty = pointsMap.bounty : Nat;
+      token = pointsMap.token : Nat;
+    };
+    let logEntry : ContributionLogEntry = {
+      id = nextLogEntryId;
+      contributor = caller;
+      timestamp = now;
+      actionType;
+      pointsAwarded = points;
+      rewardType;
+      referenceId = null;
+      details = null;
+    };
+    nextLogEntryId += 1;
+    let newLog : List.List<ContributionLogEntry> = switch (contributionLogs.get(caller)) {
+      case (null) {
+        let newList = List.empty<ContributionLogEntry>();
+        newList.add(logEntry);
+        newList;
+      };
+      case (?logs) {
+        let logsWithEntry = List.empty<ContributionLogEntry>();
+        logsWithEntry.addAll(logs.values());
+        logsWithEntry.add(logEntry);
+        logsWithEntry;
+      };
+    };
+    contributionLogs.add(caller, newLog);
+  };
+
+  public query ({ caller }) func getCallerContributionHistory(limit : Nat) : async [ContributionLogEntry] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their contribution history");
+    };
+
+    switch (contributionLogs.get(caller)) {
+      case (null) { [] };
+      case (?logs) {
+        let logsArray = logs.toArray();
+        let boundedLimit = Nat.min(limit, 100);
+        let actualLimit = Nat.min(boundedLimit, logsArray.size());
+        logsArray.sliceToArray(0, actualLimit);
+      };
+    };
+  };
+
+  public query ({ caller }) func getCallerContributionSummary() : async ContributionSummary {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their contribution summary");
+    };
+
+    var totalPoints : Nat = 0;
+    var totalCityPoints : Nat = 0;
+    var totalVotingPoints : Nat = 0;
+    var totalBountyPoints : Nat = 0;
+    var totalTokenPoints : Nat = 0;
+
+    switch (contributionLogs.get(caller)) {
+      case (null) {};
+      case (?logs) {
+        for (entry in logs.values()) {
+          totalPoints += entry.pointsAwarded;
+          switch (entry.rewardType) {
+            case ("city") { totalCityPoints += entry.pointsAwarded };
+            case ("voting") { totalVotingPoints += entry.pointsAwarded };
+            case ("bounty") { totalBountyPoints += entry.pointsAwarded };
+            case ("token") { totalTokenPoints += entry.pointsAwarded };
+            case (_) { totalCityPoints += entry.pointsAwarded };
+          };
+        };
+      };
+    };
+
+    {
+      contributor = caller;
+      totalPoints;
+      totalCityPoints;
+      totalVotingPoints;
+      totalBountyPoints;
+      totalTokenPoints;
+    };
+  };
+
+  public query ({ caller }) func adminGetContributionLogs(
+    offset : Nat,
+    limit : Nat,
+  ) : async [(Principal, [ContributionLogEntry])] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view all contribution logs");
+    };
+
+    let boundedLimit = Nat.min(limit, 50);
+    let allEntries = contributionLogs.toArray();
+    let totalEntries = allEntries.size();
+
+    if (offset >= totalEntries) {
+      return [];
+    };
+
+    let endIndex = Nat.min(offset + boundedLimit, totalEntries);
+    let slicedEntries = allEntries.sliceToArray(offset, endIndex);
+
+    let result = Array.tabulate(
+      (slicedEntries).size(),
+      func(i) {
+        let (principal, logs) = slicedEntries[i];
+        (principal, logs.toArray());
+      }
+    );
+    result;
+  };
+
+  public query ({ caller }) func adminGetUserContributionLogs(
+    user : Principal,
+    limit : Nat,
+  ) : async [ContributionLogEntry] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view user contribution logs");
+    };
+
+    switch (contributionLogs.get(user)) {
+      case (null) { [] };
+      case (?logs) {
+        let logsArray = logs.toArray();
+        let boundedLimit = Nat.min(limit, 100);
+        let actualLimit = Nat.min(boundedLimit, logsArray.size());
+        logsArray.sliceToArray(0, actualLimit);
+      };
+    };
+  };
+
+  public query ({ caller }) func getContributionCriteria() : async [(Text, ContributionCriteria)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view contribution criteria");
+    };
+    contributionCriteria.toArray();
+  };
+
+  public shared ({ caller }) func setContributionCriteria(
+    actionType : Text,
+    criteria : ContributionCriteria,
+  ) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can set contribution criteria");
+    };
+    contributionCriteria.add(actionType, criteria);
+  };
+
   public query ({ caller }) func isParent(_childId : Principal, parentId : Principal) : async Bool {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can check parent relationships");
@@ -428,19 +696,19 @@ actor {
     };
 
     if (state.size() == 0) {
-      return #error({ message = "Proposal must contain valid state"; });
+      return #error({ message = "Proposal must contain valid state" });
     };
     if (county.size() == 0) {
-      return #error({ message = "Proposal must contain valid county"; });
+      return #error({ message = "Proposal must contain valid county" });
     };
     if (censusBoundaryId.size() == 0) {
-      return #error({ message = "Proposal must contain valid census boundary id"; });
+      return #error({ message = "Proposal must contain valid census boundary id" });
     };
     if (population2020.size() == 0) {
-      return #error({ message = "Proposal must contain valid population2020"; });
+      return #error({ message = "Proposal must contain valid population2020" });
     };
     if (squareMeters == 0) {
-      return #error({ message = "Proposal must contain valid squareMeters (greater than 0)"; });
+      return #error({ message = "Proposal must contain valid squareMeters (greater than 0)" });
     };
 
     switch (proposals.get(instanceName)) {
@@ -459,7 +727,7 @@ actor {
         };
         proposals.add(instanceName, newProposal);
         moderationQueue.add(instanceName);
-        #success { proposal = newProposal };
+        #success({ proposal = newProposal });
       };
       case (?_) {
         #error({

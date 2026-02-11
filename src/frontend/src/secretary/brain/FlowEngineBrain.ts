@@ -1,7 +1,7 @@
 /**
  * Default in-frontend SecretaryBrain implementation using the flow engine.
  * Includes hook points for observing flow events and injecting future actions/destinations.
- * Now integrates intent/slot mini-flow engine.
+ * Now integrates intent/slot mini-flow engine with geography NLP, top-issues support, and tracing.
  */
 
 import type { SecretaryBrain, NavigationHandler } from './SecretaryBrain';
@@ -23,7 +23,11 @@ import {
   looksLikeRepair,
   parseRepairSlot,
   applyRepair,
+  lookupUSGeographyFromText,
 } from '../intent';
+import { extractGeographyFromText } from '../intent/geographyNlp';
+import { createSecretaryTopIssuesMessaging } from '@/lib/secretaryTopIssuesMessaging';
+import { trace } from '../observability/secretaryTrace';
 
 /**
  * Flow engine-based brain implementation
@@ -85,6 +89,66 @@ export class FlowEngineBrain implements SecretaryBrain {
     this.runner.setActor(actor);
   }
 
+  /**
+   * Get current context (for external inspection)
+   */
+  getContext(): SecretaryContext {
+    return this.runner.getContext();
+  }
+
+  /**
+   * Get all messages for display
+   */
+  getMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
+    return this.runner.getContext().messages;
+  }
+
+  /**
+   * Check if currently showing menu
+   */
+  isShowingMenu(): boolean {
+    return this.runner.getContext().currentNode === 'menu';
+  }
+
+  /**
+   * Get available typeahead options (if applicable)
+   */
+  getTypeaheadOptions(): Array<{ id: string; label: string; data: any }> {
+    const context = this.runner.getContext();
+    const nextSlot = context.activeIntent ? getNextMissingSlot(context.activeIntent, context.slots) : null;
+    
+    if (nextSlot === 'state') {
+      return this.allStates.map(state => ({
+        id: state.hierarchicalId,
+        label: state.longName,
+        data: state,
+      }));
+    } else if (nextSlot === 'county' || nextSlot === 'place') {
+      const combined = [...this.countiesForState, ...this.placesForState];
+      return combined.map(loc => ({
+        id: loc.hierarchicalId,
+        label: loc.fullName,
+        data: loc,
+      }));
+    }
+    
+    return [];
+  }
+
+  /**
+   * Get available suggestions (if applicable)
+   */
+  getSuggestions(): string[] {
+    const context = this.runner.getContext();
+    const nextSlot = context.activeIntent ? getNextMissingSlot(context.activeIntent, context.slots) : null;
+    
+    if (nextSlot === 'issue_category') {
+      return this.complaintSuggestions;
+    }
+    
+    return [];
+  }
+
   reset(): void {
     const context = this.runner.getContext();
     resetContext(context);
@@ -109,8 +173,13 @@ export class FlowEngineBrain implements SecretaryBrain {
         // Try intent classification first
         const intent = classifyIntent(text);
         if (intent) {
+          trace('intent-recognized', { intent, text });
           context.activeIntent = intent;
           context.currentNode = 'intent-slot-filling';
+          
+          // Try to prefill geography from text using actor-backed lookup
+          await this.prefillGeographyFromText(text);
+          
           await this.continueIntentSlotFilling();
           return;
         }
@@ -170,6 +239,74 @@ export class FlowEngineBrain implements SecretaryBrain {
   }
 
   /**
+   * Attempt to prefill geography slots from free text using actor-backed lookup.
+   * Falls back to in-memory extraction if actor is unavailable.
+   */
+  private async prefillGeographyFromText(text: string): Promise<void> {
+    const context = this.runner.getContext();
+    const actor = this.runner['actor'];
+    
+    try {
+      // Try actor-backed lookup first (REQ-1)
+      if (actor) {
+        trace('flow-action', { action: 'geography-lookup-start', text, source: 'actor' });
+        const lookupResult = await lookupUSGeographyFromText(text, actor);
+        
+        if (lookupResult.state) {
+          fillSlot(context.slots, 'state', lookupResult.state);
+          trace('slot-filled', { slot: 'state', value: lookupResult.state.longName, source: 'actor-lookup' });
+        }
+        
+        if (lookupResult.county) {
+          fillSlot(context.slots, 'county', lookupResult.county);
+          trace('slot-filled', { slot: 'county', value: lookupResult.county.fullName, source: 'actor-lookup' });
+        }
+        
+        if (lookupResult.place) {
+          fillSlot(context.slots, 'place', lookupResult.place);
+          trace('slot-filled', { slot: 'place', value: lookupResult.place.fullName, source: 'actor-lookup' });
+        }
+        
+        trace('flow-action', { 
+          action: 'geography-lookup-complete',
+          foundState: !!lookupResult.state,
+          foundCounty: !!lookupResult.county,
+          foundPlace: !!lookupResult.place,
+        });
+        return;
+      }
+    } catch (error) {
+      // Log error but don't crash - fall back to in-memory extraction
+      console.error('Actor-backed geography lookup failed, falling back to in-memory:', error);
+      trace('flow-action', { action: 'geography-lookup-error', error: String(error) });
+    }
+    
+    // Fallback: Use in-memory extraction with React Query-populated data
+    trace('flow-action', { action: 'geography-lookup-start', text, source: 'in-memory-fallback' });
+    const extracted = extractGeographyFromText(
+      text,
+      this.allStates,
+      this.countiesForState,
+      this.placesForState
+    );
+    
+    if (extracted.state) {
+      fillSlot(context.slots, 'state', extracted.state);
+      trace('slot-filled', { slot: 'state', value: extracted.state.longName, source: 'in-memory' });
+    }
+    
+    if (extracted.county) {
+      fillSlot(context.slots, 'county', extracted.county);
+      trace('slot-filled', { slot: 'county', value: extracted.county.fullName, source: 'in-memory' });
+    }
+    
+    if (extracted.place) {
+      fillSlot(context.slots, 'place', extracted.place);
+      trace('slot-filled', { slot: 'place', value: extracted.place.fullName, source: 'in-memory' });
+    }
+  }
+
+  /**
    * Handle input during intent/slot filling
    */
   private async handleIntentSlotInput(text: string): Promise<void> {
@@ -181,10 +318,15 @@ export class FlowEngineBrain implements SecretaryBrain {
       if (slotToRepair) {
         // Clear the slot and dependents
         resetSlotWithDependents(context, slotToRepair);
+        trace('slot-repaired', { slot: slotToRepair, dependentsCleared: true });
         addMessage(context, 'assistant', `Okay, let's update your ${slotToRepair}.`);
         await this.continueIntentSlotFilling();
         return;
       }
+      
+      // Generic repair without specific slot
+      addMessage(context, 'assistant', 'What would you like to change? You can say "change state", "change county", etc.');
+      return;
     }
 
     // Get the next missing slot
@@ -193,10 +335,12 @@ export class FlowEngineBrain implements SecretaryBrain {
     if (nextSlot === 'issue_description') {
       // Fill description slot
       fillSlot(context.slots, 'issue_description', text);
+      trace('slot-filled', { slot: 'issue_description', value: text.substring(0, 50) });
       await this.continueIntentSlotFilling();
     } else if (nextSlot === 'issue_category') {
       // Fill category slot
       fillSlot(context.slots, 'issue_category', text);
+      trace('slot-filled', { slot: 'issue_category', value: text });
       await this.continueIntentSlotFilling();
     } else {
       // For geography slots, we expect typeahead selection, not free text
@@ -230,6 +374,9 @@ export class FlowEngineBrain implements SecretaryBrain {
    */
   private async completeIntentFlow(): Promise<void> {
     const context = this.runner.getContext();
+    const actor = this.runner['actor'];
+
+    trace('intent-completed', { intent: context.activeIntent });
 
     switch (context.activeIntent) {
       case 'report_issue':
@@ -262,16 +409,71 @@ export class FlowEngineBrain implements SecretaryBrain {
         // Show categories for the selected geography
         addMessage(context, 'assistant', 'Here are the common issue categories for your area:');
         break;
+
+      case 'top_issues':
+        // Fetch and display top issues
+        if (!actor) {
+          addMessage(context, 'assistant', 'I\'m having trouble connecting to the backend. Please try again.');
+          return;
+        }
+        
+        await this.fetchAndDisplayTopIssues(actor);
+        break;
+    }
+  }
+
+  /**
+   * Fetch and display top issues for the selected geography
+   */
+  private async fetchAndDisplayTopIssues(actor: backendInterface): Promise<void> {
+    const context = this.runner.getContext();
+    const messaging = createSecretaryTopIssuesMessaging(actor);
+    
+    addMessage(context, 'assistant', 'Let me check the top issues for that location...');
+    
+    try {
+      let result;
+      
+      // Use most specific geography available
+      if (context.slots.place) {
+        result = await messaging.getTopIssuesForCity(context.slots.place.hierarchicalId);
+      } else if (context.slots.county) {
+        result = await messaging.getTopIssuesForCounty(context.slots.county.hierarchicalId);
+      } else if (context.slots.state) {
+        result = await messaging.getTopIssuesForState(context.slots.state.hierarchicalId);
+      } else {
+        addMessage(context, 'assistant', 'I need a location to show you the top issues. Please select a state first.');
+        return;
+      }
+      
+      // Display result
+      addMessage(context, 'assistant', result.message);
+      
+      if (result.issues.length > 0) {
+        const issuesList = result.issues.map((issue, idx) => `${idx + 1}. ${issue}`).join('\n');
+        addMessage(context, 'assistant', issuesList);
+        
+        // Store issues for display
+        context.reportIssueTopIssues = result.issues.slice(0, 50);
+      } else {
+        addMessage(context, 'assistant', 'Would you like to report an issue instead?');
+      }
+    } catch (error) {
+      console.error('Error fetching top issues:', error);
+      addMessage(context, 'assistant', 'I\'m having trouble retrieving issues right now. Please try again later.');
     }
   }
 
   async handleAction(action: Action): Promise<void> {
     const context = this.runner.getContext();
 
+    trace('flow-action', { type: action.type, payload: typeof action.payload });
+
     // Handle intent/slot filling actions
     if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
       if (action.type === 'state-selected') {
         fillSlot(context.slots, 'state', action.payload);
+        trace('slot-filled', { slot: 'state', value: action.payload.longName, source: 'typeahead' });
         addMessage(context, 'user', action.payload.longName);
         await this.continueIntentSlotFilling();
         return;
@@ -279,180 +481,43 @@ export class FlowEngineBrain implements SecretaryBrain {
         if (action.payload.censusFipsStateCode) {
           // County
           fillSlot(context.slots, 'county', action.payload);
+          trace('slot-filled', { slot: 'county', value: action.payload.fullName, source: 'typeahead' });
           addMessage(context, 'user', action.payload.fullName);
         } else {
           // Place
           fillSlot(context.slots, 'place', action.payload);
+          trace('slot-filled', { slot: 'place', value: action.payload.fullName, source: 'typeahead' });
           addMessage(context, 'user', action.payload.fullName);
         }
         await this.continueIntentSlotFilling();
         return;
       } else if (action.type === 'suggestion-selected') {
         fillSlot(context.slots, 'issue_category', action.payload);
+        trace('slot-filled', { slot: 'issue_category', value: action.payload, source: 'suggestion' });
         addMessage(context, 'user', action.payload);
+        addMessage(context, 'assistant', `Got it, you selected "${action.payload}".`);
         await this.continueIntentSlotFilling();
         return;
       } else if (action.type === 'back-to-menu') {
         context.activeIntent = null;
         context.currentNode = 'menu';
         context.messages = [];
+        addMessage(context, 'assistant', 'Back to the main menu. How can I help you?');
         return;
       }
     }
 
-    // Handle special actions
-    switch (action.type) {
-      case 'menu-option':
-        if (action.payload === 3 || action.payload === 4) {
-          // External navigation
-          const destinationId = action.payload === 3 ? 'proposals' : 'create-instance';
-          if (this.navigationHandler) {
-            this.navigationHandler({ destinationId, shouldClose: true });
-          }
-          return;
-        }
-        break;
-
-      case 'state-selected':
-        context.selectedState = action.payload;
-        addMessage(context, 'user', action.payload.longName);
-        break;
-
-      case 'location-selected':
-        if (action.payload.censusFipsStateCode) {
-          context.selectedCounty = action.payload;
-          addMessage(context, 'user', action.payload.fullName);
-        } else {
-          context.selectedPlace = action.payload;
-          addMessage(context, 'user', action.payload.fullName);
-        }
-        break;
-
-      case 'report-issue':
-        // Set geography from discovery state
-        const { level, id } = determineGeographyFromDiscovery(context);
-        context.reportIssueGeographyLevel = level;
-        context.reportIssueGeographyId = id;
-        break;
-
-      case 'top-issue-selected':
-        await this.handleCategorySelection(action.payload);
-        return;
-
-      case 'suggestion-selected':
-        await this.handleCategorySelection(action.payload);
-        return;
-    }
-
-    // Delegate to runner
+    // Handle standard flow actions
     await this.runner.handleAction(action);
   }
 
-  private async handleCategorySelection(category: string): Promise<void> {
+  async handleCategorySelection(category: string): Promise<void> {
     const context = this.runner.getContext();
-    addMessage(context, 'user', category);
-    
-    // Transition to complete
-    await this.runner.handleAction({ type: 'custom-category-submitted', payload: category });
-
-    // Signal navigation after a delay
-    setTimeout(() => {
-      if (this.navigationHandler) {
-        // This would trigger the Issue Project creation flow
-        // For now, we'll just emit an event
-        this.runner['emitEvent']({
-          type: 'navigation-requested',
-          navigationId: 'issue-project',
-          timestamp: Date.now(),
-        });
-      }
-    }, 1000);
+    await this.runner.handleAction({ type: 'something-else', payload: category });
   }
 
   getViewModel(): NodeViewModel {
-    const context = this.runner.getContext();
-
-    // If in intent/slot filling mode, generate custom view model
-    if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
-      return this.getIntentSlotViewModel();
-    }
-
     return this.runner.getViewModel();
-  }
-
-  /**
-   * Generate view model for intent/slot filling
-   */
-  private getIntentSlotViewModel(): NodeViewModel {
-    const context = this.runner.getContext();
-    const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
-
-    if (!nextSlot) {
-      // All slots filled, show completion message
-      return {
-        assistantMessages: [],
-        showTextInput: false,
-        showTypeahead: false,
-        buttons: [],
-        showTopIssues: false,
-        showSuggestions: false,
-      };
-    }
-
-    // Show appropriate input for the next slot
-    if (nextSlot === 'state' || nextSlot === 'county' || nextSlot === 'place') {
-      return {
-        assistantMessages: [],
-        showTextInput: false,
-        showTypeahead: true,
-        typeaheadPlaceholder: `Select ${nextSlot}...`,
-        buttons: [],
-        showTopIssues: false,
-        showSuggestions: false,
-      };
-    } else if (nextSlot === 'issue_description') {
-      return {
-        assistantMessages: [],
-        showTextInput: true,
-        textInputPlaceholder: 'Describe the issue...',
-        showTypeahead: false,
-        buttons: [],
-        showTopIssues: false,
-        showSuggestions: false,
-      };
-    } else if (nextSlot === 'issue_category') {
-      return {
-        assistantMessages: [],
-        showTextInput: false,
-        showTypeahead: false,
-        buttons: [
-          {
-            label: 'Something else',
-            action: { type: 'something-else' },
-            variant: 'outline',
-          },
-        ],
-        showTopIssues: false,
-        showSuggestions: true,
-      };
-    }
-
-    return {
-      assistantMessages: [],
-      showTextInput: true,
-      showTypeahead: false,
-      buttons: [],
-      showTopIssues: false,
-      showSuggestions: false,
-    };
-  }
-
-  getMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
-    return this.runner.getContext().messages;
-  }
-
-  isShowingMenu(): boolean {
-    return this.runner.getContext().currentNode === 'menu';
   }
 
   addListener(listener: FlowEventListener): void {
@@ -461,81 +526,5 @@ export class FlowEngineBrain implements SecretaryBrain {
 
   removeListener(listener: FlowEventListener): void {
     this.runner.removeListener(listener);
-  }
-
-  getTypeaheadOptions(): Array<{ id: string; label: string; data: any }> {
-    const context = this.runner.getContext();
-    const currentNode = context.currentNode;
-
-    // Handle intent/slot filling typeahead
-    if (context.activeIntent && currentNode === 'intent-slot-filling') {
-      const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
-      
-      if (nextSlot === 'state') {
-        return this.allStates.map((state) => ({
-          id: state.hierarchicalId,
-          label: state.longName,
-          data: state,
-        }));
-      } else if (nextSlot === 'county' || nextSlot === 'place') {
-        const counties = this.countiesForState.map((county) => ({
-          id: county.hierarchicalId,
-          label: county.fullName,
-          data: county,
-        }));
-        const places = this.placesForState.map((place) => ({
-          id: place.hierarchicalId,
-          label: place.fullName,
-          data: place,
-        }));
-        return [...counties, ...places];
-      }
-    }
-
-    switch (currentNode) {
-      case 'discovery-select-state':
-        return this.allStates.map((state) => ({
-          id: state.hierarchicalId,
-          label: state.longName,
-          data: state,
-        }));
-
-      case 'discovery-select-location':
-        const counties = this.countiesForState.map((county) => ({
-          id: county.hierarchicalId,
-          label: county.fullName,
-          data: county,
-        }));
-        const places = this.placesForState.map((place) => ({
-          id: place.hierarchicalId,
-          label: place.fullName,
-          data: place,
-        }));
-        return [...counties, ...places];
-
-      default:
-        return [];
-    }
-  }
-
-  getSuggestions(): string[] {
-    const context = this.runner.getContext();
-    
-    // Handle intent/slot filling suggestions
-    if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
-      const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
-      if (nextSlot === 'issue_category') {
-        return this.complaintSuggestions;
-      }
-    }
-
-    if (context.currentNode === 'report-show-suggestions') {
-      return this.complaintSuggestions;
-    }
-    return [];
-  }
-
-  getContext(): SecretaryContext {
-    return this.runner.getContext();
   }
 }

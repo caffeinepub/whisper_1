@@ -75,12 +75,12 @@ export function buildSlotPrompt(
 ): string {
   switch (slotName) {
     case 'state':
-      return 'Which state would you like to explore?';
+      return 'Which state are you asking about?';
     case 'county':
       if (state) {
-        return `Great! Now, which county in ${state.longName} would you like to explore?`;
+        return `Which county in ${state.longName}?`;
       }
-      return 'Which county would you like to explore?';
+      return 'Which county?';
     case 'place':
       if (county) {
         return `Which city or town in ${county.fullName}?`;
@@ -88,7 +88,7 @@ export function buildSlotPrompt(
       if (state) {
         return `Which city or town in ${state.longName}?`;
       }
-      return 'Which city or town would you like to explore?';
+      return 'Which city or town?';
     case 'issue_description':
       return 'Please describe the issue you\'d like to report:';
     case 'issue_category':

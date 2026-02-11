@@ -25,6 +25,16 @@ export const USHierarchyLevel = IDL.Variant({
   'place' : IDL.Null,
   'county' : IDL.Null,
 });
+export const ContributionLogEntry = IDL.Record({
+  'id' : IDL.Nat,
+  'pointsAwarded' : IDL.Nat,
+  'actionType' : IDL.Text,
+  'referenceId' : IDL.Opt(IDL.Text),
+  'rewardType' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'details' : IDL.Opt(IDL.Text),
+  'contributor' : IDL.Principal,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -79,10 +89,38 @@ export const Proposal = IDL.Record({
   'censusBoundaryId' : IDL.Text,
   'population2020' : IDL.Text,
 });
+export const ContributionSummary = IDL.Record({
+  'totalCityPoints' : IDL.Nat,
+  'totalBountyPoints' : IDL.Nat,
+  'totalVotingPoints' : IDL.Nat,
+  'totalTokenPoints' : IDL.Nat,
+  'totalPoints' : IDL.Nat,
+  'contributor' : IDL.Principal,
+});
 export const ProfileImage = IDL.Vec(IDL.Nat8);
+export const TokenBalance = IDL.Record({
+  'staked' : IDL.Nat,
+  'total' : IDL.Nat,
+  'voting' : IDL.Nat,
+  'bounty' : IDL.Nat,
+});
+export const ContributionPoints = IDL.Record({
+  'token' : IDL.Nat,
+  'city' : IDL.Nat,
+  'voting' : IDL.Nat,
+  'bounty' : IDL.Nat,
+});
 export const UserProfile = IDL.Record({
   'profileImage' : IDL.Opt(ProfileImage),
   'name' : IDL.Text,
+  'tokenBalance' : TokenBalance,
+  'contributionPoints' : ContributionPoints,
+});
+export const ContributionCriteria = IDL.Record({
+  'actionType' : IDL.Text,
+  'rewardType' : IDL.Text,
+  'eligibilityCriteria' : IDL.Text,
+  'points' : IDL.Nat,
 });
 export const GeoId = IDL.Text;
 export const SecretaryCategorySuggestion = IDL.Record({
@@ -134,10 +172,21 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addContributionPoints' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
   'addOrUpdateLocationBasedIssues' : IDL.Func(
       [USHierarchyLevel, IDL.Opt(IDL.Text), IDL.Vec(IDL.Text)],
       [],
       [],
+    ),
+  'adminGetContributionLogs' : IDL.Func(
+      [IDL.Nat, IDL.Nat],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(ContributionLogEntry)))],
+      ['query'],
+    ),
+  'adminGetUserContributionLogs' : IDL.Func(
+      [IDL.Principal, IDL.Nat],
+      [IDL.Vec(ContributionLogEntry)],
+      ['query'],
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'backend_getIssueCategoriesByHierarchyLevel' : IDL.Func(
@@ -188,12 +237,27 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
+  'getCallerContributionHistory' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(ContributionLogEntry)],
+      ['query'],
+    ),
+  'getCallerContributionSummary' : IDL.Func(
+      [],
+      [ContributionSummary],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCityById' : IDL.Func([IDL.Text], [IDL.Opt(USPlace)], ['query']),
   'getCityComplaintSuggestions' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
+  'getContributionCriteria' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, ContributionCriteria))],
       ['query'],
     ),
   'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
@@ -242,7 +306,17 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isParent' : IDL.Func([IDL.Principal, IDL.Principal], [IDL.Bool], ['query']),
+  'recordContribution' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+      [IDL.Nat],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setContributionCriteria' : IDL.Func(
+      [IDL.Text, ContributionCriteria],
+      [],
+      [],
+    ),
   'submitProposal' : IDL.Func(
       [
         IDL.Text,
@@ -281,6 +355,16 @@ export const idlFactory = ({ IDL }) => {
     'state' : IDL.Null,
     'place' : IDL.Null,
     'county' : IDL.Null,
+  });
+  const ContributionLogEntry = IDL.Record({
+    'id' : IDL.Nat,
+    'pointsAwarded' : IDL.Nat,
+    'actionType' : IDL.Text,
+    'referenceId' : IDL.Opt(IDL.Text),
+    'rewardType' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'details' : IDL.Opt(IDL.Text),
+    'contributor' : IDL.Principal,
   });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
@@ -336,10 +420,38 @@ export const idlFactory = ({ IDL }) => {
     'censusBoundaryId' : IDL.Text,
     'population2020' : IDL.Text,
   });
+  const ContributionSummary = IDL.Record({
+    'totalCityPoints' : IDL.Nat,
+    'totalBountyPoints' : IDL.Nat,
+    'totalVotingPoints' : IDL.Nat,
+    'totalTokenPoints' : IDL.Nat,
+    'totalPoints' : IDL.Nat,
+    'contributor' : IDL.Principal,
+  });
   const ProfileImage = IDL.Vec(IDL.Nat8);
+  const TokenBalance = IDL.Record({
+    'staked' : IDL.Nat,
+    'total' : IDL.Nat,
+    'voting' : IDL.Nat,
+    'bounty' : IDL.Nat,
+  });
+  const ContributionPoints = IDL.Record({
+    'token' : IDL.Nat,
+    'city' : IDL.Nat,
+    'voting' : IDL.Nat,
+    'bounty' : IDL.Nat,
+  });
   const UserProfile = IDL.Record({
     'profileImage' : IDL.Opt(ProfileImage),
     'name' : IDL.Text,
+    'tokenBalance' : TokenBalance,
+    'contributionPoints' : ContributionPoints,
+  });
+  const ContributionCriteria = IDL.Record({
+    'actionType' : IDL.Text,
+    'rewardType' : IDL.Text,
+    'eligibilityCriteria' : IDL.Text,
+    'points' : IDL.Nat,
   });
   const GeoId = IDL.Text;
   const SecretaryCategorySuggestion = IDL.Record({
@@ -391,10 +503,21 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addContributionPoints' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
     'addOrUpdateLocationBasedIssues' : IDL.Func(
         [USHierarchyLevel, IDL.Opt(IDL.Text), IDL.Vec(IDL.Text)],
         [],
         [],
+      ),
+    'adminGetContributionLogs' : IDL.Func(
+        [IDL.Nat, IDL.Nat],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(ContributionLogEntry)))],
+        ['query'],
+      ),
+    'adminGetUserContributionLogs' : IDL.Func(
+        [IDL.Principal, IDL.Nat],
+        [IDL.Vec(ContributionLogEntry)],
+        ['query'],
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'backend_getIssueCategoriesByHierarchyLevel' : IDL.Func(
@@ -445,12 +568,27 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getAllStates' : IDL.Func([], [IDL.Vec(USState)], ['query']),
+    'getCallerContributionHistory' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(ContributionLogEntry)],
+        ['query'],
+      ),
+    'getCallerContributionSummary' : IDL.Func(
+        [],
+        [ContributionSummary],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCityById' : IDL.Func([IDL.Text], [IDL.Opt(USPlace)], ['query']),
     'getCityComplaintSuggestions' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
+    'getContributionCriteria' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, ContributionCriteria))],
         ['query'],
       ),
     'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
@@ -503,7 +641,17 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Bool],
         ['query'],
       ),
+    'recordContribution' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+        [IDL.Nat],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setContributionCriteria' : IDL.Func(
+        [IDL.Text, ContributionCriteria],
+        [],
+        [],
+      ),
     'submitProposal' : IDL.Func(
         [
           IDL.Text,

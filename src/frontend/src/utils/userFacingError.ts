@@ -1,94 +1,65 @@
 /**
  * Converts backend errors and exceptions into user-friendly English messages.
- * Extended to cover Secretary issues/geography lookup failures.
+ * Extended with patterns for geography lookup failures, Secretary top-issues errors,
+ * and contribution log authorization/fetch failures.
  */
 export function userFacingError(error: unknown): string {
-  if (!error) {
-    return 'An unexpected error occurred. Please try again.';
-  }
+  if (!error) return 'An unknown error occurred';
 
-  const errorMessage = typeof error === 'string' 
-    ? error 
-    : error instanceof Error 
-      ? error.message 
-      : String(error);
-
-  const lowerMessage = errorMessage.toLowerCase();
+  const errorMessage = error instanceof Error ? error.message : String(error);
 
   // Authorization errors
-  if (lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')) {
-    return 'You do not have permission to perform this action.';
+  if (errorMessage.includes('Unauthorized') || errorMessage.includes('Only admins')) {
+    return 'You do not have permission to perform this action';
   }
 
-  // Admin-specific errors
-  if (lowerMessage.includes('only admins can')) {
-    return 'This action requires administrator privileges.';
-  }
-
-  // Moderation-specific errors
-  if (lowerMessage.includes('approve') || lowerMessage.includes('reject')) {
-    return 'Failed to update proposal status. Please try again.';
-  }
-
-  if (lowerMessage.includes('hide')) {
-    return 'Failed to hide proposal. Please try again.';
-  }
-
-  if (lowerMessage.includes('delete')) {
-    return 'Failed to delete proposal. Please try again.';
-  }
-
-  // Proposal errors
-  if (lowerMessage.includes('instance name already exists')) {
-    return 'This instance name is already taken. Please choose a different name.';
-  }
-
-  if (lowerMessage.includes('proposal does not exist')) {
-    return 'The requested proposal could not be found.';
+  // Contribution log errors
+  if (errorMessage.includes('contribution logs') || errorMessage.includes('contribution history')) {
+    return 'Unable to load contribution logs. Please try again.';
   }
 
   // Geography lookup errors
-  if (lowerMessage.includes('no counties found') || lowerMessage.includes('no places found')) {
-    return 'No locations found for your selection. Please try a different area.';
+  if (errorMessage.includes('No counties found') || errorMessage.includes('No places found')) {
+    return 'No geographic data found for this location';
   }
 
-  if (lowerMessage.includes('state not found') || lowerMessage.includes('county not found') || lowerMessage.includes('city not found')) {
-    return 'The requested location could not be found. Please try again.';
+  if (errorMessage.includes('No states found')) {
+    return 'Geographic data is not yet available';
   }
 
-  // Secretary top issues errors
-  if (lowerMessage.includes('top issues') || lowerMessage.includes('common issues')) {
-    return 'Unable to retrieve common issues at this time. Please try again later.';
+  // Secretary top-issues errors
+  if (errorMessage.includes('top issues') || errorMessage.includes('location issues')) {
+    return 'Unable to load top issues for this location';
+  }
+
+  // Proposal errors
+  if (errorMessage.includes('Instance name already exists')) {
+    return 'This instance name is already taken';
+  }
+
+  if (errorMessage.includes('Proposal does not exist')) {
+    return 'This proposal could not be found';
   }
 
   // Task errors
-  if (lowerMessage.includes('task') && lowerMessage.includes('not found')) {
-    return 'The requested task could not be found.';
+  if (errorMessage.includes('No tasks found')) {
+    return 'No tasks found for this proposal';
   }
 
-  if (lowerMessage.includes('no tasks found')) {
-    return 'No tasks found for this proposal.';
+  if (errorMessage.includes('Task does not exist')) {
+    return 'This task could not be found';
   }
 
   // Profile errors
-  if (lowerMessage.includes('profile')) {
-    return 'Failed to save profile. Please try again.';
+  if (errorMessage.includes('profile')) {
+    return 'Unable to load or save profile. Please try again.';
   }
 
-  // Network/actor errors
-  if (lowerMessage.includes('actor not available') || lowerMessage.includes('not ready')) {
-    return 'The system is not ready yet. Please wait a moment and try again.';
+  // Network/Actor errors
+  if (errorMessage.includes('Actor not available') || errorMessage.includes('network')) {
+    return 'Connection issue. Please check your network and try again.';
   }
 
-  if (lowerMessage.includes('network') || lowerMessage.includes('connection')) {
-    return 'Network error. Please check your connection and try again.';
-  }
-
-  // Generic validation
-  if (lowerMessage.includes('invalid') || lowerMessage.includes('validation')) {
-    return 'Invalid input. Please check your information and try again.';
-  }
-
-  // Default fallback
-  return 'An error occurred. Please try again.';
+  // Generic fallback
+  return 'Something went wrong. Please try again.';
 }

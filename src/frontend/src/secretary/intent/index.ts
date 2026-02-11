@@ -1,11 +1,13 @@
 /**
- * Barrel export for intent/slot system.
- * Provides a single discoverable entry point for future extension.
+ * Barrel export module providing a single discoverable entry point
+ * for the intent/slot system.
  */
 
-export * from './types';
-export * from './intentClassifier';
-export * from './flowRegistry';
-export * from './flowRunner';
-export * from './slotState';
-export * from './repair';
+export { classifyIntent } from './intentClassifier';
+export { initializeFlowRegistry, getFlowDefinition, getNavigationHandler } from './flowRegistry';
+export { getNextMissingSlot, areAllRequiredSlotsFilled, fillSlot } from './flowRunner';
+export { getSlotPrompt } from './flowRunner';
+export { executeCompletion } from './flowRunner';
+export { looksLikeRepair, parseRepairSlot, applyRepair } from './repair';
+export { lookupUSGeographyFromText } from './geographyLookup';
+export type { SecretaryIntent, SecretarySlot, SlotBag, IntentContext } from './types';
