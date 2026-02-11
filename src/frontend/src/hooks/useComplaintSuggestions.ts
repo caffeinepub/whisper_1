@@ -16,16 +16,8 @@ export function useComplaintSuggestions(
 
       const term = searchTerm.trim();
 
-      switch (level) {
-        case 'place':
-          return actor.getCityComplaintSuggestions(term);
-        case 'county':
-          return actor.getCountyComplaintSuggestions(term);
-        case 'state':
-          return actor.getStateComplaintSuggestions(term);
-        default:
-          return [];
-      }
+      // Use the new unified backend method
+      return actor.getSecretaryCategorySuggestions(term, level);
     },
     enabled: !!actor && !actorFetching && !!level && enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes

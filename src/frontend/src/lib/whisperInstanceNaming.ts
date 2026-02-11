@@ -1,19 +1,18 @@
 /**
- * Utility for generating and validating Whisper- prefixed instance names.
- * All instances must start with "Whisper-" followed by geography identifiers in Title-Case hyphenated format.
- * Extended to support Secretary's instance availability checking.
+ * Utility for generating and validating WHISPER- prefixed instance names.
+ * All instances must start with "WHISPER-" followed by geography identifiers.
  */
 
 import { USHierarchyLevel } from '@/backend';
 
-const WHISPER_PREFIX = 'Whisper-';
+const WHISPER_PREFIX = 'WHISPER-';
 
 /**
- * Generates a Whisper- prefixed instance name based on geography level.
+ * Generates a WHISPER- prefixed instance name based on geography level.
  * Format examples:
- * - State: "Whisper-California"
- * - County: "Whisper-Los-Angeles-County-California"
- * - Place: "Whisper-Los-Angeles-California"
+ * - State: "WHISPER-California"
+ * - County: "WHISPER-Los Angeles County,California"
+ * - Place: "WHISPER-Los Angeles,California"
  */
 export function generateWhisperInstanceName(
   level: USHierarchyLevel,
@@ -21,22 +20,20 @@ export function generateWhisperInstanceName(
   countyName?: string,
   placeName?: string
 ): string {
-  const normalizedState = stateName.trim().replace(/\s+/g, '-');
+  const normalizedState = stateName.trim();
   
   switch (level) {
     case USHierarchyLevel.place:
       if (!placeName) {
         throw new Error('Place name required for place-level instance');
       }
-      const normalizedPlace = placeName.trim().replace(/\s+/g, '-');
-      return `${WHISPER_PREFIX}${normalizedPlace}-${normalizedState}`;
+      return `${WHISPER_PREFIX}${placeName.trim()},${normalizedState}`;
     
     case USHierarchyLevel.county:
       if (!countyName) {
         throw new Error('County name required for county-level instance');
       }
-      const normalizedCounty = countyName.trim().replace(/\s+/g, '-');
-      return `${WHISPER_PREFIX}${normalizedCounty}-${normalizedState}`;
+      return `${WHISPER_PREFIX}${countyName.trim()},${normalizedState}`;
     
     case USHierarchyLevel.state:
       return `${WHISPER_PREFIX}${normalizedState}`;
@@ -47,7 +44,7 @@ export function generateWhisperInstanceName(
 }
 
 /**
- * Validates that an instance name follows the Whisper- naming convention.
+ * Validates that an instance name follows the WHISPER- naming convention.
  */
 export function isValidWhisperInstanceName(instanceName: string): boolean {
   if (!instanceName || typeof instanceName !== 'string') {
@@ -65,7 +62,7 @@ export function normalizeWhisperInstanceName(instanceName: string): string {
 }
 
 /**
- * Extracts the geography portion from a Whisper- instance name.
+ * Extracts the geography portion from a WHISPER- instance name.
  */
 export function extractGeographyFromWhisperName(instanceName: string): string | null {
   if (!isValidWhisperInstanceName(instanceName)) {
@@ -73,25 +70,4 @@ export function extractGeographyFromWhisperName(instanceName: string): string | 
   }
   
   return instanceName.slice(WHISPER_PREFIX.length);
-}
-
-/**
- * Computes the canonical instance name for a given geography selection.
- * Used by Secretary to determine which instance to check/create.
- */
-export function computeCanonicalInstanceName(
-  state: { longName: string } | null,
-  county: { fullName: string } | null,
-  place: { shortName: string } | null
-): string | null {
-  if (!state) return null;
-
-  // Most specific level takes precedence
-  if (place) {
-    return generateWhisperInstanceName(USHierarchyLevel.place, state.longName, undefined, place.shortName);
-  } else if (county) {
-    return generateWhisperInstanceName(USHierarchyLevel.county, state.longName, county.fullName);
-  } else {
-    return generateWhisperInstanceName(USHierarchyLevel.state, state.longName);
-  }
 }

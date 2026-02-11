@@ -11,7 +11,6 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export type CensusStateCode = string;
-export interface DeletionRequest { 'user' : Principal, 'requestedAt' : bigint }
 export type GeoId = string;
 export type HierarchicalGeoId = string;
 export type ProfileImage = Uint8Array;
@@ -119,7 +118,21 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addOrUpdateLocationBasedIssues' : ActorMethod<
+    [USHierarchyLevel, [] | [string], Array<string>],
+    undefined
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'backend_getIssueCategoriesByHierarchyLevel' : ActorMethod<
+    [USHierarchyLevel, [] | [string]],
+    Array<string>
+  >,
+  'backend_getUSCountyByHierarchicalId' : ActorMethod<
+    [string],
+    [] | [USCounty]
+  >,
+  'backend_getUSPlaceByHierarchicalId' : ActorMethod<[string], [] | [USPlace]>,
+  'backend_getUSStateByHierarchicalId' : ActorMethod<[string], [] | [USState]>,
   'createTask' : ActorMethod<[string, string], bigint>,
   'deleteProposal' : ActorMethod<[string], boolean>,
   'getAdminModerationQueue' : ActorMethod<[], Array<[string, Proposal]>>,
@@ -130,12 +143,11 @@ export interface _SERVICE {
   'getAllStates' : ActorMethod<[], Array<USState>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCityById' : ActorMethod<[HierarchicalGeoId], [] | [USPlace]>,
+  'getCityById' : ActorMethod<[string], [] | [USPlace]>,
   'getCityComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
-  'getCountyById' : ActorMethod<[HierarchicalGeoId], [] | [USCounty]>,
+  'getCountyById' : ActorMethod<[string], [] | [USCounty]>,
   'getCountyComplaintSuggestions' : ActorMethod<[string], Array<string>>,
-  'getDeletionRequests' : ActorMethod<[], Array<[Principal, DeletionRequest]>>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getPlacesForState' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
@@ -143,11 +155,15 @@ export interface _SERVICE {
     [string, USHierarchyLevel],
     SecretaryCategorySuggestion
   >,
-  'getStateById' : ActorMethod<[HierarchicalGeoId], [] | [USState]>,
+  'getSecretaryCategorySuggestions' : ActorMethod<
+    [string, USHierarchyLevel],
+    Array<string>
+  >,
+  'getStateById' : ActorMethod<[string], [] | [USState]>,
   'getStateComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
-  'getTop50IssuesForLocation' : ActorMethod<
-    [USHierarchyLevel, [] | [HierarchicalGeoId]],
+  'getTopIssuesForLocation' : ActorMethod<
+    [USHierarchyLevel, [] | [string]],
     Array<string>
   >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -159,10 +175,7 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
-  'processDeletionRequest' : ActorMethod<[Principal], undefined>,
-  'requestDeletion' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'searchSimilarCityNames' : ActorMethod<[string], Array<USPlace>>,
   'submitProposal' : ActorMethod<
     [
       string,

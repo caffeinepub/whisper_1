@@ -1,157 +1,141 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import { Principal } from '@icp-sdk/core/principal';
-import type { Proposal, DeletionRequest } from '@/backend';
+import type { UserProfile, Proposal, UserRole, USHierarchyLevel, USState, USCounty, USPlace } from '@/backend';
 
-/**
- * Example query hook for checking parent-child installation relationships.
- * This demonstrates the pattern for future backend integration.
- */
-export function useIsParent(childId: string, parentId: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<boolean>({
-    queryKey: ['isParent', childId, parentId],
-    queryFn: async () => {
-      if (!actor) return false;
-      try {
-        const childPrincipal = Principal.fromText(childId);
-        const parentPrincipal = Principal.fromText(parentId);
-        return await actor.isParent(childPrincipal, parentPrincipal);
-      } catch (error) {
-        console.error('Error checking parent relationship:', error);
-        return false;
-      }
-    },
-    enabled: !!actor && !isFetching && !!childId && !!parentId,
-  });
-}
-
-/**
- * Hook to fetch all proposals from the backend.
- * Returns an empty array while actor is initializing to prevent undefined states.
- */
-export function useGetAllProposals() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<Array<[string, Proposal]>>({
-    queryKey: ['proposals'],
-    queryFn: async () => {
-      if (!actor) {
-        throw new Error('Backend connection not available');
-      }
-      try {
-        const result = await actor.getAllProposals();
-        return result;
-      } catch (error) {
-        console.error('Error fetching proposals:', error);
-        throw new Error('Failed to load proposals. Please try again.');
-      }
-    },
-    enabled: !!actor && !!identity && !isFetching,
-    retry: 2,
-  });
-}
-
-/**
- * Hook to fetch a single proposal by instance name.
- * Returns null if proposal doesn't exist, throws error on fetch failure.
- */
-export function useGetProposal(instanceName: string) {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<Proposal | null>({
-    queryKey: ['proposal', instanceName],
-    queryFn: async () => {
-      if (!actor) {
-        throw new Error('Backend connection not available');
-      }
-      if (!instanceName) {
-        return null;
-      }
-      try {
-        const result = await actor.getProposal(instanceName);
-        return result;
-      } catch (error) {
-        console.error('Error fetching proposal:', error);
-        throw new Error('Failed to load proposal details. Please try again.');
-      }
-    },
-    enabled: !!actor && !!identity && !isFetching && !!instanceName,
-    retry: 2,
-  });
-}
-
-/**
- * Hook to check if the current caller is an admin.
- * Identity-aware: only attempts admin check when authenticated.
- * Includes principal in query key to ensure fresh checks per user.
- * Short staleTime ensures admin status refreshes quickly after first-user assignment.
- */
-export function useIsCallerAdmin() {
+export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
-  const { identity, isInitializing } = useInternetIdentity();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
 
-  const isAuthenticated = !!identity;
-  const principalString = identity?.getPrincipal().toString() || 'anonymous';
-
-  const query = useQuery<boolean>({
-    queryKey: ['isCallerAdmin', principalString],
+  const query = useQuery<UserProfile | null>({
+    queryKey: ['currentUserProfile', principal],
     queryFn: async () => {
-      if (!actor) {
-        throw new Error('Backend connection not available');
-      }
-      try {
-        return await actor.isCallerAdmin();
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        throw error; // Surface the error instead of returning false
-      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerUserProfile();
     },
-    // Only enable when authenticated and actor is ready
-    enabled: !!actor && isAuthenticated && !actorFetching && !isInitializing,
-    staleTime: 0, // Always refetch on mount to catch first-user admin assignment
-    refetchOnMount: true, // Ensure fresh check when component mounts
-    retry: 2,
+    enabled: !!actor && !actorFetching && !!identity,
+    retry: false,
   });
 
   return {
     ...query,
-    // Provide loading state that accounts for actor initialization and identity
-    isLoading: actorFetching || isInitializing || query.isLoading,
-    // Only consider fetched when actor is ready, authenticated, and query has completed
-    isFetched: !!actor && isAuthenticated && query.isFetched,
-    // Expose authentication state for UI gating
-    isAuthenticated,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
   };
 }
 
-/**
- * Hook to fetch all deletion requests (admin only).
- * Returns array of [Principal, DeletionRequest] tuples.
- */
-export function useGetDeletionRequests() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
+export function useSaveCallerUserProfile() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
 
-  return useQuery<Array<[Principal, DeletionRequest]>>({
-    queryKey: ['deletionRequests'],
-    queryFn: async () => {
-      if (!actor) {
-        throw new Error('Backend connection not available');
-      }
-      try {
-        const result = await actor.getDeletionRequests();
-        return result;
-      } catch (error) {
-        console.error('Error fetching deletion requests:', error);
-        throw new Error('Failed to load deletion requests. Please try again.');
-      }
+  return useMutation({
+    mutationFn: async (profile: UserProfile) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.saveCallerUserProfile(profile);
     },
-    enabled: !!actor && !!identity && !isFetching,
-    retry: 2,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    },
+  });
+}
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useQuery<boolean>({
+    queryKey: ['isCallerAdmin', principal],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !actorFetching && !!identity,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
+export function useGetAllProposals() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<[string, Proposal][]>({
+    queryKey: ['proposals'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllProposals();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetProposal(instanceName: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Proposal | null>({
+    queryKey: ['proposal', instanceName],
+    queryFn: async () => {
+      if (!actor || !instanceName) return null;
+      return actor.getProposal(instanceName);
+    },
+    enabled: !!actor && !isFetching && !!instanceName,
+  });
+}
+
+export function useGetTopIssuesForLocation(
+  locationLevel: USHierarchyLevel | null,
+  locationId: string | null,
+  enabled: boolean = true
+) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['topIssues', locationLevel, locationId],
+    queryFn: async () => {
+      if (!actor || !locationLevel) return [];
+      return actor.getTopIssuesForLocation(locationLevel, locationId);
+    },
+    enabled: !!actor && !isFetching && !!locationLevel && enabled,
+  });
+}
+
+// New query hooks for Step 1: Geography by ID endpoints
+export function useGetStateById(stateId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USState | null>({
+    queryKey: ['state', stateId],
+    queryFn: async () => {
+      if (!actor || !stateId) return null;
+      return actor.getStateById(stateId);
+    },
+    enabled: !!actor && !isFetching && !!stateId,
+  });
+}
+
+export function useGetCountyById(countyId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USCounty | null>({
+    queryKey: ['county', countyId],
+    queryFn: async () => {
+      if (!actor || !countyId) return null;
+      return actor.getCountyById(countyId);
+    },
+    enabled: !!actor && !isFetching && !!countyId,
+  });
+}
+
+export function useGetCityById(cityId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USPlace | null>({
+    queryKey: ['city', cityId],
+    queryFn: async () => {
+      if (!actor || !cityId) return null;
+      return actor.getCityById(cityId);
+    },
+    enabled: !!actor && !isFetching && !!cityId,
   });
 }

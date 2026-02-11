@@ -1,52 +1,174 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:58:58.407Z",
+  "generatedAt": "2026-02-11T16:19:08.629Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 9,
+    "implemented": 9,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
+        "summary": "Define a small set of core Secretary intents and required slots, and represent them in the Secretary state so the assistant can track an active intent and which slots have been filled (at minimum: intents `report_issue`, `find_instance`, `create_instance`, `ask_category`; slots `state`, `county`, `city/place`, `issue_category`, `issue_description`).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/caffeine-draft-preview-blocker.js",
-          "frontend/index.html"
+          "frontend/src/secretary/flow/types.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/intent/types.ts",
+          "frontend/src/secretary/intent/slotState.ts"
         ],
         "matchedFiles": [
-          "frontend/public/caffeine-draft-preview-blocker.js",
-          "frontend/index.html"
+          "frontend/src/secretary/flow/types.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/intent/types.ts",
+          "frontend/src/secretary/intent/slotState.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
+        "summary": "Add a client-side intent classifier (rule-based keyword/pattern matching) that runs on free-text user input and maps the text to one of the supported intents, without using any external services.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/index.html",
-          "frontend/src/App.tsx",
-          "frontend/src/components/common/AppErrorBoundary.tsx"
+          "frontend/src/secretary/intent/intentClassifier.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
         ],
         "matchedFiles": [
-          "frontend/index.html",
-          "frontend/src/components/common/AppErrorBoundary.tsx"
+          "frontend/src/secretary/intent/intentClassifier.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement slot-filling prompts for each intent: when an intent is active, the Secretary asks for the next missing required slot step-by-step, and accepts user input via the existing UI controls (text input and/or typeahead) until all required slots are filled.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/intent/flowRunner.ts",
+          "frontend/src/secretary/copy/secretaryCopy.ts",
+          "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/secretary/ui/secretaryViewModel.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/intent/flowRunner.ts",
+          "frontend/src/secretary/copy/secretaryCopy.ts",
+          "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Connect slot-filling for geography to existing geography data sources so the Secretary can suggest valid states/counties/places and store the selected geography in slots (use the existing state/county/place lists already fetched for typeahead).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Integrate issue category suggestions into the intent/slot flow so that, after an issue description is provided, the Secretary fetches complaint/issue category suggestions for the selected geography level (city/county/state) and allows the user to pick a suggestion or enter a custom category, storing the result in the `issue_category` slot.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useComplaintSuggestions.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useComplaintSuggestions.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Add completion rules: once all required slots for an intent are filled, perform the intent’s completion action using existing app navigation/flows (e.g., `report_issue` should proceed to the existing issue-project navigation request; `view proposals` / `create instance` should navigate and close the widget like current menu actions).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/hooks/useSecretaryNavigationRegistry.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Implement fallback and repair behavior during slot filling: if the user changes their mind (e.g., “Actually, state is Texas”), reset only the relevant slot(s) and any dependent slots (e.g., changing state clears county/place), then continue slot filling without wiping the whole conversation.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/intent/repair.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/intent/repair.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Create a simple flow registry that maps each intent to (a) required slot list, (b) slot prompt order, and (c) a completion action, and expose extension hooks so future intents/slots can be added without reworking core Secretary UI components.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/intent/index.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/intent/index.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Update the Secretary smoke test checklist to include the new intent classification + slot-filling flows and repair behavior, and ensure the existing documented smoke tests still pass after the changes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md"
+        ],
+        "matchedFiles": [
+          "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.html",
-    "frontend/public/caffeine-draft-preview-blocker.js",
-    "frontend/src/components/common/AppErrorBoundary.tsx",
+    "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md",
+    "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useComplaintSuggestions.ts",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/copy/secretaryCopy.ts",
+    "frontend/src/secretary/copy/secretaryPrompts.ts",
+    "frontend/src/secretary/flow/types.ts",
+    "frontend/src/secretary/intent/flowRegistry.ts",
+    "frontend/src/secretary/intent/flowRunner.ts",
+    "frontend/src/secretary/intent/index.ts",
+    "frontend/src/secretary/intent/intentClassifier.ts",
+    "frontend/src/secretary/intent/repair.ts",
+    "frontend/src/secretary/intent/slotState.ts",
+    "frontend/src/secretary/intent/types.ts",
+    "frontend/src/secretary/state/secretaryContext.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

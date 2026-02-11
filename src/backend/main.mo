@@ -12,15 +12,12 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-
 actor {
   include MixinStorage();
-
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   public type ProfileImage = Storage.ExternalBlob;
-
   public type UserProfile = {
     name : Text;
     profileImage : ?ProfileImage;
@@ -75,17 +72,20 @@ actor {
     censusLandKm2 : Int;
     censusWaterKm2 : Int;
   };
+
   type USGeographyDataChunk = {
     states : [USState];
     counties : [USCounty];
     places : [USPlace];
   };
+
   type USGeography = {
     country : USCountry;
     states : Map.Map<HierarchicalGeoId, USState>;
     counties : Map.Map<HierarchicalGeoId, USCounty>;
     places : Map.Map<HierarchicalGeoId, USPlace>;
   };
+
   type USGeographySummary = { numStates : Nat; numCounties : Nat };
   type Installation = { scope : Text; owner : Principal; parent : ?Principal; children : [Effect] };
   public type Proposal = {
@@ -125,11 +125,6 @@ actor {
     #error : {
       message : Text;
     };
-  };
-
-  type DeletionRequest = {
-    user : Principal;
-    requestedAt : Int;
   };
 
   func emptyUSGeographyData() : USGeography {
@@ -178,7 +173,6 @@ actor {
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
-  let deletionRequests = Map.empty<Principal, DeletionRequest>();
   let geoIdToCensusIdMap = Map.empty<GeoId, CensusId>();
   let censusIdToGeoIdMap = Map.empty<CensusId, GeoId>();
   let hierarchicalGeoIdToGeoIdMap = Map.empty<HierarchicalGeoId, GeoId>();
@@ -357,6 +351,18 @@ actor {
     "Irrigation Project Funding"
   ];
 
+  // New Map to store location-based complaints
+  let locationBasedComplaintMap = Map.empty<Text, [Text]>();
+
+  func hierarchyLevelToText(level : USHierarchyLevel) : Text {
+    switch (level) {
+      case (#country) { "country" };
+      case (#state) { "state" };
+      case (#county) { "county" };
+      case (#place) { "place" };
+    };
+  };
+
   func validStatusTransition(current : Text, next : Text, _proposal : Proposal) : Bool {
     switch (current, next) {
       case ("Pending", "Approved") { true };
@@ -388,32 +394,6 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
-  };
-
-  public shared ({ caller }) func requestDeletion() : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can request account deletion");
-    };
-    let request : DeletionRequest = {
-      user = caller;
-      requestedAt = 0; // In production, use Time.now()
-    };
-    deletionRequests.add(caller, request);
-  };
-
-  public query ({ caller }) func getDeletionRequests() : async [(Principal, DeletionRequest)] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can view deletion requests");
-    };
-    deletionRequests.toArray();
-  };
-
-  public shared ({ caller }) func processDeletionRequest(user : Principal) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can process deletion requests");
-    };
-    userProfiles.remove(user);
-    deletionRequests.remove(user);
   };
 
   public query ({ caller }) func isParent(_childId : Principal, parentId : Principal) : async Bool {
@@ -573,58 +553,18 @@ actor {
     );
   };
 
-  // Geography query functions - accessible to all users including guests
-  // Secretary-specific functions for Motoko backend
-  public query ({ caller }) func getStateById(hierarchicalId : HierarchicalGeoId) : async ?USState {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can access this endpoint");
-    };
-    usGeography.states.get(hierarchicalId);
-  };
-
-  public query ({ caller }) func getCountyById(hierarchicalId : HierarchicalGeoId) : async ?USCounty {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can access this endpoint");
-    };
-    usGeography.counties.get(hierarchicalId);
-  };
-
-  public query ({ caller }) func getCityById(hierarchicalId : HierarchicalGeoId) : async ?USPlace {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can access this endpoint");
-    };
-    usGeography.places.get(hierarchicalId);
-  };
-
-  public query ({ caller }) func getTop50IssuesForLocation(_level : USHierarchyLevel, _hierarchicalId : ?HierarchicalGeoId) : async [Text] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can access this endpoint");
-    };
-    let sortedCityIssues = complaintCategoriesCity.sort(
-      func(a, b) { Nat.compare(a.size(), b.size()) }
-    );
-    sortedCityIssues.sliceToArray(0, 50);
-  };
-
-  public query ({ caller }) func searchSimilarCityNames(searchTerm : Text) : async [USPlace] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can access this endpoint");
-    };
-    if (searchTerm.trim(#char ' ').size() < 3) {
-      Runtime.trap("No results for search term: " # searchTerm);
-    };
-    let matchingCities = usGeography.places.filter(
-      func(_hierarchicalId, place) { place.fullName.toLower().contains(#text(searchTerm.toLower())) }
-    );
-    let toArrayFiltered = matchingCities.values().toArray();
-    toArrayFiltered.sliceToArray(0, Nat.min(toArrayFiltered.size(), 8));
-  };
-
+  // Geography query functions - require user authentication
   public query ({ caller }) func getAllStates() : async [USState] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
     usGeography.states.values().toArray();
   };
 
   public query ({ caller }) func getCountiesForState(stateGeoId : GeoId) : async [USCounty] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
     let countiesList = List.empty<USCounty>();
     for ((countyGeoId, county) in usGeography.counties.entries()) {
       if (countyGeoId.startsWith(#text(stateGeoId))) { countiesList.add(county) };
@@ -636,6 +576,9 @@ actor {
   };
 
   public query ({ caller }) func getPlacesForCounty(countyGeoId : GeoId) : async [USPlace] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
     let placesList = List.empty<USPlace>();
     for ((placeGeoId, place) in usGeography.places.entries()) {
       if (placeGeoId.startsWith(#text(countyGeoId))) { placesList.add(place) };
@@ -646,7 +589,11 @@ actor {
     } else { placesArray };
   };
 
+  // New Backend Support: Fetch Places for State
   public query ({ caller }) func getPlacesForState(stateGeoId : GeoId) : async [USPlace] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
     let filteredPlacesList = List.empty<USPlace>();
     for ((placeGeoId, place) in usGeography.places.entries()) {
       if (placeGeoId.startsWith(#text(stateGeoId))) {
@@ -692,7 +639,7 @@ actor {
     };
   };
 
-  // Task Management
+  // ===================== Task Management ========================
   public shared ({ caller }) func createTask(proposalId : Text, description : Text) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create tasks");
@@ -778,6 +725,9 @@ actor {
   };
 
   public query ({ caller }) func getCityComplaintSuggestions(searchTerm : Text) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint suggestions");
+    };
     let filtered = complaintCategoriesCity.filter(
       func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
     );
@@ -786,6 +736,9 @@ actor {
   };
 
   public query ({ caller }) func getCountyComplaintSuggestions(searchTerm : Text) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint suggestions");
+    };
     let filtered = complaintCategoriesCounty.filter(
       func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
     );
@@ -794,6 +747,9 @@ actor {
   };
 
   public query ({ caller }) func getStateComplaintSuggestions(searchTerm : Text) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint suggestions");
+    };
     let filtered = complaintCategoriesState.filter(
       func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
     );
@@ -802,18 +758,30 @@ actor {
   };
 
   public query ({ caller }) func getAllCityComplaintCategories() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint categories");
+    };
     complaintCategoriesCity;
   };
 
   public query ({ caller }) func getAllCountyComplaintCategories() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint categories");
+    };
     complaintCategoriesCounty;
   };
 
   public query ({ caller }) func getAllStateComplaintCategories() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint categories");
+    };
     complaintCategoriesState;
   };
 
   public query ({ caller }) func getSecretaryCategorySuggestion(searchTerm : Text, locationLevel : USHierarchyLevel) : async SecretaryCategorySuggestion {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access category suggestions");
+    };
     let statesByGeoId = usGeography.states.values().toArray();
     let filteredCategories = switch (locationLevel) {
       case (#place) {
@@ -851,5 +819,152 @@ actor {
       statesByGeoId;
       proposedCategories = filteredCategories.sliceToArray(0, Nat.min(filteredCategories.size(), 10));
     };
+  };
+
+  public query ({ caller }) func getSecretaryCategorySuggestions(searchTerm : Text, locationLevel : USHierarchyLevel) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access category suggestions");
+    };
+    let filteredCategories = switch (locationLevel) {
+      case (#place) {
+        complaintCategoriesCity.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#county) {
+        complaintCategoriesCounty.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#state) {
+        complaintCategoriesState.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+      };
+      case (#country) {
+        let stateFiltered = complaintCategoriesState.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        let countyFiltered = complaintCategoriesCounty.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        let cityFiltered = complaintCategoriesCity.filter(
+          func(category) { category.toLower().contains(#text(searchTerm.toLower())) }
+        );
+        stateFiltered.concat(countyFiltered).concat(cityFiltered);
+      };
+    };
+
+    filteredCategories.sliceToArray(0, Nat.min(filteredCategories.size(), 10));
+  };
+
+  // Secretary-only queries for backed geography mapping
+
+  public query ({ caller }) func backend_getUSStateByHierarchicalId(hierarchicalId : Text) : async ?USState {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only Secretary can access this endpoint");
+    };
+    usGeography.states.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func backend_getUSCountyByHierarchicalId(hierarchicalId : Text) : async ?USCounty {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only Secretary can access this endpoint");
+    };
+    usGeography.counties.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func backend_getUSPlaceByHierarchicalId(hierarchicalId : Text) : async ?USPlace {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only Secretary can access this endpoint");
+    };
+    usGeography.places.get(hierarchicalId);
+  };
+
+  public query ({ caller }) func backend_getIssueCategoriesByHierarchyLevel(
+    locationLevel : USHierarchyLevel,
+    locationId : ?Text,
+  ) : async [Text] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only Secretary can access this endpoint");
+    };
+    let key = switch (locationId) {
+      case (?id) { hierarchyLevelToText(locationLevel) # "_" # id };
+      case (null) { hierarchyLevelToText(locationLevel) # "_general" };
+    };
+    switch (locationBasedComplaintMap.get(key)) {
+      case (?issues) { issues.sliceToArray(0, Nat.min(issues.size(), 50)) };
+      case (null) {
+        switch (locationLevel) {
+          case (#place) { complaintCategoriesCity.sliceToArray(0, 50) };
+          case (#county) { complaintCategoriesCounty.sliceToArray(0, 50) };
+          case (#state) { complaintCategoriesState.sliceToArray(0, 50) };
+          case (#country) { complaintCategoriesState.sliceToArray(0, 50) };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getStateById(stateId : Text) : async ?USState {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
+    usGeography.states.get(stateId);
+  };
+
+  public query ({ caller }) func getCountyById(countyId : Text) : async ?USCounty {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
+    usGeography.counties.get(countyId);
+  };
+
+  public query ({ caller }) func getCityById(cityId : Text) : async ?USPlace {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access geography data");
+    };
+    usGeography.places.get(cityId);
+  };
+
+  public query ({ caller }) func getTopIssuesForLocation(
+    locationLevel : USHierarchyLevel,
+    locationId : ?Text,
+  ) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access location issues");
+    };
+    let key = switch (locationId) {
+      case (?id) { hierarchyLevelToText(locationLevel) # "_" # id };
+      case (null) { hierarchyLevelToText(locationLevel) # "_general" };
+    };
+
+    switch (locationBasedComplaintMap.get(key)) {
+      case (?issues) { issues };
+      case (null) {
+        switch (locationLevel) {
+          case (#place) { complaintCategoriesCity };
+          case (#county) { complaintCategoriesCounty };
+          case (#state) { complaintCategoriesState };
+          case (#country) { complaintCategoriesState };
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func addOrUpdateLocationBasedIssues(
+    locationLevel : USHierarchyLevel,
+    locationId : ?Text,
+    issues : [Text],
+  ) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can add or update location-based issues");
+    };
+
+    let key = switch (locationId) {
+      case (?id) { hierarchyLevelToText(locationLevel) # "_" # id };
+      case (null) { hierarchyLevelToText(locationLevel) # "_general" };
+    };
+
+    locationBasedComplaintMap.add(key, issues.sliceToArray(0, Nat.min(issues.size(), 50)));
   };
 };

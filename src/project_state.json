@@ -1,28 +1,83 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Investigate and mitigate blank white screen in Caffeine preview caused by injected draft editor script (disallowed origin) by stripping suspected dependency chain and adding a temporary in-site blocker to prevent preview system injection.",
+  "summary": "Build a client-side AI chat \"Secretary\" with a small intent/slot-style flow engine (Rasa-like) and integrate it with geography and issues/category databases for guided, task-completing chat flows.",
   "architectural_notes": [
-    "Caffeine preview may auto-inject an editor subsystem (draft-script.js) based on bundle detection, which can fail with a 'disallowed origin' error and prevent the app from mounting."
+    "Secretary must remain fully client-side (rule-based/React) with no external Rasa backend or embedded external widgets.",
+    "Implement Rasa-like behavior via a lightweight in-app intent + slot-filling flow registry and completion-action hooks."
   ],
-  "known_issues": [
-    "Preview can render a blank white screen when injected draft editor script throws 'disallowed origin' for the preview URL (e.g., https://just-olive-eim-draft.caffeine.xyz)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-a-temporary-early-executing-in-site-blocker-that-prevents-the-caffeine-preview-system-s-injected-draft-editor-script-from-loading-executing-e-g-draft-script-js-draft-editor-so-the-preview-no-longer-crashes-with-the-disallowed-origin-error-and-the-react-app-can-mount",
-      "title": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
+      "id": "feature-define-a-small-set-of-core-secretary-intents-and-required-slots-and-represent-them-in-the-secretary-state-so-the-assistant-can-track-an-active-intent-and-which-slots-have-been-filled-at-minimum-intents-report-issue-find-instance-create-instance-ask-category-slots-state-county-city-place-issue-category-issue-description",
+      "title": "Define a small set of core Secretary intents and required slots, and represent them in the Secretary state so the assistant can track an active intent and which slots have been filled (at minimum: intents `report_issue`, `find_instance`, `create_instance`, `ask_category`; slots `state`, `county`, `city/place`, `issue_category`, `issue_description`).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-strip-the-suspected-editor-triggering-dependency-chain-from-the-frontend-bundle-so-the-preview-system-stops-deciding-to-inject-the-draft-editor-subsystem-in-the-first-place",
-      "title": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
+      "id": "feature-add-a-client-side-intent-classifier-rule-based-keyword-pattern-matching-that-runs-on-free-text-user-input-and-maps-the-text-to-one-of-the-supported-intents-without-using-any-external-services",
+      "title": "Add a client-side intent classifier (rule-based keyword/pattern matching) that runs on free-text user input and maps the text to one of the supported intents, without using any external services.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-slot-filling-prompts-for-each-intent-when-an-intent-is-active-the-secretary-asks-for-the-next-missing-required-slot-step-by-step-and-accepts-user-input-via-the-existing-ui-controls-text-input-and-or-typeahead-until-all-required-slots-are-filled",
+      "title": "Implement slot-filling prompts for each intent: when an intent is active, the Secretary asks for the next missing required slot step-by-step, and accepts user input via the existing UI controls (text input and/or typeahead) until all required slots are filled.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-connect-slot-filling-for-geography-to-existing-geography-data-sources-so-the-secretary-can-suggest-valid-states-counties-places-and-store-the-selected-geography-in-slots-use-the-existing-state-county-place-lists-already-fetched-for-typeahead",
+      "title": "Connect slot-filling for geography to existing geography data sources so the Secretary can suggest valid states/counties/places and store the selected geography in slots (use the existing state/county/place lists already fetched for typeahead).",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-issue-category-suggestions-into-the-intent-slot-flow-so-that-after-an-issue-description-is-provided-the-secretary-fetches-complaint-issue-category-suggestions-for-the-selected-geography-level-city-county-state-and-allows-the-user-to-pick-a-suggestion-or-enter-a-custom-category-storing-the-result-in-the-issue-category-slot",
+      "title": "Integrate issue category suggestions into the intent/slot flow so that, after an issue description is provided, the Secretary fetches complaint/issue category suggestions for the selected geography level (city/county/state) and allows the user to pick a suggestion or enter a custom category, storing the result in the `issue_category` slot.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-completion-rules-once-all-required-slots-for-an-intent-are-filled-perform-the-intent-s-completion-action-using-existing-app-navigation-flows-e-g-report-issue-should-proceed-to-the-existing-issue-project-navigation-request-view-proposals-create-instance-should-navigate-and-close-the-widget-like-current-menu-actions",
+      "title": "Add completion rules: once all required slots for an intent are filled, perform the intent’s completion action using existing app navigation/flows (e.g., `report_issue` should proceed to the existing issue-project navigation request; `view proposals` / `create instance` should navigate and close the widget like current menu actions).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-fallback-and-repair-behavior-during-slot-filling-if-the-user-changes-their-mind-e-g-actually-state-is-texas-reset-only-the-relevant-slot-s-and-any-dependent-slots-e-g-changing-state-clears-county-place-then-continue-slot-filling-without-wiping-the-whole-conversation",
+      "title": "Implement fallback and repair behavior during slot filling: if the user changes their mind (e.g., “Actually, state is Texas”), reset only the relevant slot(s) and any dependent slots (e.g., changing state clears county/place), then continue slot filling without wiping the whole conversation.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-simple-flow-registry-that-maps-each-intent-to-a-required-slot-list-b-slot-prompt-order-and-c-a-completion-action-and-expose-extension-hooks-so-future-intents-slots-can-be-added-without-reworking-core-secretary-ui-components",
+      "title": "Create a simple flow registry that maps each intent to (a) required slot list, (b) slot prompt order, and (c) a completion action, and expose extension hooks so future intents/slots can be added without reworking core Secretary UI components.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-secretary-smoke-test-checklist-to-include-the-new-intent-classification-slot-filling-flows-and-repair-behavior-and-ensure-the-existing-documented-smoke-tests-still-pass-after-the-changes",
+      "title": "Update the Secretary smoke test checklist to include the new intent classification + slot-filling flows and repair behavior, and ensure the existing documented smoke tests still pass after the changes.",
+      "reqIds": [
+        "REQ-9"
       ],
       "version": 1
     }
@@ -30,18 +85,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Strip suspected editor-triggering dependency chain from the bundle to stop Caffeine preview from injecting draft-script.js (disallowed origin) and causing blank screen",
+      "summary": "Implement a client-side intent/slot-style flow engine for the Secretary (intents, slots, slot-filling prompts, flow registry, completion actions, fallback/repair).",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add a temporary in-site script/workaround to block the problematic dependency chain / prevent preview system injection of the editor script",
+      "summary": "Integrate the Secretary flows with geography data (state/county/city suggestions) and issues/category databases to support tasks like reporting and finding issues.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Mitigate Caffeine preview blank screen by blocking injected draft editor script and stripping editor-triggering dependency chain",
+  "projectName": "Implement intent/slot-style mini-flow engine for Secretary and integrate with geography + issue category data",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

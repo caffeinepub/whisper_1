@@ -7,21 +7,6 @@ This document tracks the visual and UX improvements made to the Whisper homepage
 
 ## Hero Section
 
-### Hero Text (Updated Draft Version 70)
-
-**PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS**
-
-This is the official mission statement and must remain exactly as written:
-
-- **Headline**: "Of the People, By the People — Realized"
-- **Subtext**: "Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up."
-
-**Before/After Comparison:**
-- **Previous Headline** (Draft Version 46 and earlier): "Whisper"
-- **Previous Subtext** (Draft Version 46 and earlier): "Decentralized civic engagement platform"
-- **New Headline** (Draft Version 70+): "Of the People, By the People — Realized"
-- **New Subtext** (Draft Version 70+): "Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up."
-
 ### Hero Image
 - **Current Asset**: `/frontend/public/assets/generated/second-best-hero-image.dim_2400x1350.jpg`
 - **Description**: Static bundled hero image for community collaboration theme
@@ -39,7 +24,7 @@ This is the official mission statement and must remain exactly as written:
 - **Readability**: Hero headline and description maintain >4.5:1 contrast ratio across all viewport sizes
 
 ### Hero Content
-- **Headline**: "Of the People, By the People — Realized"
+- **Headline**: "Reclaiming Government of the People, by the People"
 - **Typography**: 
   - Desktop: `text-7xl` (4.5rem)
   - Mobile: `text-5xl` (3rem)
@@ -248,11 +233,3 @@ This is the official mission statement and must remain exactly as written:
 - **Proposal Submission Flow**: Enhanced React Query cache invalidation to ensure proposals list refreshes immediately after submission
 - **ProposalsSection**: Improved auto-open logic to wait for fresh data (`isFetched` check) before opening Proposal Detail Dialog
 - **Smoke Test Steps 5-6**: Fixed SPA flow so Proposal Detail and Issue Project dialogs open with correct data without requiring manual page refresh
-
-### Draft Version 70
-- **Editor Dependencies**: Removed any remaining editor-related frontend dependencies and code references
-- **Hero Text Update**: Replaced homepage hero headline and subtext with permanent official mission statement
-  - **New Headline**: "Of the People, By the People — Realized"
-  - **New Subtext**: "Whisper is the decentralized platform where citizens report issues, collaborate openly, and resolve them together — rewarding real effort, guaranteeing transparency, and rebuilding trust in local governance from the ground up."
-- **Permanent Comment**: Added required "PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS" comment above hero strings in App.tsx
-- **Documentation**: Updated this file with before/after comparison of hero text changes

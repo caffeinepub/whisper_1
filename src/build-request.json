@@ -1,59 +1,208 @@
 {
   "kind": "build_request",
-  "title": "Mitigate Caffeine preview blank screen by blocking injected draft editor script and stripping editor-triggering dependency chain",
-  "priority": "high",
+  "title": "Implement intent/slot-style mini-flow engine for Secretary and integrate with geography + issue category data",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
+      "text": "Define a small set of core Secretary intents and required slots, and represent them in the Secretary state so the assistant can track an active intent and which slots have been filled (at minimum: intents `report_issue`, `find_instance`, `create_instance`, `ask_category`; slots `state`, `county`, `city/place`, `issue_category`, `issue_description`).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-user-1",
+          "msg-assistant-1"
         ],
         "quotes": [
-          "can you strip it and write a temporary script in the site that blocks dependency chain completely so the preview system stops injecting their script?"
+          "Run steps 1 through 10",
+          "Define 3–5 core intents the Secretary should recognize (report_issue, find_instance, create_instance, ask_category)."
         ]
       },
       "acceptanceCriteria": [
-        "The blocker is implemented without modifying any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
-        "The blocker runs before the application bundle executes (i.e., it is loaded before the main module script).",
-        "When opening a draft preview URL (e.g., https://just-olive-eim-draft.caffeine.xyz), the browser console no longer shows the draft-editor “disallowed origin” error originating from injected draft scripts, and the app renders instead of a blank white page.",
-        "The blocker is scoped as “temporary” and is gated to only activate on Caffeine draft preview hostnames/conditions (so it does not interfere with normal deployments)."
+        "Secretary state includes fields for activeIntent and per-intent slot values (filled/unfilled).",
+        "Slot values can be reset independently without resetting the entire conversation (to support repair behavior later)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
+      "text": "Add a client-side intent classifier (rule-based keyword/pattern matching) that runs on free-text user input and maps the text to one of the supported intents, without using any external services.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-user-1",
+          "msg-assistant-1"
         ],
         "quotes": [
-          "can you strip it and write a temporary script in the site that blocks dependency chain completely so the preview system stops injecting their script?"
+          "Run steps 1 through 10",
+          "Add a tiny intent classifier (simple keyword and pattern matching) inside the Secretary logic to map user messages to one of the intents."
         ]
       },
       "acceptanceCriteria": [
-        "Frontend build succeeds after removing the suspected editor-related dependency chain (including any direct imports and transitive inclusions that can trigger editor/script injection heuristics).",
-        "No editor-related packages/imports/runtime references remain in the built frontend output (e.g., no references indicative of draft editor tooling in the compiled JS).",
-        "Draft preview loads and renders the app without requiring the temporary blocker to catch/neutralize injected draft editor scripts (blocker may remain in place, but should not be the only thing preventing a crash)."
+        "Typing a supported command (e.g., \"report an issue\", \"create instance\", \"find my city\", \"category\") selects the corresponding intent reliably.",
+        "Unknown text does not crash; it falls back to existing unknown/recovery behavior."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement slot-filling prompts for each intent: when an intent is active, the Secretary asks for the next missing required slot step-by-step, and accepts user input via the existing UI controls (text input and/or typeahead) until all required slots are filled.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Add a slot‑filling handler: when an intent is triggered, check which required slots are still empty and ask questions step by step."
+        ]
+      },
+      "acceptanceCriteria": [
+        "For `report_issue`, the assistant collects geography (if missing), then issue_description and issue_category (via suggestions/custom entry).",
+        "For `create_instance`, the assistant collects geography slots needed to navigate into the instance-creation flow (or to preselect values where supported).",
+        "For `find_instance`, the assistant collects geography slots and then routes to the closest existing discovery/top-issues functionality.",
+        "The assistant never asks for slots that are already filled."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Connect slot-filling for geography to existing geography data sources so the Secretary can suggest valid states/counties/places and store the selected geography in slots (use the existing state/county/place lists already fetched for typeahead).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Connect the slot‑filler to your existing geography APIs (state → county → city selectors) so the Secretary can auto‑suggest correct entries."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When the next missing slot is `state`, the Secretary shows state typeahead options sourced from existing geography queries.",
+        "When the next missing slot is `county` or `place`, the Secretary shows the appropriate combined county/place options for the selected state (consistent with current discovery behavior).",
+        "Selecting a typeahead option fills the corresponding slot and advances to the next missing slot prompt."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Integrate issue category suggestions into the intent/slot flow so that, after an issue description is provided, the Secretary fetches complaint/issue category suggestions for the selected geography level (city/county/state) and allows the user to pick a suggestion or enter a custom category, storing the result in the `issue_category` slot.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Connect issue_category suggestions to your planned issue/complaint category database."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Given a filled geography slot set and a provided issue_description, the UI shows category suggestions (and supports “Something else” leading to custom category entry).",
+        "If backend complaint-category suggestion endpoints are missing or incomplete, implement them in `backend/main.mo` using stable data arrays for city/county/state categories consistent with `frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md`.",
+        "All user-facing copy for prompts and buttons remains in English and is consistent with the existing Secretary copy pattern."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Add completion rules: once all required slots for an intent are filled, perform the intent’s completion action using existing app navigation/flows (e.g., `report_issue` should proceed to the existing issue-project navigation request; `view proposals` / `create instance` should navigate and close the widget like current menu actions).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Add completion rules: when all required slots are filled for an intent, perform the corresponding action (e.g., load an instance, open issue creation page, or show results)."
+        ]
+      },
+      "acceptanceCriteria": [
+        "`report_issue` completion triggers the same downstream behavior as the current report flow completion (navigation requested to issue project, or equivalent existing behavior).",
+        "`create_instance` completion navigates to the existing Create Instance destination and closes the Secretary widget.",
+        "`find_instance` completion routes into the existing discovery/top-issues presentation for the filled geography (or navigates to the appropriate page/dialog if that is the current pattern)."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Implement fallback and repair behavior during slot filling: if the user changes their mind (e.g., “Actually, state is Texas”), reset only the relevant slot(s) and any dependent slots (e.g., changing state clears county/place), then continue slot filling without wiping the whole conversation.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Add fallback and repair behavior: if users change their mind (“Actually I meant…”) reset only the affected slot."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Changing a higher-level geography slot clears only dependent geography slots and preserves non-dependent slots (e.g., preserves description/category if still applicable per flow rules).",
+        "The assistant confirms/reflects the updated slot state via its next prompt without requiring a full reset to menu."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Create a simple flow registry that maps each intent to (a) required slot list, (b) slot prompt order, and (c) a completion action, and expose extension hooks so future intents/slots can be added without reworking core Secretary UI components.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1",
+          "msg-assistant-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10",
+          "Add a simple flow registry so each intent maps to a “mini‑flow” with its own slot list and completion action.",
+          "Expose hooks so future flows (project creation, instance linking, category refinements) can reuse the same intent/slot engine."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Intent-to-flow mapping is defined in a single, discoverable module (registry) rather than scattered conditionals.",
+        "Adding a new intent requires adding a registry entry and minimal glue code, not rewriting the core runner/widget.",
+        "Existing Secretary flow-engine nodes/transitions continue to work (no regressions in menu, discovery, report-issue)."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Update the Secretary smoke test checklist to include the new intent classification + slot-filling flows and repair behavior, and ensure the existing documented smoke tests still pass after the changes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "Run steps 1 through 10"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md` includes manual steps for: (1) triggering each intent by free-text, (2) slot-filling geography via typeahead, (3) selecting a complaint category suggestion, and (4) changing a slot mid-flow (repair) without full reset.",
+        "All previously listed smoke tests remain valid and pass without new console errors."
       ]
     }
   ],
   "constraints": [
-    "Respect the single-actor backend architecture; do not introduce additional backend services.",
-    "Do not modify files listed as immutable in SYSTEM_CONTEXT: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, and anything under frontend/src/components/ui.",
-    "Keep all user-facing text in English.",
-    "Do not change the homepage mission statement strings or the “PERMANENT HERO TEXT – DO NOT CHANGE IN FUTURE BUILDS” comment in frontend/src/App.tsx."
+    "Keep all backend logic in the single Motoko actor in `backend/main.mo` (single-actor architecture).",
+    "Do not edit files under `frontend/src/components/ui` or other immutable paths listed in SYSTEM_CONTEXT.",
+    "Do not add any external integrations (no Rasa server, no external JS chat widgets, no WebSockets, no third-party LLM APIs).",
+    "Use English for all user-facing copy."
   ],
   "nonGoals": [
-    "Implementing a permanent platform-level fix to Caffeine’s preview injection behavior (this is a temporary in-app mitigation).",
-    "Adding new product features unrelated to fixing the preview blank-screen/injected-script failure.",
-    "Changing backend logic, schema, or adding migrations unless strictly required for the preview mitigation (not expected)."
+    "Implementing Rasa (Python server) or embedding any third-party chat widget.",
+    "Adding real-time chat, WebSockets, push notifications, or external database infrastructure.",
+    "Changing unrelated app pages, routing architecture, or authentication mechanisms beyond what is required to support the Secretary flows."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

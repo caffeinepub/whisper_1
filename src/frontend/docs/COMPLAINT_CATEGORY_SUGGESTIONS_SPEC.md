@@ -1,13 +1,15 @@
 # Complaint Category Suggestions - Developer Specification
 
 ## Overview
-This feature adds a stable-memory database of common citizen issues/complaints categorized by jurisdiction level (city, county, state) for the AI Secretary to suggest likely categories based on user input. When a user selects a suggestion, the chosen category is automatically attached to the Issue/Complaint Project stub.
+This document specifies the complaint category suggestion system for the Whisper Secretary assistant, including database structure, backend API endpoints, frontend integration, and the intent/slot flow engine.
 
-## Database Structure
+## Backend Database Structure
 
-### Storage Approach
-- **Stable Memory**: Complaint categories are stored as immutable arrays in the backend canister
-- **Organization**: Three separate arrays for city, county, and state levels
-- **Persistence**: Data survives canister upgrades (stable memory)
+### Category Storage
+Categories are stored in three stable arrays in `backend/main.mo`:
+- `complaintCategoriesCity: [Text]` - City/place-level categories
+- `complaintCategoriesCounty: [Text]` - County-level categories
+- `complaintCategoriesState: [Text]` - State-level categories
 
-### Data Schema
+### Location-Based Complaint Map
+A map stores location-specific top issues:

@@ -2,11 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-temporary-early-executing-in-site-blocker-that-prevents-the-caffeine-preview-system-s-injected-draft-editor-script-from-loading-executing-e-g-draft-script-js-draft-editor-so-the-preview-no-longer-crashes-with-the-disallowed-origin-error-and-the-react-app-can-mount",
-      "featureTitle": "Add a temporary, early-executing in-site blocker that prevents the Caffeine preview system’s injected draft editor script from loading/executing (e.g., draft-script.js / draft-editor), so the preview no longer crashes with the “disallowed origin” error and the React app can mount.",
+      "featureId": "feature-define-a-small-set-of-core-secretary-intents-and-required-slots-and-represent-them-in-the-secretary-state-so-the-assistant-can-track-an-active-intent-and-which-slots-have-been-filled-at-minimum-intents-report-issue-find-instance-create-instance-ask-category-slots-state-county-city-place-issue-category-issue-description",
+      "featureTitle": "Define a small set of core Secretary intents and required slots, and represent them in the Secretary state so the assistant can track an active intent and which slots have been filled (at minimum: intents `report_issue`, `find_instance`, `create_instance`, `ask_category`; slots `state`, `county`, `city/place`, `issue_category`, `issue_description`).",
       "files": [
-        "frontend/index.html",
-        "frontend/public/caffeine-draft-preview-blocker.js"
+        "frontend/src/secretary/flow/types.ts",
+        "frontend/src/secretary/intent/slotState.ts",
+        "frontend/src/secretary/intent/types.ts",
+        "frontend/src/secretary/state/secretaryContext.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -23,11 +25,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-strip-the-suspected-editor-triggering-dependency-chain-from-the-frontend-bundle-so-the-preview-system-stops-deciding-to-inject-the-draft-editor-subsystem-in-the-first-place",
-      "featureTitle": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
+      "featureId": "feature-add-a-client-side-intent-classifier-rule-based-keyword-pattern-matching-that-runs-on-free-text-user-input-and-maps-the-text-to-one-of-the-supported-intents-without-using-any-external-services",
+      "featureTitle": "Add a client-side intent classifier (rule-based keyword/pattern matching) that runs on free-text user input and maps the text to one of the supported intents, without using any external services.",
       "files": [
-        "frontend/index.html",
-        "frontend/src/components/common/AppErrorBoundary.tsx"
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/intentClassifier.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -40,6 +42,157 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-slot-filling-prompts-for-each-intent-when-an-intent-is-active-the-secretary-asks-for-the-next-missing-required-slot-step-by-step-and-accepts-user-input-via-the-existing-ui-controls-text-input-and-or-typeahead-until-all-required-slots-are-filled",
+      "featureTitle": "Implement slot-filling prompts for each intent: when an intent is active, the Secretary asks for the next missing required slot step-by-step, and accepts user input via the existing UI controls (text input and/or typeahead) until all required slots are filled.",
+      "files": [
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/copy/secretaryCopy.ts",
+        "frontend/src/secretary/copy/secretaryPrompts.ts",
+        "frontend/src/secretary/intent/flowRunner.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-connect-slot-filling-for-geography-to-existing-geography-data-sources-so-the-secretary-can-suggest-valid-states-counties-places-and-store-the-selected-geography-in-slots-use-the-existing-state-county-place-lists-already-fetched-for-typeahead",
+      "featureTitle": "Connect slot-filling for geography to existing geography data sources so the Secretary can suggest valid states/counties/places and store the selected geography in slots (use the existing state/county/place lists already fetched for typeahead).",
+      "files": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-integrate-issue-category-suggestions-into-the-intent-slot-flow-so-that-after-an-issue-description-is-provided-the-secretary-fetches-complaint-issue-category-suggestions-for-the-selected-geography-level-city-county-state-and-allows-the-user-to-pick-a-suggestion-or-enter-a-custom-category-storing-the-result-in-the-issue-category-slot",
+      "featureTitle": "Integrate issue category suggestions into the intent/slot flow so that, after an issue description is provided, the Secretary fetches complaint/issue category suggestions for the selected geography level (city/county/state) and allows the user to pick a suggestion or enter a custom category, storing the result in the `issue_category` slot.",
+      "files": [
+        "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md",
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/hooks/useComplaintSuggestions.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-completion-rules-once-all-required-slots-for-an-intent-are-filled-perform-the-intent-s-completion-action-using-existing-app-navigation-flows-e-g-report-issue-should-proceed-to-the-existing-issue-project-navigation-request-view-proposals-create-instance-should-navigate-and-close-the-widget-like-current-menu-actions",
+      "featureTitle": "Add completion rules: once all required slots for an intent are filled, perform the intent’s completion action using existing app navigation/flows (e.g., `report_issue` should proceed to the existing issue-project navigation request; `view proposals` / `create instance` should navigate and close the widget like current menu actions).",
+      "files": [
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/flowRegistry.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-fallback-and-repair-behavior-during-slot-filling-if-the-user-changes-their-mind-e-g-actually-state-is-texas-reset-only-the-relevant-slot-s-and-any-dependent-slots-e-g-changing-state-clears-county-place-then-continue-slot-filling-without-wiping-the-whole-conversation",
+      "featureTitle": "Implement fallback and repair behavior during slot filling: if the user changes their mind (e.g., “Actually, state is Texas”), reset only the relevant slot(s) and any dependent slots (e.g., changing state clears county/place), then continue slot filling without wiping the whole conversation.",
+      "files": [
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/repair.ts",
+        "frontend/src/secretary/state/secretaryContext.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-simple-flow-registry-that-maps-each-intent-to-a-required-slot-list-b-slot-prompt-order-and-c-a-completion-action-and-expose-extension-hooks-so-future-intents-slots-can-be-added-without-reworking-core-secretary-ui-components",
+      "featureTitle": "Create a simple flow registry that maps each intent to (a) required slot list, (b) slot prompt order, and (c) a completion action, and expose extension hooks so future intents/slots can be added without reworking core Secretary UI components.",
+      "files": [
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/flowRegistry.ts",
+        "frontend/src/secretary/intent/index.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-secretary-smoke-test-checklist-to-include-the-new-intent-classification-slot-filling-flows-and-repair-behavior-and-ensure-the-existing-documented-smoke-tests-still-pass-after-the-changes",
+      "featureTitle": "Update the Secretary smoke test checklist to include the new intent classification + slot-filling flows and repair behavior, and ensure the existing documented smoke tests still pass after the changes.",
+      "files": [
+        "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
       ],
       "confidence": "high"
     }

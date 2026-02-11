@@ -28,7 +28,8 @@ export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, init
     return () => setMounted(false);
   }, []);
 
-  if (!mounted || !overlayRoot) {
+  // Don't render anything if not open
+  if (!open || !mounted || !overlayRoot) {
     return null;
   }
 

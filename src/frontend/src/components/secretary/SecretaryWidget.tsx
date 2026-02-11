@@ -3,23 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, ArrowLeft, FileText, AlertTriangle, MapPin, Plus, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, ArrowLeft, FileText, AlertTriangle, MapPin, Plus } from 'lucide-react';
 import { IconBubble } from '@/components/common/IconBubble';
-import { useSecretaryChat } from '@/hooks/useSecretaryChat';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
-import { useSecretaryInstanceAvailability } from '@/hooks/useSecretaryInstanceAvailability';
-import { useSecretaryAutoCreateInstance } from '@/hooks/useSecretaryAutoCreateInstance';
+import { useGetAllProposals } from '@/hooks/useQueries';
 import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
 import { useSetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useActor } from '@/hooks/useActor';
 import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
-import { parseDeepLink } from '@/lib/secretaryNavigation';
 import { signalProjectNavigation } from '@/utils/secretaryProjectNavigation';
-import { computeCanonicalInstanceName } from '@/lib/whisperInstanceNaming';
-import { composeSecretaryMessage, getFoundingMemberMessage, getInstanceFoundMessage } from '@/lib/secretaryFriendlyMessages';
-import { uiCopy } from '@/lib/uiCopy';
-import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
+import { FlowEngineBrain } from '@/secretary/brain/FlowEngineBrain';
+import { prepareUIViewModel } from '@/secretary/ui/secretaryViewModel';
+import type { Action } from '@/secretary/flow/types';
+import { USHierarchyLevel } from '@/backend';
 
 interface SecretaryWidgetProps {
   open?: boolean;
@@ -28,9 +26,6 @@ interface SecretaryWidgetProps {
   initialFlow?: 'discovery' | null;
 }
 
-type DiscoveryStep = 'idle' | 'select-state' | 'select-county-or-city' | 'checking-availability' | 'result' | 'creating-instance';
-type ReportIssueStep = 'idle' | 'collect-description' | 'show-suggestions' | 'custom-category' | 'complete';
-
 interface TypeaheadOption {
   id: string;
   label: string;
@@ -38,567 +33,187 @@ interface TypeaheadOption {
 }
 
 export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, initialFlow }: SecretaryWidgetProps) {
-  const { messages, isMenuVisible, addUserMessage, addAssistantMessage, returnToMenu, resetChat } = useSecretaryChat();
   const { findByKeyword, navigate } = useSecretaryNavigationRegistry();
+  const { actor } = useActor();
   const [userInput, setUserInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  // Discovery flow state
-  const [discoveryStep, setDiscoveryStep] = useState<DiscoveryStep>('idle');
-  const [selectedState, setSelectedState] = useState<USState | null>(null);
-  const [selectedCounty, setSelectedCounty] = useState<USCounty | null>(null);
-  const [selectedPlace, setSelectedPlace] = useState<USPlace | null>(null);
-  const [instanceExists, setInstanceExists] = useState<boolean>(false);
-  const [createdInstanceName, setCreatedInstanceName] = useState<string | null>(null);
-  
-  // Report issue flow state
-  const [reportIssueStep, setReportIssueStep] = useState<ReportIssueStep>('idle');
-  const [issueDescription, setIssueDescription] = useState('');
-  const [issueLevel, setIssueLevel] = useState<USHierarchyLevel | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
-  const debouncedDescription = useDebouncedValue(issueDescription, 500);
-  
-  const { data: states = [], isLoading: statesLoading } = useGetAllStates();
-  const { data: counties = [], isLoading: countiesLoading } = useGetCountiesForState(selectedState?.hierarchicalId || null);
-  const { data: places = [], isLoading: placesLoading } = useGetPlacesForState(selectedState?.hierarchicalId || null);
-  
-  // Determine which level to check based on current selection
-  const availabilityLevel = selectedPlace 
-    ? USHierarchyLevel.place 
-    : selectedCounty 
-    ? USHierarchyLevel.county 
-    : selectedState 
-    ? USHierarchyLevel.state 
-    : null;
+  const brainRef = useRef<FlowEngineBrain | null>(null);
+  const [, setForceUpdate] = useState(0);
 
-  const availabilityParams = availabilityLevel && selectedState ? {
-    level: availabilityLevel,
-    state: selectedState,
-    county: selectedCounty,
-    place: selectedPlace,
-  } : null;
+  // Initialize brain
+  if (!brainRef.current) {
+    brainRef.current = new FlowEngineBrain(actor);
+    brainRef.current.setKeywordFinder(findByKeyword);
+    brainRef.current.setNavigationHandler((request) => {
+      navigate(request.destinationId);
+      if (request.shouldClose) {
+        onOpenChange?.(false);
+      }
+    });
+  }
 
-  const { data: instanceAvailable, isLoading: checkingAvailability } = useSecretaryInstanceAvailability(availabilityParams);
-  const autoCreateMutation = useSecretaryAutoCreateInstance();
+  const brain = brainRef.current;
+
+  // Update actor when it changes
+  useEffect(() => {
+    if (brain) {
+      brain.setActor(actor);
+    }
+  }, [actor, brain]);
+
+  // Geography queries
+  const { data: allStates = [] } = useGetAllStates();
+  const context = brain.getContext();
   
-  const { data: suggestions = [], isLoading: suggestionsLoading } = useComplaintSuggestions(
-    issueLevel,
-    debouncedDescription,
-    reportIssueStep === 'show-suggestions'
+  // Use slots for intent/slot filling, fallback to discovery state
+  const stateForQuery = context.activeIntent ? context.slots.state : context.selectedState;
+  
+  const { data: countiesForState = [] } = useGetCountiesForState(
+    stateForQuery?.hierarchicalId || null
   );
-  
-  const setCategoryMutation = useSetIssueProjectCategory();
+  const { data: placesForState = [] } = useGetPlacesForState(
+    stateForQuery?.hierarchicalId || null
+  );
 
+  // Update brain with geography data
+  useEffect(() => {
+    if (brain) {
+      brain.setGeographyData(allStates, countiesForState, placesForState);
+    }
+  }, [allStates, countiesForState, placesForState, brain]);
+
+  // Proposals query
+  const { data: allProposals = [] } = useGetAllProposals();
+
+  // Complaint suggestions - use slots for intent/slot filling
+  const descriptionForQuery = context.activeIntent 
+    ? context.slots.issue_description 
+    : context.reportIssueDescription;
+  const levelForQuery = context.activeIntent && context.slots.state
+    ? USHierarchyLevel.state
+    : context.reportIssueGeographyLevel;
+    
+  const debouncedSearchTerm = useDebouncedValue(descriptionForQuery, 300);
+  const { data: complaintSuggestions = [] } = useComplaintSuggestions(
+    levelForQuery,
+    debouncedSearchTerm,
+    context.currentNode === 'report-show-suggestions' ||
+    (!!context.activeIntent && context.currentNode === 'intent-slot-filling')
+  );
+
+  // Update brain with suggestions
+  useEffect(() => {
+    if (brain) {
+      brain.setComplaintSuggestions(complaintSuggestions);
+    }
+  }, [complaintSuggestions, brain]);
+
+  const { mutate: setIssueProjectCategory } = useSetIssueProjectCategory();
+
+  // Get view model from brain
+  const viewModel = brain.getViewModel();
+  const uiViewModel = prepareUIViewModel(viewModel);
+  const messages = brain.getMessages();
+  const isMenuVisible = brain.isShowingMenu();
+
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, discoveryStep, reportIssueStep]);
+  }, [messages]);
 
+  // Initialize discovery flow if requested
   useEffect(() => {
-    if (open) {
-      const deepLink = parseDeepLink(window.location.hash);
-      if (deepLink && deepLink.type === 'section') {
-        window.location.hash = '';
-      }
-      
-      // Start discovery flow if requested
-      if (initialFlow === 'discovery') {
-        startDiscoveryFlow();
-      }
+    if (open && initialFlow === 'discovery' && isMenuVisible) {
+      handleAction({ type: 'menu-option', payload: 1 });
     }
   }, [open, initialFlow]);
 
-  // Handle availability check completion
-  useEffect(() => {
-    if (discoveryStep === 'checking-availability' && !checkingAvailability && instanceAvailable !== undefined) {
-      setInstanceExists(instanceAvailable);
-      
-      // Use friendly message helper
-      const geographyLabel = getGeographyLabel();
-      
-      if (instanceAvailable) {
-        const message = getInstanceFoundMessage(geographyLabel);
-        addAssistantMessage(message);
-      } else {
-        const level = availabilityLevel || USHierarchyLevel.state;
-        const message = getFoundingMemberMessage(level, geographyLabel);
-        addAssistantMessage(message);
-      }
-      
-      setDiscoveryStep('result');
-    }
-  }, [discoveryStep, checkingAvailability, instanceAvailable]);
+  // Don't render if not open (after all hooks are called)
+  if (!open) {
+    return null;
+  }
 
-  const getGeographyLabel = (): string => {
-    if (selectedPlace && selectedState) {
-      return `${selectedPlace.shortName}, ${selectedState.shortName}`;
-    } else if (selectedCounty && selectedState) {
-      return `${selectedCounty.shortName}, ${selectedState.shortName}`;
-    } else if (selectedState) {
-      return selectedState.longName;
-    }
-    return 'your selected location';
-  };
+  const handleAction = async (action: Action) => {
+    await brain.handleAction(action);
+    setForceUpdate((n) => n + 1);
 
-  const startDiscoveryFlow = () => {
-    addAssistantMessage(uiCopy.secretary.discoveryPromptState);
-    setDiscoveryStep('select-state');
-  };
-
-  const startReportIssueFlow = () => {
-    // Determine jurisdiction level based on current geography selection
-    let level: USHierarchyLevel = USHierarchyLevel.state;
-    if (selectedPlace) {
-      level = USHierarchyLevel.place;
-    } else if (selectedCounty) {
-      level = USHierarchyLevel.county;
-    } else if (selectedState) {
-      level = USHierarchyLevel.state;
-    }
-    
-    setIssueLevel(level);
-    addAssistantMessage(uiCopy.secretary.reportIssueDescriptionPrompt);
-    setReportIssueStep('collect-description');
-  };
-
-  const handleStateSelect = (option: TypeaheadOption) => {
-    const state = option.data as USState;
-    setSelectedState(state);
-    addUserMessage(state.longName);
-    addAssistantMessage(`${uiCopy.secretary.discoveryPromptCityOrCounty}`);
-    setDiscoveryStep('select-county-or-city');
-  };
-
-  const handleCountySelect = (option: TypeaheadOption) => {
-    const county = option.data as USCounty;
-    setSelectedCounty(county);
-    addUserMessage(county.fullName);
-    
-    // Start availability check
-    addAssistantMessage(uiCopy.secretary.checkingAvailability);
-    setDiscoveryStep('checking-availability');
-  };
-
-  const handlePlaceSelect = (option: TypeaheadOption) => {
-    const place = option.data as USPlace;
-    setSelectedPlace(place);
-    addUserMessage(place.shortName);
-    
-    // Start availability check
-    addAssistantMessage(uiCopy.secretary.checkingAvailability);
-    setDiscoveryStep('checking-availability');
-  };
-
-  const handleDescriptionSubmit = () => {
-    if (!issueDescription.trim()) return;
-    
-    addUserMessage(issueDescription);
-    addAssistantMessage(uiCopy.secretary.reportIssueSuggestionsPrompt);
-    setReportIssueStep('show-suggestions');
-  };
-
-  const handleCategorySelect = async (category: string) => {
-    setSelectedCategory(category);
-    addUserMessage(category);
-    addAssistantMessage(uiCopy.secretary.reportIssueCategorySelected);
-    
-    // Find or create the appropriate proposal
-    const proposalName = computeCanonicalInstanceName(selectedState, selectedCounty, selectedPlace);
-    
-    if (proposalName) {
-      // Save category
-      try {
-        await setCategoryMutation.mutateAsync({
-          proposalId: proposalName,
-          category,
-        });
-        
-        // Signal navigation to project
-        setTimeout(() => {
-          signalProjectNavigation({ proposalName, category });
-          addAssistantMessage(uiCopy.secretary.reportIssueNavigating);
-          
-          setTimeout(() => {
-            handleClose();
-          }, 1000);
-        }, 500);
-      } catch (error) {
-        console.error('Failed to set category:', error);
-        addAssistantMessage('Failed to save category. Please try again.');
-      }
-    }
-    
-    setReportIssueStep('complete');
-  };
-
-  const handleSomethingElse = () => {
-    addUserMessage(uiCopy.secretary.reportIssueSomethingElse);
-    addAssistantMessage(uiCopy.secretary.reportIssueCustomCategory);
-    setReportIssueStep('custom-category');
-  };
-
-  const handleCustomCategorySubmit = async () => {
-    if (!userInput.trim()) return;
-    
-    const customCategory = userInput.trim();
-    await handleCategorySelect(customCategory);
-    setUserInput('');
-  };
-
-  const handleAutoCreateInstance = async () => {
-    if (!selectedState || !availabilityLevel) {
-      addAssistantMessage('Unable to create instance. Please try again.');
-      return;
+    // Handle special actions
+    if (action.type === 'menu-option') {
+      onOptionSelect?.(action.payload);
     }
 
-    setDiscoveryStep('creating-instance');
-    addAssistantMessage('Creating your Whisper instance...');
+    if (action.type === 'custom-category-submitted' || action.type === 'top-issue-selected' || action.type === 'suggestion-selected') {
+      const category = action.payload;
+      const proposalName = 'temp-proposal-id';
+      setIssueProjectCategory({ proposalId: proposalName, category });
 
-    try {
-      const result = await autoCreateMutation.mutateAsync({
-        level: availabilityLevel,
-        state: selectedState,
-        county: selectedCounty,
-        place: selectedPlace,
-        description: `Whisper instance for ${getGeographyLabel()}`,
-      });
-
-      setCreatedInstanceName(result.instanceName);
-      addAssistantMessage(`Success! Your Whisper instance "${result.instanceName}" has been created. Navigating to your new instance...`);
-      
-      // Navigate to the newly created proposal
       setTimeout(() => {
-        navigate('proposals');
-        handleClose();
-      }, 2000);
-    } catch (error: any) {
-      console.error('Auto-create failed:', error);
-      const errorMessage = error?.message || 'Failed to create instance. Please try again.';
-      addAssistantMessage(errorMessage);
-      setDiscoveryStep('result');
+        signalProjectNavigation({ proposalName, category });
+        onOpenChange?.(false);
+      }, 1000);
     }
   };
 
-  const handleDiscoveryAction = () => {
-    if (instanceExists) {
-      navigate('proposals');
-      handleClose();
-    } else {
-      // Trigger automatic instance creation
-      handleAutoCreateInstance();
-    }
+  const handleUserMessageSubmit = async () => {
+    if (!userInput.trim()) return;
+
+    const message = userInput.trim();
+    setUserInput('');
+
+    await brain.handleUserText(message);
+    setForceUpdate((n) => n + 1);
+  };
+
+  const handleBackToMenu = async () => {
+    await handleAction({ type: 'back-to-menu' });
   };
 
   const handleClose = () => {
     onOpenChange?.(false);
-    setTimeout(() => {
-      resetChat();
-      setDiscoveryStep('idle');
-      setReportIssueStep('idle');
-      setSelectedState(null);
-      setSelectedCounty(null);
-      setSelectedPlace(null);
-      setIssueDescription('');
-      setIssueLevel(null);
-      setSelectedCategory(null);
-      setUserInput('');
-      setInstanceExists(false);
-      setCreatedInstanceName(null);
-    }, 300);
   };
 
-  const handleOptionSelect = (optionNumber: number) => {
-    onOptionSelect?.(optionNumber);
-    
-    switch (optionNumber) {
-      case 1:
-        startDiscoveryFlow();
-        break;
-      case 2:
-        startReportIssueFlow();
-        break;
-      case 3:
-        navigate('proposals');
-        handleClose();
-        break;
-      case 4:
-        navigate('create-instance');
-        handleClose();
-        break;
-      default:
-        break;
-    }
-  };
-
-  const handleFreeTextSubmit = () => {
-    if (!userInput.trim()) return;
-    
-    addUserMessage(userInput);
-    
-    const match = findByKeyword(userInput);
-    if (match) {
-      navigate(match.id);
-      handleClose();
-    } else {
-      addAssistantMessage(uiCopy.secretary.noMatchFound);
-    }
-    
-    setUserInput('');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      
-      if (reportIssueStep === 'collect-description') {
-        handleDescriptionSubmit();
-      } else if (reportIssueStep === 'custom-category') {
-        handleCustomCategorySubmit();
-      } else if (isMenuVisible) {
-        handleFreeTextSubmit();
+  const handleTypeaheadSelect = async (option: TypeaheadOption) => {
+    if (context.currentNode === 'discovery-select-state') {
+      await handleAction({ type: 'state-selected', payload: option.data });
+    } else if (context.currentNode === 'discovery-select-location') {
+      await handleAction({ type: 'location-selected', payload: option.data });
+    } else if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
+      // Handle intent/slot filling typeahead
+      if (option.data.fipsCode && option.data.longName) {
+        // State
+        await handleAction({ type: 'state-selected', payload: option.data });
+      } else {
+        // County or place
+        await handleAction({ type: 'location-selected', payload: option.data });
       }
     }
   };
 
-  // Convert geography data to TypeaheadOption format
-  const stateOptions: TypeaheadOption[] = states.map(state => ({
-    id: state.hierarchicalId,
-    label: state.longName,
-    data: state,
-  }));
-
-  const countyOptions: TypeaheadOption[] = counties.map(county => ({
-    id: county.hierarchicalId,
-    label: county.fullName,
-    data: county,
-  }));
-
-  const placeOptions: TypeaheadOption[] = places.map(place => ({
-    id: place.hierarchicalId,
-    label: place.shortName,
-    data: place,
-  }));
-
-  const renderContent = () => {
-    // Discovery flow UI
-    if (discoveryStep === 'select-state') {
-      return (
-        <div className="space-y-4">
-          <SecretaryLocationTypeahead
-            options={stateOptions}
-            onSelect={handleStateSelect}
-            placeholder={uiCopy.secretary.typeaheadStatePlaceholder}
-            emptyMessage={uiCopy.secretary.typeaheadNoResults}
-            isLoading={statesLoading}
-          />
-        </div>
-      );
-    }
-
-    if (discoveryStep === 'select-county-or-city') {
-      return (
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">{uiCopy.secretary.typeaheadCountyHelper}</p>
-            <SecretaryLocationTypeahead
-              options={countyOptions}
-              onSelect={handleCountySelect}
-              placeholder={uiCopy.secretary.typeaheadCountyPlaceholder}
-              emptyMessage={uiCopy.secretary.typeaheadNoResults}
-              isLoading={countiesLoading}
-            />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">{uiCopy.secretary.typeaheadCityHelper}</p>
-            <SecretaryLocationTypeahead
-              options={placeOptions}
-              onSelect={handlePlaceSelect}
-              placeholder={uiCopy.secretary.typeaheadCityPlaceholder}
-              emptyMessage={uiCopy.secretary.typeaheadNoResults}
-              isLoading={placesLoading}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    if (discoveryStep === 'creating-instance') {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Creating instance...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (discoveryStep === 'result') {
-      return (
-        <div className="space-y-3">
-          <Button
-            onClick={handleDiscoveryAction}
-            className="w-full"
-            size="lg"
-            disabled={autoCreateMutation.isPending}
-          >
-            {autoCreateMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : instanceExists ? (
-              <>
-                <FileText className="mr-2 h-4 w-4" />
-                View Existing Instance
-              </>
-            ) : (
-              <>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Instance
-              </>
-            )}
-          </Button>
-        </div>
-      );
-    }
-
-    // Report issue flow UI
-    if (reportIssueStep === 'collect-description') {
-      return (
-        <div className="space-y-3">
-          <Input
-            value={issueDescription}
-            onChange={(e) => setIssueDescription(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Describe the issue..."
-            className="w-full"
-          />
-          <Button
-            onClick={handleDescriptionSubmit}
-            disabled={!issueDescription.trim()}
-            className="w-full"
-          >
-            Continue
-          </Button>
-        </div>
-      );
-    }
-
-    if (reportIssueStep === 'show-suggestions') {
-      return (
-        <div className="space-y-2">
-          {suggestionsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading suggestions...</p>
-          ) : suggestions.length > 0 ? (
-            <>
-              {suggestions.map((category, index) => (
-                <Button
-                  key={index}
-                  onClick={() => handleCategorySelect(category)}
-                  variant="outline"
-                  className="w-full justify-start"
-                >
-                  {category}
-                </Button>
-              ))}
-              <Button
-                onClick={handleSomethingElse}
-                variant="ghost"
-                className="w-full"
-              >
-                Something else
-              </Button>
-            </>
-          ) : (
-            <Button
-              onClick={handleSomethingElse}
-              variant="outline"
-              className="w-full"
-            >
-              Enter custom category
-            </Button>
-          )}
-        </div>
-      );
-    }
-
-    if (reportIssueStep === 'custom-category') {
-      return (
-        <div className="space-y-3">
-          <Input
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter category name..."
-            className="w-full"
-          />
-          <Button
-            onClick={handleCustomCategorySubmit}
-            disabled={!userInput.trim()}
-            className="w-full"
-          >
-            Submit
-          </Button>
-        </div>
-      );
-    }
-
-    // Main menu
-    if (isMenuVisible) {
-      return (
-        <div className="space-y-3">
-          {uiCopy.secretary.menuOptions.map((option, index) => (
-            <Button
-              key={index}
-              onClick={() => handleOptionSelect(index + 1)}
-              variant="outline"
-              className="w-full justify-start text-left h-auto py-3"
-            >
-              <span className="flex items-center gap-3">
-                <IconBubble size="sm" variant="secondary">
-                  {index === 0 && <MapPin className="h-4 w-4" />}
-                  {index === 1 && <AlertTriangle className="h-4 w-4" />}
-                  {index === 2 && <FileText className="h-4 w-4" />}
-                  {index === 3 && <Plus className="h-4 w-4" />}
-                </IconBubble>
-                <span>{option}</span>
-              </span>
-            </Button>
-          ))}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  if (!open) return null;
+  const typeaheadOptions = brain.getTypeaheadOptions();
+  const suggestions = brain.getSuggestions();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
-      <Card className="w-full max-w-md shadow-2xl pointer-events-auto">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-3">
-            {!isMenuVisible && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={returnToMenu}
-                className="h-8 w-8"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-            <div className="flex items-center gap-2">
-              <IconBubble size="sm" variant="secondary">
-                <MessageCircle className="h-4 w-4" />
-              </IconBubble>
-              <CardTitle className="text-lg">{uiCopy.secretary.title}</CardTitle>
-            </div>
-          </div>
+    <Card className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] shadow-2xl z-overlay">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
+        <div className="flex items-center gap-3">
+          <IconBubble size="sm">
+            <MessageCircle className="h-4 w-4" />
+          </IconBubble>
+          <CardTitle className="text-lg font-semibold">Secretary</CardTitle>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isMenuVisible && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBackToMenu}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -607,52 +222,132 @@ export function SecretaryWidget({ open = false, onOpenChange, onOptionSelect, in
           >
             <X className="h-4 w-4" />
           </Button>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
-        <CardContent className="space-y-4">
-          <ScrollArea ref={scrollRef} className="h-[400px] pr-4">
+      <CardContent className="p-0">
+        <ScrollArea ref={scrollRef} className="h-96 p-4">
+          {isMenuVisible ? (
             <div className="space-y-4">
-              {messages.map((message, index) => (
+              <p className="text-sm text-muted-foreground mb-4">
+                How can I help you today?
+              </p>
+              <div className="grid gap-2">
+                {uiViewModel.buttons.map((button, idx) => {
+                  const Icon = button.icon === 'MapPin' ? MapPin : button.icon === 'AlertTriangle' ? AlertTriangle : button.icon === 'FileText' ? FileText : Plus;
+                  return (
+                    <Button
+                      key={idx}
+                      variant={button.variant || 'outline'}
+                      className="justify-start h-auto py-3 px-4"
+                      onClick={() => handleAction(button.action)}
+                    >
+                      <Icon className="mr-3 h-5 w-5 shrink-0" />
+                      <span className="text-left">{button.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((msg, idx) => (
                 <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground'
+                      msg.role === 'user'
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 </div>
               ))}
+
+              {uiViewModel.shouldShowTypeahead && (
+                <div className="mt-4">
+                  <SecretaryLocationTypeahead
+                    options={typeaheadOptions}
+                    onSelect={handleTypeaheadSelect}
+                    placeholder={uiViewModel.typeaheadPlaceholder}
+                  />
+                </div>
+              )}
+
+              {uiViewModel.shouldShowTopIssues && uiViewModel.topIssues.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {uiViewModel.topIssues.map((issue, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      className="w-full justify-start text-left h-auto py-2 px-3"
+                      onClick={() => handleAction({ type: 'top-issue-selected', payload: issue })}
+                    >
+                      <span className="text-sm">{issue}</span>
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {uiViewModel.shouldShowSuggestions && suggestions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {suggestions.map((suggestion, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      className="w-full justify-start text-left h-auto py-2 px-3"
+                      onClick={() => handleAction({ type: 'suggestion-selected', payload: suggestion })}
+                    >
+                      <span className="text-sm">{suggestion}</span>
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {!isMenuVisible && uiViewModel.buttons.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {uiViewModel.buttons.map((button, idx) => (
+                    <Button
+                      key={idx}
+                      variant={button.variant || 'outline'}
+                      className="w-full"
+                      onClick={() => handleAction(button.action)}
+                    >
+                      {button.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
-          </ScrollArea>
+          )}
+        </ScrollArea>
 
-          {renderContent()}
-
-          {isMenuVisible && (
-            <div className="flex gap-2 pt-2 border-t">
+        {!isMenuVisible && uiViewModel.shouldShowTextInput && (
+          <div className="p-4 border-t">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUserMessageSubmit();
+              }}
+              className="flex gap-2"
+            >
               <Input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={uiCopy.secretary.inputPlaceholder}
+                placeholder={uiViewModel.textInputPlaceholder || 'Type your message...'}
                 className="flex-1"
               />
-              <Button
-                onClick={handleFreeTextSubmit}
-                size="icon"
-                disabled={!userInput.trim()}
-              >
+              <Button type="submit" size="icon" disabled={!userInput.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            </form>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { USHierarchyLevel } from '@/backend';
 import { useLocalStorageState } from './useLocalStorageState';
-import { getUserFacingError } from '@/utils/userFacingError';
+import { userFacingError } from '@/utils/userFacingError';
 
 /**
  * Hook to check if an instance name is already taken.
@@ -20,10 +20,10 @@ export function useCheckInstanceName(instanceName: string) {
         const result = await actor.isInstanceNameTaken(instanceName);
         return result;
       } catch (error) {
-        const { userMessage, originalError } = getUserFacingError(error);
-        console.error('Error checking instance name:', originalError);
+        const errorMessage = userFacingError(error);
+        console.error('Error checking instance name:', error);
         // Throw user-friendly error to prevent submission when we can't verify availability
-        throw new Error(userMessage);
+        throw new Error(errorMessage);
       }
     },
     enabled: !!actor && !isFetching && !!instanceName && instanceName.length > 0,
@@ -99,9 +99,9 @@ export function useSubmitProposal() {
 
         return { instanceName: params.instanceName };
       } catch (error) {
-        const { userMessage, originalError } = getUserFacingError(error);
-        console.error('Error submitting proposal:', originalError);
-        throw new Error(userMessage);
+        const errorMessage = userFacingError(error);
+        console.error('Error submitting proposal:', error);
+        throw new Error(errorMessage);
       }
     },
     onSuccess: (data) => {

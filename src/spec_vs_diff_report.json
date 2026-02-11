@@ -1,49 +1,61 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:58:58.404Z",
-  "summary": "REQ-1 appears implemented via an early-loaded draft preview script blocker added to frontend/index.html and a new public blocker script gated to *-draft.caffeine.* hostnames. There is no evidence in the provided diff summary that REQ-2 (stripping the editor-triggering dependency chain from the frontend bundle) was implemented. Several additional changes (error boundary hardening/logging, project state tracking, and a large frontend-file-summaries update) are present but not explicitly requested.",
+  "generatedAt": "2026-02-11T16:19:08.625Z",
+  "summary": "The diff adds a new intent/slot mini-flow engine (types, classifier, flow registry/runner, slot state + repair utilities) and wires parts of it into the existing Secretary brain/widget. However, several required completion actions appear stubbed (no real navigation/flow trigger), and there are multiple additional/unrelated frontend changes called out in the diff summary that were not requested by the BuildRequest.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Strip the suspected editor-triggering dependency chain from the frontend bundle so the preview system stops deciding to inject the draft editor subsystem in the first place.",
-      "reason": "The diff summary shows no package/import removals, no refactors removing editor-related dependencies, and no evidence of eliminating editor-related references from the bundle. Only a blocker script and ancillary changes are shown.",
+      "id": "REQ-6",
+      "requirement": "Add completion rules so that once all required slots for an intent are filled, the intent’s completion action triggers the existing downstream navigation/flows (report_issue -> existing issue-project navigation; create_instance navigates+closes; find_instance routes to discovery/top-issues).",
+      "reason": "Completion actions for several intents are present but appear to be placeholders without actually triggering the required existing downstream behaviors (especially report_issue and find_instance).",
       "evidence": [
-        "frontend/public/caffeine-draft-preview-blocker.js",
-        "frontend/index.html",
-        "frontend/src/components/common/AppErrorBoundary.tsx"
+        "frontend/src/secretary/intent/flowRegistry.ts (report_issue completionAction contains only comments; find_instance completionAction contains only comments; ask_category completionAction contains only comments)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Hardened React AppErrorBoundary with additional logging/handling for 'disallowed origin' and script-related errors plus UI fallback improvements.",
-      "reason": "BuildRequest focuses on blocking the injected draft editor script and stripping the dependency chain; it does not request changing the error boundary behavior/UI.",
+      "description": "Broad unrelated documentation and styling/app-shell changes (architecture/phased plan/deployment/style guide, global CSS, Tailwind config, App shell changes) beyond implementing the Secretary intent/slot flows.",
+      "reason": "BuildRequest is focused on Secretary intent/slot mini-flow engine integration; these additional changes are not requested requirements and risk violating the \"Changing unrelated app pages/routing architecture\" non-goal.",
       "evidence": [
-        "frontend/src/components/common/AppErrorBoundary.tsx"
+        "frontend-file-summaries.txt (ARCHITECTURE.md, PHASED_PLAN.md, DEPLOYMENT.md, STYLE_GUIDE.md, src/index.css, tailwind.config.js, src/App.tsx summaries indicate substantial changes)"
       ]
     },
     {
-      "description": "Added/updated project tracking metadata for AR-1..AR-4 in project_state.json.",
-      "reason": "BuildRequest does not request adding or modifying repository project tracking/state files.",
+      "description": "Changes to proposals and create-instance UI/components (e.g., ProposalsSection/ProposalDetailDialog, CreateInstancePlaceholderCard) not directly required to support Secretary flows.",
+      "reason": "Not explicitly requested by any REQ; BuildRequest cautions against changing unrelated pages beyond what’s required for Secretary flows.",
       "evidence": [
-        "project_state.json"
+        "frontend-file-summaries.txt (src/components/proposals/ProposalsSection.tsx, src/components/proposals/ProposalDetailDialog.tsx, src/components/create-instance/CreateInstancePlaceholderCard.tsx summaries)"
       ]
     },
     {
-      "description": "Updated/added a large frontend-file-summaries.txt describing many files/features not part of the requested mitigation.",
-      "reason": "BuildRequest does not request generating or updating documentation summary artifacts.",
+      "description": "Added hook to fetch all complaint categories (useGetAllComplaintCategories) with separate backend calls (getAllCity/County/StateComplaintCategories).",
+      "reason": "REQ-5 requests integrating category suggestions into the intent/slot flow; fetching *all* categories via extra endpoints is not explicitly requested (and may require backend support not specified in the diff excerpt).",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/hooks/useComplaintSuggestions.ts (adds useGetAllComplaintCategories and calls actor.getAllCityComplaintCategories/getAllCountyComplaintCategories/getAllStateComplaintCategories)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.66,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/public/caffeine-draft-preview-blocker.js",
-    "frontend/src/components/common/AppErrorBoundary.tsx",
+    "frontend/docs/COMPLAINT_CATEGORY_SUGGESTIONS_SPEC.md",
+    "frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/hooks/useComplaintSuggestions.ts",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/copy/secretaryCopy.ts",
+    "frontend/src/secretary/copy/secretaryPrompts.ts",
+    "frontend/src/secretary/flow/types.ts",
+    "frontend/src/secretary/intent/flowRegistry.ts",
+    "frontend/src/secretary/intent/flowRunner.ts",
+    "frontend/src/secretary/intent/index.ts",
+    "frontend/src/secretary/intent/intentClassifier.ts",
+    "frontend/src/secretary/intent/repair.ts",
+    "frontend/src/secretary/intent/slotState.ts",
+    "frontend/src/secretary/intent/types.ts",
+    "frontend/src/secretary/state/secretaryContext.ts",
     "project_state.json"
   ]
 }

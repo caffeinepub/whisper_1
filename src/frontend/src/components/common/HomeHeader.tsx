@@ -1,192 +1,160 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, X } from 'lucide-react';
+import { LoginButton } from './LoginButton';
+import { UserProfileMenu } from './UserProfileMenu';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useIsCallerAdmin } from '@/hooks/useQueries';
 import { useCurrentPath } from '@/hooks/useCurrentPath';
-import { UserProfileMenu } from './UserProfileMenu';
 import { uiCopy } from '@/lib/uiCopy';
 import { resolveAssetUrl } from '@/utils/assetUrl';
 
 export function HomeHeader() {
-  const { identity, login, loginStatus } = useInternetIdentity();
-  const { data: isAdmin, isAuthenticated } = useIsCallerAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
-  const [logoRetried, setLogoRetried] = useState(false);
+  const { identity } = useInternetIdentity();
+  const { data: isAdmin } = useIsCallerAdmin();
   const currentPath = useCurrentPath();
+  const isAuthenticated = !!identity;
 
-  const isLoggingIn = loginStatus === 'logging-in';
-
-  const handleLogin = async () => {
-    try {
-      await login();
-    } catch (error: any) {
-      console.error('Login error:', error);
-    }
-  };
-
-  const navigateToPage = (path: string) => {
+  const handleNavigation = (path: string) => {
     const basePath = import.meta.env.BASE_URL || '/';
-    const normalizedBase = basePath.endsWith('/') ? basePath : `${basePath}/`;
-    const fullPath = `${normalizedBase}${path.startsWith('/') ? path.slice(1) : path}`;
+    const fullPath = basePath.endsWith('/') ? `${basePath}${path}` : `${basePath}/${path}`;
     window.history.pushState({}, '', fullPath);
     window.dispatchEvent(new PopStateEvent('popstate'));
     setMobileMenuOpen(false);
   };
 
-  // Retry logo loading once on error
-  const handleLogoError = () => {
-    if (!logoRetried) {
-      setLogoRetried(true);
-      setLogoError(false);
-      setTimeout(() => {
-        if (!logoError) {
-          setLogoError(false);
-        }
-      }, 100);
-    } else {
-      setLogoError(true);
-    }
-  };
-
-  // Show admin link when authenticated and admin check resolves to true
-  const showAdminLink = isAuthenticated && isAdmin === true;
-
-  // Check if a path is active
-  const isActivePath = (path: string): boolean => {
-    if (path === '/') return currentPath === '/';
-    return currentPath.startsWith(path);
+  const isActive = (path: string) => {
+    const basePath = import.meta.env.BASE_URL || '/';
+    const normalizedBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+    const normalizedCurrent = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
+    const normalizedPath = path === '' ? normalizedBase : `${normalizedBase}/${path}`;
+    return normalizedCurrent === normalizedPath;
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur supports-[backdrop-filter]:bg-slate-900/90 border-b border-slate-700">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setMobileMenuOpen(false);
-            }}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            onClick={() => handleNavigation('')}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            {!logoError ? (
-              <img
-                src={resolveAssetUrl('/whisper-logo-teal.svg')}
-                alt={uiCopy.product.name}
-                className="h-8 w-8"
-                onError={handleLogoError}
-              />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">W</span>
-              </div>
-            )}
-            <span className="text-xl font-bold text-white">{uiCopy.product.name}</span>
+            <img
+              src={resolveAssetUrl('/whisper-logo-teal.svg')}
+              alt="Whisper Logo"
+              className="h-8 w-8"
+            />
+            <span className="text-xl font-bold text-white">
+              {uiCopy.product.name}
+            </span>
           </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <button
-              onClick={() => navigateToPage('/geography')}
+              onClick={() => handleNavigation('proposals')}
               className={`text-sm font-medium transition-colors ${
-                isActivePath('/geography')
+                isActive('proposals')
                   ? 'text-secondary'
                   : 'text-white hover:text-secondary'
               }`}
             >
-              {uiCopy.geography.title}
+              {uiCopy.navigation.proposals}
             </button>
-
-            {showAdminLink && (
+            <button
+              onClick={() => handleNavigation('create-instance')}
+              className={`text-sm font-medium transition-colors ${
+                isActive('create-instance')
+                  ? 'text-secondary'
+                  : 'text-white hover:text-secondary'
+              }`}
+            >
+              {uiCopy.navigation.createInstance}
+            </button>
+            {isAdmin && (
               <button
-                onClick={() => navigateToPage('/admin/moderation')}
+                onClick={() => handleNavigation('admin')}
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/admin')
+                  isActive('admin')
                     ? 'text-secondary'
                     : 'text-white hover:text-secondary'
                 }`}
               >
-                {uiCopy.admin.title}
+                {uiCopy.navigation.admin}
               </button>
-            )}
-
-            {isAuthenticated ? (
-              <UserProfileMenu onNavigate={navigateToPage} />
-            ) : (
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                size="sm"
-                className="bg-accent hover:bg-accent-hover text-accent-foreground"
-              >
-                {isLoggingIn ? uiCopy.auth.loggingIn : uiCopy.hero.getStartedCta}
-              </Button>
             )}
           </nav>
 
-          {/* Mobile Menu Toggle */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden text-white hover:text-secondary">
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[320px]">
-              <nav className="flex flex-col gap-4 mt-8">
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated ? (
+              <UserProfileMenu onNavigate={handleNavigation} />
+            ) : (
+              <LoginButton />
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6 text-white" />
+            ) : (
+              <Menu className="h-6 w-6 text-white" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-slate-700">
+            <nav className="flex flex-col gap-4">
+              <button
+                onClick={() => handleNavigation('proposals')}
+                className={`text-left px-4 py-2 rounded-lg transition-colors ${
+                  isActive('proposals')
+                    ? 'bg-secondary/10 text-secondary font-medium'
+                    : 'text-white hover:bg-slate-800'
+                }`}
+              >
+                {uiCopy.navigation.proposals}
+              </button>
+              <button
+                onClick={() => handleNavigation('create-instance')}
+                className={`text-left px-4 py-2 rounded-lg transition-colors ${
+                  isActive('create-instance')
+                    ? 'bg-secondary/10 text-secondary font-medium'
+                    : 'text-white hover:bg-slate-800'
+                }`}
+              >
+                {uiCopy.navigation.createInstance}
+              </button>
+              {isAdmin && (
                 <button
-                  onClick={() => navigateToPage('/geography')}
-                  className={`text-left text-base font-medium transition-colors py-2 ${
-                    isActivePath('/geography')
-                      ? 'text-secondary'
-                      : 'text-white hover:text-secondary'
+                  onClick={() => handleNavigation('admin')}
+                  className={`text-left px-4 py-2 rounded-lg transition-colors ${
+                    isActive('admin')
+                      ? 'bg-secondary/10 text-secondary font-medium'
+                      : 'text-white hover:bg-slate-800'
                   }`}
                 >
-                  {uiCopy.geography.title}
+                  {uiCopy.navigation.admin}
                 </button>
-
-                {showAdminLink && (
-                  <button
-                    onClick={() => navigateToPage('/admin/moderation')}
-                    className={`text-left text-base font-medium transition-colors py-2 ${
-                      isActivePath('/admin')
-                        ? 'text-secondary'
-                        : 'text-white hover:text-secondary'
-                    }`}
-                  >
-                    {uiCopy.admin.title}
-                  </button>
-                )}
-
+              )}
+              <div className="px-4 pt-2 border-t border-slate-700">
                 {isAuthenticated ? (
-                  <>
-                    <button
-                      onClick={() => navigateToPage('/profile')}
-                      className={`text-left text-base font-medium transition-colors py-2 ${
-                        isActivePath('/profile')
-                          ? 'text-secondary'
-                          : 'text-white hover:text-secondary'
-                      }`}
-                    >
-                      {uiCopy.profile.title}
-                    </button>
-                    <UserProfileMenu onNavigate={navigateToPage} />
-                  </>
+                  <UserProfileMenu onNavigate={handleNavigation} />
                 ) : (
-                  <Button
-                    onClick={handleLogin}
-                    disabled={isLoggingIn}
-                    className="bg-accent hover:bg-accent-hover text-accent-foreground w-full"
-                  >
-                    {isLoggingIn ? uiCopy.auth.loggingIn : uiCopy.hero.getStartedCta}
-                  </Button>
+                  <LoginButton />
                 )}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+              </div>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

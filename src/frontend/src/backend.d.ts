@@ -30,10 +30,6 @@ export type SubmitProposalResult = {
         proposal: Proposal;
     };
 };
-export interface DeletionRequest {
-    user: Principal;
-    requestedAt: bigint;
-}
 export interface Proposal {
     status: string;
     geographyLevel: USHierarchyLevel;
@@ -105,7 +101,12 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addOrUpdateLocationBasedIssues(locationLevel: USHierarchyLevel, locationId: string | null, issues: Array<string>): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    backend_getIssueCategoriesByHierarchyLevel(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
+    backend_getUSCountyByHierarchicalId(hierarchicalId: string): Promise<USCounty | null>;
+    backend_getUSPlaceByHierarchicalId(hierarchicalId: string): Promise<USPlace | null>;
+    backend_getUSStateByHierarchicalId(hierarchicalId: string): Promise<USState | null>;
     createTask(proposalId: string, description: string): Promise<bigint>;
     deleteProposal(instanceName: string): Promise<boolean>;
     getAdminModerationQueue(): Promise<Array<[string, Proposal]>>;
@@ -116,30 +117,27 @@ export interface backendInterface {
     getAllStates(): Promise<Array<USState>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getCityById(hierarchicalId: HierarchicalGeoId): Promise<USPlace | null>;
+    getCityById(cityId: string): Promise<USPlace | null>;
     getCityComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
-    getCountyById(hierarchicalId: HierarchicalGeoId): Promise<USCounty | null>;
+    getCountyById(countyId: string): Promise<USCounty | null>;
     getCountyComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
-    getDeletionRequests(): Promise<Array<[Principal, DeletionRequest]>>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getPlacesForState(stateGeoId: GeoId): Promise<Array<USPlace>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
     getSecretaryCategorySuggestion(searchTerm: string, locationLevel: USHierarchyLevel): Promise<SecretaryCategorySuggestion>;
-    getStateById(hierarchicalId: HierarchicalGeoId): Promise<USState | null>;
+    getSecretaryCategorySuggestions(searchTerm: string, locationLevel: USHierarchyLevel): Promise<Array<string>>;
+    getStateById(stateId: string): Promise<USState | null>;
     getStateComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
     getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
-    getTop50IssuesForLocation(_level: USHierarchyLevel, _hierarchicalId: HierarchicalGeoId | null): Promise<Array<string>>;
+    getTopIssuesForLocation(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     hideProposal(instanceName: string): Promise<boolean>;
     ingestUSGeographyData(data: Array<USGeographyDataChunk>): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
-    processDeletionRequest(user: Principal): Promise<void>;
-    requestDeletion(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    searchSimilarCityNames(searchTerm: string): Promise<Array<USPlace>>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
     updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;

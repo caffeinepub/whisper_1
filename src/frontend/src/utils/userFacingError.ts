@@ -1,127 +1,94 @@
 /**
- * Utility function that normalizes errors into user-facing English messages.
- * Extended with moderation-specific error patterns and runtime error handling.
+ * Converts backend errors and exceptions into user-friendly English messages.
+ * Extended to cover Secretary issues/geography lookup failures.
  */
-
-interface ErrorResult {
-  userMessage: string;
-  originalError: any;
-}
-
-export function getUserFacingError(error: any): ErrorResult {
-  const originalError = error;
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return {
-      userMessage: error,
-      originalError,
-    };
+export function userFacingError(error: unknown): string {
+  if (!error) {
+    return 'An unexpected error occurred. Please try again.';
   }
 
-  // Handle Error objects
-  if (error instanceof Error) {
-    const message = error.message;
+  const errorMessage = typeof error === 'string' 
+    ? error 
+    : error instanceof Error 
+      ? error.message 
+      : String(error);
 
-    // Authorization errors
-    if (message.includes('Unauthorized') || message.includes('Only admins')) {
-      return {
-        userMessage: 'You do not have permission to perform this action.',
-        originalError,
-      };
-    }
+  const lowerMessage = errorMessage.toLowerCase();
 
-    // Moderation-specific errors
-    if (message.includes('approve') || message.includes('Approve')) {
-      return {
-        userMessage: 'Failed to approve. The item may have already been processed.',
-        originalError,
-      };
-    }
-
-    if (message.includes('reject') || message.includes('Reject')) {
-      return {
-        userMessage: 'Failed to reject. The item may have already been processed.',
-        originalError,
-      };
-    }
-
-    if (message.includes('hide') || message.includes('Hide')) {
-      return {
-        userMessage: 'Failed to hide. Please try again.',
-        originalError,
-      };
-    }
-
-    if (message.includes('delete') || message.includes('Delete')) {
-      return {
-        userMessage: 'Failed to delete. Please try again.',
-        originalError,
-      };
-    }
-
-    // Instance name errors
-    if (message.includes('already exists') || message.includes('already taken')) {
-      return {
-        userMessage: 'This instance name is already taken. Please choose a different name.',
-        originalError,
-      };
-    }
-
-    // Geography validation errors
-    if (message.includes('valid state') || message.includes('State is required')) {
-      return {
-        userMessage: 'Please select a valid state.',
-        originalError,
-      };
-    }
-
-    if (message.includes('valid county') || message.includes('County is required')) {
-      return {
-        userMessage: 'Please select a valid county.',
-        originalError,
-      };
-    }
-
-    // Draft editor / runtime errors
-    if (message.includes('disallowed origin') || message.includes('SecurityError')) {
-      return {
-        userMessage: 'A security error occurred. Please refresh the page and try again.',
-        originalError,
-      };
-    }
-
-    // Network/connection errors
-    if (message.includes('Actor not available') || message.includes('Backend connection')) {
-      return {
-        userMessage: 'Unable to connect to the backend. Please check your connection and try again.',
-        originalError,
-      };
-    }
-
-    // Generic backend errors
-    if (message.includes('trap') || message.includes('Canister')) {
-      return {
-        userMessage: 'An unexpected error occurred. Please try again.',
-        originalError,
-      };
-    }
-
-    // Return the original message if it's already user-friendly
-    return {
-      userMessage: message,
-      originalError,
-    };
+  // Authorization errors
+  if (lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')) {
+    return 'You do not have permission to perform this action.';
   }
 
-  // Handle objects with message property
-  if (error && typeof error === 'object' && 'message' in error) {
-    return getUserFacingError(error.message);
+  // Admin-specific errors
+  if (lowerMessage.includes('only admins can')) {
+    return 'This action requires administrator privileges.';
   }
 
-  // Fallback for unknown error types
-  return {
-    userMessage: 'An unexpected error occurred. Please try again.',
-    originalError,
-  };
+  // Moderation-specific errors
+  if (lowerMessage.includes('approve') || lowerMessage.includes('reject')) {
+    return 'Failed to update proposal status. Please try again.';
+  }
+
+  if (lowerMessage.includes('hide')) {
+    return 'Failed to hide proposal. Please try again.';
+  }
+
+  if (lowerMessage.includes('delete')) {
+    return 'Failed to delete proposal. Please try again.';
+  }
+
+  // Proposal errors
+  if (lowerMessage.includes('instance name already exists')) {
+    return 'This instance name is already taken. Please choose a different name.';
+  }
+
+  if (lowerMessage.includes('proposal does not exist')) {
+    return 'The requested proposal could not be found.';
+  }
+
+  // Geography lookup errors
+  if (lowerMessage.includes('no counties found') || lowerMessage.includes('no places found')) {
+    return 'No locations found for your selection. Please try a different area.';
+  }
+
+  if (lowerMessage.includes('state not found') || lowerMessage.includes('county not found') || lowerMessage.includes('city not found')) {
+    return 'The requested location could not be found. Please try again.';
+  }
+
+  // Secretary top issues errors
+  if (lowerMessage.includes('top issues') || lowerMessage.includes('common issues')) {
+    return 'Unable to retrieve common issues at this time. Please try again later.';
+  }
+
+  // Task errors
+  if (lowerMessage.includes('task') && lowerMessage.includes('not found')) {
+    return 'The requested task could not be found.';
+  }
+
+  if (lowerMessage.includes('no tasks found')) {
+    return 'No tasks found for this proposal.';
+  }
+
+  // Profile errors
+  if (lowerMessage.includes('profile')) {
+    return 'Failed to save profile. Please try again.';
+  }
+
+  // Network/actor errors
+  if (lowerMessage.includes('actor not available') || lowerMessage.includes('not ready')) {
+    return 'The system is not ready yet. Please wait a moment and try again.';
+  }
+
+  if (lowerMessage.includes('network') || lowerMessage.includes('connection')) {
+    return 'Network error. Please check your connection and try again.';
+  }
+
+  // Generic validation
+  if (lowerMessage.includes('invalid') || lowerMessage.includes('validation')) {
+    return 'Invalid input. Please check your information and try again.';
+  }
+
+  // Default fallback
+  return 'An error occurred. Please try again.';
 }
