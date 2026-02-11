@@ -5,24 +5,26 @@
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Add a stable-memory contribution log",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Implement a stable-memory backed Contribution Log in the Motoko canister so contribution log entries and the next log entry ID persist across canister upgrades. This must cover the existing contribution logging APIs in backend/main.mo (e.g., recordContribution, addContributionPoints, getCallerContributionHistory, getCallerContributionSummary) without changing their externally observable behavior (other than persistence across upgrades).",
+      "id": "feature-ensure-the-secretary-widget-discovery-flow-shows-county-city-suggestions-after-a-state-is-selected-and-that-suggestions-are-filtered-correctly-with-no-console-errors-as-described-in-step-5-of-frontend-docs-smoke-test-regression-patch-md",
+      "title": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-secretary-flow-engine-behavior-matches-the-manual-checklist-in-step-6-of-frontend-docs-smoke-test-regression-patch-md-and-the-detailed-scenarios-in-frontend-docs-smoke-test-secretary-flows-md-including-menu-rendering-discovery-report-issue-paths-with-and-without-top-issues-custom-category-flow-back-to-menu-behavior-keyword-navigation-and-unknown-input-recovery",
+      "title": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Implement stable-memory backed contribution log (Phase 1 step 1)",
+  "new_feature_requests": [],
+  "projectName": "Execute Secretary smoke-test steps 5 and 6 (geography suggestions + flow engine)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

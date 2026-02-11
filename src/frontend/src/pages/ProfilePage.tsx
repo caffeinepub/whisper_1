@@ -9,6 +9,7 @@ import { IconBubble } from '@/components/common/IconBubble';
 import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '@/hooks/useCallerUserProfile';
+import { useCallerContributionSummary } from '@/hooks/useCallerContributionSummary';
 import { useActor } from '@/hooks/useActor';
 import { LoginButton } from '@/components/common/LoginButton';
 import { uiCopy } from '@/lib/uiCopy';
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { data: contributionSummary, isLoading: summaryLoading } = useCallerContributionSummary();
   const saveMutation = useSaveCallerUserProfile();
   
   const [name, setName] = useState('');
@@ -127,12 +129,16 @@ export default function ProfilePage() {
     }
 
     try {
-      await saveMutation.mutateAsync({
+      // Preserve all existing fields from loaded profile
+      const profileToSave = {
+        ...userProfile,
         name: name.trim(),
         profileImage: profileImage || undefined,
         tokenBalance: userProfile?.tokenBalance || { staked: 0n, voting: 0n, bounty: 0n, total: 0n },
         contributionPoints: userProfile?.contributionPoints || { city: 0n, voting: 0n, bounty: 0n, token: 0n },
-      });
+      };
+      
+      await saveMutation.mutateAsync(profileToSave);
       toast.success(uiCopy.profile.saveSuccess);
       setHasChanges(false);
     } catch (error: any) {
@@ -156,12 +162,9 @@ export default function ProfilePage() {
 
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
-  // Calculate total contribution points
-  const totalContributionPoints = userProfile 
-    ? Number(userProfile.contributionPoints.city) + 
-      Number(userProfile.contributionPoints.voting) + 
-      Number(userProfile.contributionPoints.bounty) + 
-      Number(userProfile.contributionPoints.token)
+  // Calculate total contribution points from backend summary
+  const totalContributionPoints = contributionSummary 
+    ? Number(contributionSummary.totalPoints)
     : 0;
 
   const renderProfileImageSection = () => (
@@ -217,37 +220,47 @@ export default function ProfilePage() {
     </div>
   );
 
-  const renderContributionPointsSection = () => (
-    <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
-      <div className="flex items-center gap-3">
-        <IconBubble size="md" variant="secondary">
-          <Award className="h-5 w-5" />
-        </IconBubble>
-        <div>
-          <Label className="text-white text-lg font-semibold">{uiCopy.profile.contributionPointsLabel}</Label>
-          <p className="text-xs text-white/60">{uiCopy.profile.contributionPointsHelper}</p>
+  const renderContributionPointsSection = () => {
+    if (summaryLoading) {
+      return (
+        <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
+          <LoadingIndicator label="Loading contribution points..." />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
+        <div className="flex items-center gap-3">
+          <IconBubble size="md" variant="secondary">
+            <Award className="h-5 w-5" />
+          </IconBubble>
+          <div>
+            <Label className="text-white text-lg font-semibold">{uiCopy.profile.contributionPointsLabel}</Label>
+            <p className="text-xs text-white/60">{uiCopy.profile.contributionPointsHelper}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 bg-white/5 rounded border border-white/10">
+            <p className="text-xs text-white/60 mb-1">Total Points</p>
+            <p className="text-2xl font-bold text-secondary">{totalContributionPoints.toLocaleString()}</p>
+          </div>
+          <div className="p-3 bg-white/5 rounded border border-white/10">
+            <p className="text-xs text-white/60 mb-1">City Points</p>
+            <p className="text-xl font-semibold text-white">{Number(contributionSummary?.totalCityPoints || 0n).toLocaleString()}</p>
+          </div>
+          <div className="p-3 bg-white/5 rounded border border-white/10">
+            <p className="text-xs text-white/60 mb-1">Voting Points</p>
+            <p className="text-xl font-semibold text-white">{Number(contributionSummary?.totalVotingPoints || 0n).toLocaleString()}</p>
+          </div>
+          <div className="p-3 bg-white/5 rounded border border-white/10">
+            <p className="text-xs text-white/60 mb-1">Bounty Points</p>
+            <p className="text-xl font-semibold text-white">{Number(contributionSummary?.totalBountyPoints || 0n).toLocaleString()}</p>
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="p-3 bg-white/5 rounded border border-white/10">
-          <p className="text-xs text-white/60 mb-1">Total Points</p>
-          <p className="text-2xl font-bold text-secondary">{totalContributionPoints.toLocaleString()}</p>
-        </div>
-        <div className="p-3 bg-white/5 rounded border border-white/10">
-          <p className="text-xs text-white/60 mb-1">City Points</p>
-          <p className="text-xl font-semibold text-white">{Number(userProfile?.contributionPoints.city || 0n).toLocaleString()}</p>
-        </div>
-        <div className="p-3 bg-white/5 rounded border border-white/10">
-          <p className="text-xs text-white/60 mb-1">Voting Points</p>
-          <p className="text-xl font-semibold text-white">{Number(userProfile?.contributionPoints.voting || 0n).toLocaleString()}</p>
-        </div>
-        <div className="p-3 bg-white/5 rounded border border-white/10">
-          <p className="text-xs text-white/60 mb-1">Bounty Points</p>
-          <p className="text-xl font-semibold text-white">{Number(userProfile?.contributionPoints.bounty || 0n).toLocaleString()}</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[oklch(0.15_0.05_230)] via-[oklch(0.18_0.05_230)] to-[oklch(0.20_0.05_230)]">

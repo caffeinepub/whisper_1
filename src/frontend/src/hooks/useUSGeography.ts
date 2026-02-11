@@ -13,19 +13,20 @@ export function useGetAllStates() {
     queryKey: ['geography', 'states'],
     queryFn: async () => {
       if (!actor) {
-        throw new Error('Backend connection not available');
+        return [];
       }
       try {
         const result = await actor.getAllStates();
         return result;
       } catch (error) {
         console.error('Error fetching states:', error);
-        throw new Error('Failed to load states. Please try again.');
+        return [];
       }
     },
     enabled: !!actor && !isFetching,
     retry: 2,
     staleTime: 1000 * 60 * 60, // States data is stable, cache for 1 hour
+    initialData: [], // Provide stable empty array during loading
   });
 }
 
@@ -53,14 +54,15 @@ export function useGetCountiesForState(stateGeoId: GeoId | null) {
           // Return empty array for legitimate empty results
           return [];
         }
-        // Re-throw actual errors
+        // Return empty array for other errors to prevent console noise
         console.error('Error fetching counties:', error);
-        throw new Error('Failed to load counties. Please try again.');
+        return [];
       }
     },
     enabled: !!actor && !isFetching && !!stateGeoId,
     retry: 1, // Only retry once since empty results are valid
     staleTime: 1000 * 60 * 30, // Counties data is stable, cache for 30 minutes
+    initialData: [], // Provide stable empty array during loading
   });
 }
 
@@ -88,14 +90,15 @@ export function useGetPlacesForCounty(countyGeoId: GeoId | null) {
           // Return empty array for legitimate empty results
           return [];
         }
-        // Re-throw actual errors
+        // Return empty array for other errors to prevent console noise
         console.error('Error fetching places:', error);
-        throw new Error('Failed to load places. Please try again.');
+        return [];
       }
     },
     enabled: !!actor && !isFetching && !!countyGeoId,
     retry: 1, // Only retry once since empty results are valid
     staleTime: 1000 * 60 * 30, // Places data is stable, cache for 30 minutes
+    initialData: [], // Provide stable empty array during loading
   });
 }
 
@@ -123,13 +126,92 @@ export function useGetPlacesForState(stateGeoId: GeoId | null) {
           // Return empty array for legitimate empty results
           return [];
         }
-        // Re-throw actual errors
-        console.error('Error fetching places for state:', error);
-        throw new Error('Failed to load places. Please try again.');
+        // Return empty array for other errors to prevent console noise
+        console.error('Error fetching places:', error);
+        return [];
       }
     },
     enabled: !!actor && !isFetching && !!stateGeoId,
     retry: 1, // Only retry once since empty results are valid
     staleTime: 1000 * 60 * 30, // Places data is stable, cache for 30 minutes
+    initialData: [], // Provide stable empty array during loading
+  });
+}
+
+/**
+ * Hook to fetch a specific state by ID.
+ */
+export function useGetStateById(stateId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USState | null>({
+    queryKey: ['geography', 'state', stateId],
+    queryFn: async () => {
+      if (!actor || !stateId) {
+        return null;
+      }
+      try {
+        const result = await actor.getStateById(stateId);
+        return result;
+      } catch (error) {
+        console.error('Error fetching state by ID:', error);
+        return null;
+      }
+    },
+    enabled: !!actor && !isFetching && !!stateId,
+    retry: 1,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+/**
+ * Hook to fetch a specific county by ID.
+ */
+export function useGetCountyById(countyId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USCounty | null>({
+    queryKey: ['geography', 'county', countyId],
+    queryFn: async () => {
+      if (!actor || !countyId) {
+        return null;
+      }
+      try {
+        const result = await actor.getCountyById(countyId);
+        return result;
+      } catch (error) {
+        console.error('Error fetching county by ID:', error);
+        return null;
+      }
+    },
+    enabled: !!actor && !isFetching && !!countyId,
+    retry: 1,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/**
+ * Hook to fetch a specific city/place by ID.
+ */
+export function useGetCityById(cityId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USPlace | null>({
+    queryKey: ['geography', 'city', cityId],
+    queryFn: async () => {
+      if (!actor || !cityId) {
+        return null;
+      }
+      try {
+        const result = await actor.getCityById(cityId);
+        return result;
+      } catch (error) {
+        console.error('Error fetching city by ID:', error);
+        return null;
+      }
+    },
+    enabled: !!actor && !isFetching && !!cityId,
+    retry: 1,
+    staleTime: 1000 * 60 * 30,
   });
 }

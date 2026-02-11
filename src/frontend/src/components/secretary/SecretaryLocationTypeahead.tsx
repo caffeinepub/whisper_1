@@ -75,6 +75,9 @@ export function SecretaryLocationTypeahead({
     setSearchTerm('');
   };
 
+  // Show dropdown immediately if we have options, even with empty search
+  const showDropdown = options.length > 0;
+
   return (
     <div className="space-y-2">
       <Input
@@ -87,7 +90,7 @@ export function SecretaryLocationTypeahead({
         className="bg-white text-black border-secondary/30 focus:border-secondary focus:ring-secondary"
       />
 
-      {searchTerm && (
+      {showDropdown && (
         <div className="bg-white rounded-lg border border-secondary/30 shadow-lg max-h-[240px] overflow-hidden">
           {isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>

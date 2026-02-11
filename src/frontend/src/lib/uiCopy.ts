@@ -140,7 +140,7 @@ export const uiCopy = {
     saveSuccess: 'Profile saved successfully',
     saveError: 'Failed to save profile',
     contributionPointsLabel: 'Contribution Points',
-    contributionPointsHelper: 'Earn points by participating in your community',
+    contributionPointsHelper: 'Points are for tracking participation only—no token value in Phase 1',
   },
   admin: {
     pageTitle: 'Admin Moderation',
@@ -176,6 +176,10 @@ export const uiCopy = {
     contributionLogsError: 'Failed to load contribution logs',
     contributionLogsRefresh: 'Refresh Logs',
     contributionLogsLoadMore: 'Load More',
+    userSearchLabel: 'Search by User Principal',
+    userSearchPlaceholder: 'Enter user principal ID...',
+    userSearchButton: 'Search',
+    userLogsEmpty: 'No contribution logs found for this user',
   },
   geography: {
     pageTitle: 'Geography',

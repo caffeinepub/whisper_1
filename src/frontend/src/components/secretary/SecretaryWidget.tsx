@@ -31,18 +31,18 @@ export function SecretaryWidget({
   const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Geography queries for typeahead/discovery (REQ-3)
-  const { data: allStates = [] } = useGetAllStates();
+  // Geography queries for typeahead/discovery
+  const { data: allStates = [], isLoading: statesLoading } = useGetAllStates();
   
   // Get current slots to determine which geography queries to enable
   const context = brain.getContext();
   const stateSlot = context.slots.state as USState | null;
   
-  const { data: countiesForState = [] } = useGetCountiesForState(
+  const { data: countiesForState = [], isLoading: countiesLoading } = useGetCountiesForState(
     stateSlot?.hierarchicalId || null
   );
   
-  const { data: placesForState = [] } = useGetPlacesForState(
+  const { data: placesForState = [], isLoading: placesLoading } = useGetPlacesForState(
     stateSlot?.hierarchicalId || null
   );
 
@@ -74,7 +74,7 @@ export function SecretaryWidget({
     }
   }, [findByKeyword, brain]);
 
-  // Update geography data for typeahead (REQ-3)
+  // Update geography data for typeahead
   useEffect(() => {
     brain.setGeographyData(allStates, countiesForState, placesForState);
   }, [allStates, countiesForState, placesForState, brain]);
@@ -112,7 +112,7 @@ export function SecretaryWidget({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -175,6 +175,9 @@ export function SecretaryWidget({
 
   const showBackButton = !brain.isShowingMenu();
 
+  // Determine if typeahead is loading
+  const isTypeaheadLoading = statesLoading || countiesLoading || placesLoading;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
       <div className="w-full max-w-md h-[600px] bg-background border border-border rounded-lg shadow-lg flex flex-col pointer-events-auto">
@@ -236,12 +239,12 @@ export function SecretaryWidget({
             )}
 
             {/* Typeahead */}
-            {viewModel.showTypeahead && typeaheadOptions.length > 0 && (
+            {viewModel.showTypeahead && (
               <SecretaryLocationTypeahead
                 options={typeaheadOptions}
                 onSelect={handleTypeaheadSelect}
                 placeholder={viewModel.typeaheadPlaceholder || 'Search...'}
-                isLoading={isProcessing}
+                isLoading={isTypeaheadLoading}
               />
             )}
 
@@ -272,7 +275,7 @@ export function SecretaryWidget({
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder={viewModel.textInputPlaceholder || 'Type a message...'}
                 disabled={isProcessing}
                 className="flex-1"

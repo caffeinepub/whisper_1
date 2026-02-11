@@ -14,6 +14,7 @@ import type {
 import { nodeDefinitions, transitions } from './flows';
 import { addMessage, resetDiscoveryState, resetReportIssueState } from '../state/secretaryContext';
 import { decideReportIssueNextNode } from '../decisions/secretaryDecisions';
+import { createEmptySlotBag } from '../intent/slotState';
 import type { backendInterface } from '@/backend';
 
 /**
@@ -26,6 +27,13 @@ export class FlowRunner {
 
   constructor(context: SecretaryContext, actor: backendInterface | null) {
     this.context = context;
+    this.actor = actor;
+  }
+
+  /**
+   * Update actor reference
+   */
+  setActor(actor: backendInterface | null): void {
     this.actor = actor;
   }
 
@@ -48,6 +56,13 @@ export class FlowRunner {
    */
   private emitEvent(event: FlowEvent): void {
     this.listeners.forEach((listener) => listener(event));
+  }
+
+  /**
+   * Get the current context (for external inspection)
+   */
+  getContext(): SecretaryContext {
+    return this.context;
   }
 
   /**
@@ -144,9 +159,11 @@ export class FlowRunner {
   private async handleNodeSpecialLogic(nodeId: NodeId): Promise<void> {
     switch (nodeId) {
       case 'menu':
-        // Reset flow state when returning to menu
+        // Reset all flow state when returning to menu
         resetDiscoveryState(this.context);
         resetReportIssueState(this.context);
+        this.context.slots = createEmptySlotBag();
+        this.context.activeIntent = null;
         break;
 
       case 'report-loading':
@@ -211,19 +228,5 @@ export class FlowRunner {
       addMessage(this.context, 'assistant', 'I\'m having trouble loading issue data. Please try again.');
       await this.handleAction({ type: 'back-to-menu' });
     }
-  }
-
-  /**
-   * Get the current context (for external inspection)
-   */
-  getContext(): SecretaryContext {
-    return this.context;
-  }
-
-  /**
-   * Update the actor reference
-   */
-  setActor(actor: backendInterface | null): void {
-    this.actor = actor;
   }
 }

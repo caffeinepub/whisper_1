@@ -1,34 +1,61 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:51:27.614Z",
+  "generatedAt": "2026-02-11T23:42:06.058Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 0,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Implement a stable-memory backed Contribution Log in the Motoko canister so contribution log entries and the next log entry ID persist across canister upgrades. This must cover the existing contribution logging APIs in backend/main.mo (e.g., recordContribution, addContributionPoints, getCallerContributionHistory, getCallerContributionSummary) without changing their externally observable behavior (other than persistence across upgrades).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/hooks/useUSGeography.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/hooks/useUSGeography.ts"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/flow/flows.ts",
+          "frontend/src/secretary/flow/runner.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/copy/secretaryCopy.ts",
+          "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/flow/runner.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/hooks/useUSGeography.ts",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/flow/runner.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

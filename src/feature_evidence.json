@@ -1,4 +1,49 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-ensure-the-secretary-widget-discovery-flow-shows-county-city-suggestions-after-a-state-is-selected-and-that-suggestions-are-filtered-correctly-with-no-console-errors-as-described-in-step-5-of-frontend-docs-smoke-test-regression-patch-md",
+      "featureTitle": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
+      "files": [
+        "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/hooks/useUSGeography.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-secretary-flow-engine-behavior-matches-the-manual-checklist-in-step-6-of-frontend-docs-smoke-test-regression-patch-md-and-the-detailed-scenarios-in-frontend-docs-smoke-test-secretary-flows-md-including-menu-rendering-discovery-report-issue-paths-with-and-without-top-issues-custom-category-flow-back-to-menu-behavior-keyword-navigation-and-unknown-input-recovery",
+      "featureTitle": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "files": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/flow/runner.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

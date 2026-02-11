@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Persist the Contribution Log and next log entry ID across Motoko canister upgrades using stable memory, without changing existing API behavior.
+**Goal:** Pass Secretary smoke-test steps 5 and 6 by fixing geography suggestions after state selection and ensuring the Secretary flow engine matches the documented checklist, without console errors.
 
 **Planned changes:**
-- Update the contribution log storage in `backend/main.mo` to use stable-memory backed state (e.g., stable variables plus `preupgrade`/`postupgrade`, or an equivalent stable structure).
-- Ensure the existing contribution logging APIs (`recordContribution`, `addContributionPoints`, `getCallerContributionHistory`, `getCallerContributionSummary`) continue to behave the same, except that data persists across upgrades.
-- Preserve existing authorization behavior for recording/viewing caller contribution history/summary.
-- Maintain bounded contribution history query responses (keep the existing limit behavior and avoid unbounded payloads).
-- If needed, add a conditional upgrade migration that preserves existing stable state per repository policy.
+- Update the Secretary discovery flow so that after selecting a state, county/city suggestions appear immediately and filter correctly based on the chosen state and user input.
+- Align Secretary flow engine behavior with the step-6 checklist and documented scenarios: initial menu rendering, discovery path, report-issue paths (with/without top issues), “Something else” custom category path, back-to-menu reset behavior, keyword navigation routing/close behavior, and unknown-input recovery messaging/actions.
+- Eliminate browser console errors and React hooks warnings occurring during these flows.
 
-**User-visible outcome:** After an upgrade, previously recorded contribution log entries remain available and the next contribution log entry ID continues without reuse.
+**User-visible outcome:** In the Secretary widget, users can complete discovery (state → location → result) with correctly filtered location suggestions, navigate menu/report-issue/custom-category paths as expected, recover from unknown inputs, and return to the menu with state reset—without console errors.

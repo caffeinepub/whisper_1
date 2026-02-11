@@ -7,7 +7,10 @@ import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
-import Migration "migration";
+import Int "mo:core/Int";
+import Bool "mo:core/Bool";
+
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
@@ -15,7 +18,6 @@ import Storage "blob-storage/Storage";
 
 // Use migration on upgrade
 
-(with migration = Migration.run)
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
@@ -48,6 +50,7 @@ actor {
     points : Nat;
     rewardType : Text;
   };
+
   public type ContributionLogEntry = {
     id : Nat;
     contributor : Principal;
@@ -58,12 +61,18 @@ actor {
     referenceId : ?Text;
     details : ?Text;
   };
+
+  public type ContributionLogPersistence = {
+    persistentEntries : [ContributionLogEntry];
+  };
+
   public type ContributionCriteria = {
     actionType : Text;
     points : Nat;
     rewardType : Text;
     eligibilityCriteria : Text;
   };
+
   public type ContributionSummary = {
     contributor : Principal;
     totalPoints : Nat;
@@ -406,7 +415,7 @@ actor {
 
   // Contribution Points and Token Accounting
   var nextLogEntryId : Nat = 0;
-  let contributionLogs = Map.empty<Principal, List.List<ContributionLogEntry>>();
+  let contributionLogs = Map.empty<Principal, ContributionLogPersistence>();
   let contributionCriteria = Map.empty<Text, ContributionCriteria>();
 
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
@@ -477,17 +486,17 @@ actor {
     let entryId = nextLogEntryId;
     nextLogEntryId += 1;
 
-    let newLog : List.List<ContributionLogEntry> = switch (contributionLogs.get(caller)) {
+    let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
       case (null) {
-        let newList = List.empty<ContributionLogEntry>();
-        newList.add(logEntry);
-        newList;
+        { persistentEntries = [logEntry] };
       };
       case (?logs) {
-        let logsWithEntry = List.empty<ContributionLogEntry>();
-        logsWithEntry.addAll(logs.values());
-        logsWithEntry.add(logEntry);
-        logsWithEntry;
+        let persistentList = List.empty<ContributionLogEntry>();
+        for (e in logs.persistentEntries.values()) {
+          persistentList.add(e);
+        };
+        persistentList.add(logEntry);
+        { persistentEntries = persistentList.toArray() };
       };
     };
     contributionLogs.add(caller, newLog);
@@ -530,17 +539,17 @@ actor {
       details = null;
     };
     nextLogEntryId += 1;
-    let newLog : List.List<ContributionLogEntry> = switch (contributionLogs.get(caller)) {
+    let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
       case (null) {
-        let newList = List.empty<ContributionLogEntry>();
-        newList.add(logEntry);
-        newList;
+        { persistentEntries = [logEntry] };
       };
       case (?logs) {
-        let logsWithEntry = List.empty<ContributionLogEntry>();
-        logsWithEntry.addAll(logs.values());
-        logsWithEntry.add(logEntry);
-        logsWithEntry;
+        let persistentList = List.empty<ContributionLogEntry>();
+        for (e in logs.persistentEntries.values()) {
+          persistentList.add(e);
+        };
+        persistentList.add(logEntry);
+        { persistentEntries = persistentList.toArray() };
       };
     };
     contributionLogs.add(caller, newLog);
@@ -554,7 +563,7 @@ actor {
     switch (contributionLogs.get(caller)) {
       case (null) { [] };
       case (?logs) {
-        let logsArray = logs.toArray();
+        let logsArray = logs.persistentEntries;
         let boundedLimit = Nat.min(limit, 100);
         let actualLimit = Nat.min(boundedLimit, logsArray.size());
         logsArray.sliceToArray(0, actualLimit);
@@ -576,7 +585,7 @@ actor {
     switch (contributionLogs.get(caller)) {
       case (null) {};
       case (?logs) {
-        for (entry in logs.values()) {
+        for (entry in logs.persistentEntries.values()) {
           totalPoints += entry.pointsAwarded;
           switch (entry.rewardType) {
             case ("city") { totalCityPoints += entry.pointsAwarded };
@@ -622,7 +631,7 @@ actor {
       (slicedEntries).size(),
       func(i) {
         let (principal, logs) = slicedEntries[i];
-        (principal, logs.toArray());
+        (principal, logs.persistentEntries);
       }
     );
     result;
@@ -639,7 +648,7 @@ actor {
     switch (contributionLogs.get(user)) {
       case (null) { [] };
       case (?logs) {
-        let logsArray = logs.toArray();
+        let logsArray = logs.persistentEntries;
         let boundedLimit = Nat.min(limit, 100);
         let actualLimit = Nat.min(boundedLimit, logsArray.size());
         logsArray.sliceToArray(0, actualLimit);

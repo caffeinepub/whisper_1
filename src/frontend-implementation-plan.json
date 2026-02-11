@@ -1,6 +1,83 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stable-memory contribution log (frontend impact assessment)",
-  "requirements": []
+  "title": "Secretary widget smoke-test steps 5–6 (geography suggestions + flow engine)",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Show and correctly filter county/city suggestions immediately after selecting a state in the Secretary discovery flow, without console errors.",
+      "acceptanceCriteria": [
+        "With geography data ingested, opening the Secretary widget and running the discovery flow allows selecting a state and then immediately shows county/city suggestions.",
+        "The suggestions list updates (filters) correctly based on the selected state and user input without noticeable lag.",
+        "No errors appear in the browser console while running this flow."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
+          "operation": "modify",
+          "description": "Adjust the typeahead dropdown behavior so that it can show initial suggestions immediately (even with an empty search term) after a state is selected, while still filtering efficiently as the user types; ensure keyboard navigation remains correct and no React warnings are introduced."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Ensure the discovery/location typeahead renders whenever the current flow expects it (including loading/empty states), rather than being gated by a non-empty options array; ensure state→county/city suggestions appear immediately after state selection and that selection actions reliably distinguish state vs county vs place."
+        },
+        {
+          "path": "frontend/src/hooks/useUSGeography.ts",
+          "operation": "modify",
+          "description": "Harden the geography query hooks used by the Secretary widget so that state-driven county/place queries enable/disable cleanly, return stable empty arrays during transitions, and never throw or log console errors when state is null/cleared (supporting rapid back-to-menu resets)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Align Secretary flow engine behavior with the step-6 manual checklist (menu, discovery, report-issue variants, custom category, back-to-menu reset, keyword navigation, unknown-input recovery) with no console errors or React hooks warnings.",
+      "acceptanceCriteria": [
+        "Opening the Secretary widget shows a menu with four options and a greeting message.",
+        "Discovery flow works end-to-end (state → location → result), and returning back to menu resets flow state.",
+        "Report issue flow works both when top issues exist and when they do not; selecting a category completes the flow and triggers the expected navigation behavior.",
+        "Custom category flow works via a “Something else” path and accepts a user-entered category.",
+        "Keyword navigation (e.g., typing a destination keyword) routes to the correct page and the widget closes when expected.",
+        "Unknown input produces an English recovery message and provides a working “Back to Menu” action.",
+        "No console errors or React hooks warnings occur during these flows."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/secretary/flow/flows.ts",
+          "operation": "modify",
+          "description": "Update/verify the flow node definitions and view models to match the step-6 checklist: menu with four options + greeting; discovery (state→location→result); report-issue paths (with and without top issues) including “Something else” → custom category; consistent back-to-menu availability and behavior; unknown-input recovery view model with working Back to Menu action."
+        },
+        {
+          "path": "frontend/src/secretary/flow/runner.ts",
+          "operation": "modify",
+          "description": "Ensure flow transitions and action handling fully reset state when returning to menu (selected geography, report-issue temporary fields, suggestions/top-issues cache, active intent, and messages as appropriate), and that transitions do not emit console errors during rapid user interactions."
+        },
+        {
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "operation": "modify",
+          "description": "Align brain behavior with the smoke-test flows: ensure menu initializes with the expected greeting/options when the widget opens; ensure keyword/deep-link navigation triggers the provided navigation handler with shouldClose=true; ensure unknown-input recovery uses English copy and always offers a working Back to Menu action; remove/avoid console.warn/error paths that can be hit during normal flows (while still handling failures gracefully)."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Eliminate React warnings in the chat input handling (e.g., replace deprecated keypress handling), ensure Back to Menu button visibility matches non-menu states, and ensure the widget closes when navigation actions request it (via the provided navigation handler integration)."
+        },
+        {
+          "path": "frontend/src/secretary/copy/secretaryCopy.ts",
+          "operation": "modify",
+          "description": "Ensure all user-facing Secretary strings required by the step-6 flows (menu greeting/options labels, recovery text, prompts) are in English and consistent with the smoke-test documents."
+        },
+        {
+          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "operation": "modify",
+          "description": "Adjust prompts/messages used across discovery/report-issue/recovery so they match the manual checklist expectations (including clear recovery messaging for unknown input and correct prompts during slot-filling/report flows), ensuring English-only output."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Verify Secretary navigation wiring so that destinations/keywords used in the smoke test (e.g., proposals, create instance) route correctly and the Secretary widget closes when expected; ensure the Secretary widget receives the correct navigation handler and keyword finder without introducing new routes."
+        }
+      ]
+    }
+  ]
 }

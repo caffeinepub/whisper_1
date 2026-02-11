@@ -111,6 +111,20 @@ export class FlowEngineBrain implements SecretaryBrain {
   }
 
   /**
+   * Register a flow event listener
+   */
+  addListener(listener: FlowEventListener): void {
+    this.runner.addListener(listener);
+  }
+
+  /**
+   * Remove a flow event listener
+   */
+  removeListener(listener: FlowEventListener): void {
+    this.runner.removeListener(listener);
+  }
+
+  /**
    * Get available typeahead options (if applicable)
    */
   getTypeaheadOptions(): Array<{ id: string; label: string; data: any }> {
@@ -147,6 +161,13 @@ export class FlowEngineBrain implements SecretaryBrain {
     }
     
     return [];
+  }
+
+  /**
+   * Get current view model for rendering
+   */
+  getViewModel(): NodeViewModel {
+    return this.runner.getViewModel();
   }
 
   reset(): void {
@@ -200,7 +221,7 @@ export class FlowEngineBrain implements SecretaryBrain {
           }
         }
 
-        // Unknown input
+        // Unknown input - use English recovery message
         await this.runner.handleAction({ type: 'free-text-input', payload: text });
         break;
 
@@ -229,8 +250,8 @@ export class FlowEngineBrain implements SecretaryBrain {
           }
         }
 
-        // Still unknown
-        addMessage(context, 'assistant', 'I still couldn\'t understand that. Please try the menu options.');
+        // Still unknown - provide English recovery message
+        addMessage(context, 'assistant', 'I still couldn\'t understand that. Please try the menu options or use the Back to Menu button.');
         break;
 
       default:
@@ -247,7 +268,7 @@ export class FlowEngineBrain implements SecretaryBrain {
     const actor = this.runner['actor'];
     
     try {
-      // Try actor-backed lookup first (REQ-1)
+      // Try actor-backed lookup first
       if (actor) {
         trace('flow-action', { action: 'geography-lookup-start', text, source: 'actor' });
         const lookupResult = await lookupUSGeographyFromText(text, actor);
@@ -499,10 +520,11 @@ export class FlowEngineBrain implements SecretaryBrain {
         await this.continueIntentSlotFilling();
         return;
       } else if (action.type === 'back-to-menu') {
+        // Reset all state when returning to menu
         context.activeIntent = null;
         context.currentNode = 'menu';
         context.messages = [];
-        addMessage(context, 'assistant', 'Back to the main menu. How can I help you?');
+        addMessage(context, 'assistant', 'How can I help you today?');
         return;
       }
     }
@@ -513,18 +535,11 @@ export class FlowEngineBrain implements SecretaryBrain {
 
   async handleCategorySelection(category: string): Promise<void> {
     const context = this.runner.getContext();
-    await this.runner.handleAction({ type: 'something-else', payload: category });
-  }
-
-  getViewModel(): NodeViewModel {
-    return this.runner.getViewModel();
-  }
-
-  addListener(listener: FlowEventListener): void {
-    this.runner.addListener(listener);
-  }
-
-  removeListener(listener: FlowEventListener): void {
-    this.runner.removeListener(listener);
+    
+    // Store the selected category in the description field (legacy flow compatibility)
+    context.reportIssueDescription = category;
+    
+    // Transition to complete
+    await this.runner.handleAction({ type: 'custom-category-submitted', payload: category });
   }
 }

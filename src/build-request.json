@@ -1,38 +1,57 @@
 {
   "kind": "build_request",
-  "title": "Implement stable-memory backed contribution log (Phase 1 step 1)",
+  "title": "Execute Secretary smoke-test steps 5 and 6 (geography suggestions + flow engine)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement a stable-memory backed Contribution Log in the Motoko canister so contribution log entries and the next log entry ID persist across canister upgrades. This must cover the existing contribution logging APIs in backend/main.mo (e.g., recordContribution, addContributionPoints, getCallerContributionHistory, getCallerContributionSummary) without changing their externally observable behavior (other than persistence across upgrades).",
-      "target": "backend",
+      "text": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "Run step 1"
+          "Run steps 5 and 6"
         ]
       },
       "acceptanceCriteria": [
-        "After recording one or more contribution log entries, upgrading the canister preserves all previously recorded log entries and the next log entry ID (no ID reuse after upgrade).",
-        "Contribution log persistence is implemented using stable memory (stable vars and preupgrade/postupgrade, or an equivalent stable structure) rather than in-memory-only Map/List state.",
-        "Existing authorization behavior remains intact (e.g., only callers with #user permission can record/view their own contribution history/summary).",
-        "The contribution history query still enforces a bounded result size (e.g., existing limit clamped to a maximum) and does not introduce unbounded payloads.",
-        "Build passes and the canister compiles successfully with the updated stable-memory contribution log implementation."
+        "With geography data ingested, opening the Secretary widget and running the discovery flow allows selecting a state and then immediately shows county/city suggestions.",
+        "The suggestions list updates (filters) correctly based on the selected state and user input without noticeable lag.",
+        "No errors appear in the browser console while running this flow."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Run steps 5 and 6"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Opening the Secretary widget shows a menu with four options and a greeting message.",
+        "Discovery flow works end-to-end (state → location → result), and returning back to menu resets flow state.",
+        "Report issue flow works both when top issues exist and when they do not; selecting a category completes the flow and triggers the expected navigation behavior.",
+        "Custom category flow works via a “Something else” path and accepts a user-entered category.",
+        "Keyword navigation (e.g., typing a destination keyword) routes to the correct page and the widget closes when expected.",
+        "Unknown input produces an English recovery message and provides a working “Back to Menu” action.",
+        "No console errors or React hooks warnings occur during these flows."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor architecture with all Motoko logic in backend/main.mo.",
-    "If an upgrade migration is required for existing deployed state, follow the repository migration policy (conditional migration) and do not break existing stable state."
+    "Use English for all user-facing text.",
+    "Do not edit frontend files under `frontend/src/components/ui` or other immutable paths listed in SYSTEM_CONTEXT.",
+    "Keep backend logic (if any changes are needed) within the single Motoko actor in `backend/main.mo`; only introduce/modify `backend/migration.mo` if a state upgrade is required."
   ],
   "nonGoals": [
-    "Do not implement token minting, burning, staking, transfers, governance voting, or any on-chain token logic.",
-    "Do not add admin-only contribution log APIs or admin UI in this step.",
-    "Do not add WSP placeholder fields to user profiles in this step.",
-    "Do not create or connect contribution events to issues/comments/evidence/categories in this step."
+    "Do not implement new Secretary intents or add new product features beyond what is needed to satisfy smoke-test steps 5 and 6.",
+    "Do not introduce real-time communication features (e.g., WebSockets) or third-party auth providers."
   ],
   "imageRequirements": {
     "required": [],
