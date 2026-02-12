@@ -1,35 +1,71 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T03:43:03.018Z",
-  "summary": "Frontend adds a new React Query hook (useStakingInfo) and a StakingSection UI component with loading and empty states. However, the diff summary does not provide evidence that the backend getStakingInfo query was implemented/exposed, nor that the Profile page actually renders the new Staking section, nor that candid bindings were regenerated to include the new method.",
+  "generatedAt": "2026-02-12T04:25:54.692Z",
+  "summary": "Frontend wiring for proposals, staking mutations, governance UI/hooks, and Secretary navigation signals/options was added/updated. However, the diff summary does not provide evidence that the required backend canister methods/state for proposals, staking, and governance were implemented in `backend/main.mo` (only types are shown due to truncation), so the core backend portions of REQ-1/2/3 cannot be verified as complete from the provided diff.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Backend exposes a public query method named getStakingInfo returning a nullable StakingRecord for the caller, backed by existing stakingRecords, and available via generated frontend candid bindings.",
-      "reason": "backend/main.mo is truncated and does not show any getStakingInfo method or its implementation details (nullable return, caller lookup in stakingRecords). There is also no evidence in the diff summary of regenerated candid/bindings being updated to include getStakingInfo.",
+      "requirement": "Implement and wire backend query/update methods for proposals (list, get by identifier, and lifecycle updates used by the UI) so Proposals list/detail uses real canister data (no placeholders).",
+      "reason": "Frontend now calls `actor.getAllProposals()` and `actor.getProposal(instanceName)`, but the diff summary for `backend/main.mo` is truncated and does not show any added/updated proposal query/update methods or persisted proposal state to back these calls.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useStakingInfo.ts (calls actor.getStakingInfo but does not prove backend/bindings exist)"
+        "frontend/src/hooks/useQueries.ts",
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Profile page renders a read-only Staking section card that fetches staking info via getStakingInfo and shows Total Staked, Available Balance, Locked Balance, Pending Rewards with loading and empty states.",
-      "reason": "A StakingSection component and hook were added, but the diff summary does not show changes to the Profile page itself to include/render this section.",
+      "requirement": "Add staking backend support with `getStakingInfo`, `stake(amount)`, and `unstake(amount)`, including consistent token/staking state updates and validation (cannot stake/unstake more than allowed) with English user-friendly errors.",
+      "reason": "Frontend mutations were updated to call `actor.stake`/`actor.unstake` and invalidate queries, but the diff summary does not show backend implementations for staking methods, staking state, or validation/error behavior in `backend/main.mo` (truncated). Also no evidence is shown for a backend `getStakingInfo` method supporting `useStakingInfo`.",
       "evidence": [
+        "frontend/src/hooks/useStakingMutations.ts",
         "frontend/src/pages/profile/components/StakingSection.tsx",
-        "frontend/src/hooks/useStakingInfo.ts"
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Implement backend governance proposal CRUD and voting (create, list, get details, vote) persisted in canister state, and ensure authenticated calls for create/vote.",
+      "reason": "Frontend governance hooks/UI call `actor.governanceListProposals`, `actor.governanceGetProposal`, `actor.governanceCreateProposal`, and `actor.governanceVote`, but the diff summary does not show these backend methods or persistence being implemented in `backend/main.mo` (only new types appear; file content is truncated).",
+      "evidence": [
+        "frontend/src/hooks/useGovernanceProposals.ts",
+        "backend/main.mo (truncated)"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.64,
+  "hallucinated_features": [
+    {
+      "description": "Added a Secretary navigation option/destination for 'Governance' (keywords + confirmation message).",
+      "reason": "REQ-4 only asked to expand Secretary routing to the Proposals area and deep-link/open a specific proposal; it did not request Secretary routing for Governance.",
+      "evidence": [
+        "frontend/src/lib/secretaryNavigation.ts"
+      ]
+    },
+    {
+      "description": "Added/updated multiple comprehensive documentation and styling/config files (architecture/phased plan/deployment/style guide, Tailwind config, global CSS).",
+      "reason": "The BuildRequest focuses on connecting proposals to backend, adding staking/governance UI, and expanding Secretary routing to proposals; large doc/style/config expansions are not requested requirements.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useStakingInfo.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/components/proposals/ProposalsSection.tsx",
+    "frontend/src/hooks/useGovernanceProposals.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useStakingMutations.ts",
+    "frontend/src/lib/secretaryNavigation.ts",
+    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
+    "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
+    "frontend/src/pages/profile/components/GovernanceSection.tsx",
     "frontend/src/pages/profile/components/StakingSection.tsx",
+    "frontend/src/utils/secretaryProjectNavigation.ts",
     "project_state.json"
   ]
 }

@@ -9,146 +9,58 @@ interface TopIssuesResult {
 
 /**
  * Helper module for Secretary to retrieve and format top issues for locations.
- * Calls backend geography-by-ID and top-issues endpoints, then formats results
- * into friendly English messages with robust fallbacks for null/empty cases.
+ * Backend methods not yet implemented - returns empty results with friendly messages.
  */
 export class SecretaryTopIssuesMessaging {
   constructor(private actor: backendInterface) {}
 
   /**
-   * Retrieve and format top issues for a state by ID
+   * Retrieve and format top issues for a state by ID.
+   * Backend methods not yet implemented - returns empty result.
    */
   async getTopIssuesForState(stateId: string): Promise<TopIssuesResult> {
-    try {
-      const state = await this.actor.getStateById(stateId);
-      
-      if (!state) {
-        return {
-          message: "I couldn't find that state. Please try again.",
-          issues: [],
-        };
-      }
-
-      const issues = await this.actor.getTopIssuesForLocation(HierarchyLevel.state, stateId);
-      
-      if (!issues || issues.length === 0) {
-        return {
-          message: `No common issues have been recorded for ${state.longName} yet. You can still describe your issue and we'll help you get started.`,
-          issues: [],
-        };
-      }
-
-      return {
-        message: `Here are the most common issues in ${state.longName}:`,
-        issues: issues.slice(0, 50),
-      };
-    } catch (error) {
-      console.error('Error fetching state issues:', error);
-      return {
-        message: "I'm having trouble retrieving state issues right now. You can still describe your issue below.",
-        issues: [],
-      };
-    }
+    // Backend methods (getStateById, getTopIssuesForLocation) not yet implemented
+    return {
+      message: "Top issues data is not yet available. You can still describe your issue and we'll help you get started.",
+      issues: [],
+    };
   }
 
   /**
-   * Retrieve and format top issues for a county by ID
+   * Retrieve and format top issues for a county by ID.
+   * Backend methods not yet implemented - returns empty result.
    */
   async getTopIssuesForCounty(countyId: string): Promise<TopIssuesResult> {
-    try {
-      const county = await this.actor.getCountyById(countyId);
-      
-      if (!county) {
-        return {
-          message: "I couldn't find that county. Please try again.",
-          issues: [],
-        };
-      }
-
-      const issues = await this.actor.getTopIssuesForLocation(HierarchyLevel.county, countyId);
-      
-      if (!issues || issues.length === 0) {
-        return {
-          message: `No common issues have been recorded for ${county.fullName} yet. You can still describe your issue and we'll help you get started.`,
-          issues: [],
-        };
-      }
-
-      return {
-        message: `Here are the most common issues in ${county.fullName}:`,
-        issues: issues.slice(0, 50),
-      };
-    } catch (error) {
-      console.error('Error fetching county issues:', error);
-      return {
-        message: "I'm having trouble retrieving county issues right now. You can still describe your issue below.",
-        issues: [],
-      };
-    }
+    // Backend methods (getCountyById, getTopIssuesForLocation) not yet implemented
+    return {
+      message: "Top issues data is not yet available. You can still describe your issue and we'll help you get started.",
+      issues: [],
+    };
   }
 
   /**
-   * Retrieve and format top issues for a city/place by ID
+   * Retrieve and format top issues for a city/place by ID.
+   * Backend methods not yet implemented - returns empty result.
    */
   async getTopIssuesForCity(cityId: string): Promise<TopIssuesResult> {
-    try {
-      const city = await this.actor.getCityById(cityId);
-      
-      if (!city) {
-        return {
-          message: "I couldn't find that city. Please try again.",
-          issues: [],
-        };
-      }
-
-      const issues = await this.actor.getTopIssuesForLocation(HierarchyLevel.place, cityId);
-      
-      if (!issues || issues.length === 0) {
-        return {
-          message: `No common issues have been recorded for ${city.shortName} yet. You can still describe your issue and we'll help you get started.`,
-          issues: [],
-        };
-      }
-
-      return {
-        message: `Here are the most common issues in ${city.shortName}:`,
-        issues: issues.slice(0, 50),
-      };
-    } catch (error) {
-      console.error('Error fetching city issues:', error);
-      return {
-        message: "I'm having trouble retrieving city issues right now. You can still describe your issue below.",
-        issues: [],
-      };
-    }
+    // Backend methods (getCityById, getTopIssuesForLocation) not yet implemented
+    return {
+      message: "Top issues data is not yet available. You can still describe your issue and we'll help you get started.",
+      issues: [],
+    };
   }
 
   /**
-   * Retrieve and format general top issues for a given level (no specific location)
+   * Retrieve and format general top issues for a given level (no specific location).
+   * Backend method not yet implemented - returns empty result.
    */
   async getGeneralTopIssuesForLevel(level: USHierarchyLevel): Promise<TopIssuesResult> {
-    try {
-      const issues = await this.actor.getTopIssuesForLocation(level, null);
-      
-      if (!issues || issues.length === 0) {
-        return {
-          message: `No common issues have been recorded for ${this.getLevelLabel(level)} level yet. Please describe your issue below.`,
-          issues: [],
-        };
-      }
-
-      const levelLabel = this.getLevelLabel(level);
-      return {
-        message: `Here are the most common ${levelLabel}-level issues:`,
-        issues: issues.slice(0, 50),
-      };
-    } catch (error) {
-      console.error('Error fetching general issues:', error);
-      return {
-        message: "I'm having trouble retrieving issues right now. You can still describe your issue below.",
-        issues: [],
-      };
-    }
+    // Backend method (getTopIssuesForLocation) not yet implemented
+    const levelLabel = this.getLevelLabel(level);
+    return {
+      message: `Top issues data is not yet available for ${levelLabel} level. Please describe your issue below.`,
+      issues: [],
+    };
   }
 
   /**

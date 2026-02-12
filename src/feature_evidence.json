@@ -2,10 +2,30 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-a-read-only-staking-ui-in-the-profile-page-that-fetches-staking-info-from-the-backend-using-getstakinginfo-and-displays-total-staked-available-balance-locked-balance-and-pending-rewards-with-loading-and-empty-states",
-      "featureTitle": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
+      "featureId": "feature-connect-the-existing-proposals-list-detail-ui-to-real-backend-data-by-implementing-and-wiring-backend-query-update-methods-for-proposals-list-proposals-fetch-a-proposal-by-identifier-and-any-required-proposal-lifecycle-updates-used-by-the-ui-ensure-the-frontend-react-query-hooks-used-by-proposalssection-and-proposaldetaildialog-use-these-backend-methods-no-placeholder-stub-data-and-preserve-current-loading-empty-error-states",
+      "featureTitle": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
       "files": [
-        "frontend/src/hooks/useStakingInfo.ts",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-staking-backend-support-and-connect-it-to-the-existing-staking-ui-and-hooks-add-canister-methods-required-by-the-current-frontend-contract-at-minimum-getstakinginfo-stake-amount-and-unstake-amount-update-token-staking-state-consistently-and-replace-the-placeholder-errors-in-usestake-useunstake-so-the-profile-staking-section-can-successfully-stake-and-unstake",
+      "featureTitle": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
+      "files": [
+        "frontend/src/hooks/useStakingMutations.ts",
         "frontend/src/pages/profile/components/StakingSection.tsx"
       ],
       "components": [
@@ -19,6 +39,55 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-governance-ui-for-governance-proposals-create-list-view-details-and-vote-and-implement-the-corresponding-backend-methods-for-governance-proposals-and-voting-the-governance-ui-should-be-accessible-from-an-appropriate-existing-navigation-entry-point-e-g-profile-page-section-and-or-a-dedicated-route-and-must-use-authenticated-canister-calls-reuse-existing-design-system-components-and-patterns-cards-dialogs-badges-loading-states",
+      "featureTitle": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/hooks/useGovernanceProposals.ts",
+        "frontend/src/lib/uiCopy.ts",
+        "frontend/src/pages/ProfilePage.tsx",
+        "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
+        "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
+        "frontend/src/pages/profile/components/GovernanceSection.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-expand-the-secretary-routing-navigation-system-so-the-secretary-can-route-users-to-the-proposals-area-and-also-deep-link-open-a-specific-proposal-when-the-secretary-navigation-payload-includes-a-proposal-identifier-name-ensure-the-registry-keywords-and-deep-link-parsing-support-proposal-destinations-and-that-the-proposals-ui-responds-by-opening-the-correct-proposal-detail-dialog",
+      "featureTitle": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/proposals/ProposalsSection.tsx",
+        "frontend/src/lib/secretaryNavigation.ts",
+        "frontend/src/utils/secretaryProjectNavigation.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

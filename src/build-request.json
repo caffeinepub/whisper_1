@@ -1,56 +1,97 @@
 {
   "kind": "build_request",
-  "title": "Add backend getStakingInfo query and read-only staking UI",
+  "title": "Connect proposals to backend, add staking & governance UI, and expand Secretary routing to proposals",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a basic backend query method named getStakingInfo that returns the caller’s staking information using the existing StakingRecord type and stakingRecords storage.",
-      "target": "backend",
+      "text": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "run steps 4. Add a basic getStakingInfo method"
+          "Run Connect proposals to backend"
         ]
       },
       "acceptanceCriteria": [
-        "The Motoko canister exposes a public query method named getStakingInfo.",
-        "getStakingInfo returns a nullable StakingRecord for the caller (null when no record exists).",
-        "The method is included in the generated frontend candid bindings (frontend can import/call it via the actor).",
-        "No state-breaking changes are introduced to existing staking storage (stakingRecords continues to be the source of truth)."
+        "Backend exposes query methods that allow the frontend to retrieve the proposals shown in the Proposals UI without relying on hardcoded/placeholder data.",
+        "Frontend proposals queries resolve to real canister calls and the existing Proposals list renders with data returned from the backend.",
+        "Proposal detail dialog opens and displays details for a selected proposal using backend-provided data.",
+        "All user-facing errors remain in English and use existing error handling patterns (e.g., userFacingError mapping)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
-      "target": "frontend",
+      "text": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "and 5. Add frontend staking UI (read-only)"
+          "Add staking and governance UI"
         ]
       },
       "acceptanceCriteria": [
-        "A React Query hook exists to fetch staking info from the backend getStakingInfo method (identity-scoped caching, consistent with existing query patterns).",
-        "The Profile page renders a Staking section card (read-only) showing the four staking fields formatted with the existing token amount formatter.",
-        "While the query is loading, the staking section shows a loading indicator.",
-        "When the backend returns null, the staking section shows an English empty-state message indicating no staking record is available.",
-        "No stake/unstake actions or inputs are present in the staking UI."
+        "Calling `getStakingInfo()` from the frontend returns a real `StakingRecord` (or `null` if not initialized) for the authenticated caller.",
+        "`useStake` and `useUnstake` mutations perform real canister calls and no longer throw 'not yet implemented in backend' errors.",
+        "After a successful stake/unstake, the staking info and WSP balance queries invalidate and the UI refreshes to the updated values.",
+        "Staking operations enforce basic validation (e.g., cannot stake more than available, cannot unstake more than staked) and surface user-friendly English error messages on failure."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Add staking and governance UI"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend supports governance proposal CRUD needed by UI: create proposal, list proposals, get proposal details, and cast a vote; results are persisted in canister state.",
+        "Frontend provides a governance proposals list with loading/empty/error states and a detail view for a selected governance proposal.",
+        "Frontend provides a create-governance-proposal flow with title/description inputs and clear success/failure feedback in English.",
+        "Frontend provides voting controls (approve/reject) and reflects updated tallies/status after voting via query invalidation/refetch.",
+        "Non-authenticated users are prompted to log in (or see an appropriate auth-required state) before creating/voting."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Expand Secretary routing to proposals"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Secretary navigation includes a destination for proposals and can trigger navigation to the proposals view using the existing navigation registry/keyword matching approach.",
+        "When the Secretary emits a navigation event targeting a specific proposal, the Proposals UI opens the proposal detail dialog for that proposal (when it exists in the loaded dataset).",
+        "If the requested proposal is not found, the UI fails gracefully (no crash) and remains on the proposals page with an English error/toast/message consistent with existing patterns.",
+        "No changes are made to immutable frontend paths; Secretary routing changes are implemented in editable modules that compose existing hooks/components."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
-    "Do not edit any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT."
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Only create/modify `backend/migration.mo` if a state migration is required by new stable variables/state layout changes (conditional migration policy).",
+    "Do not edit frontend files under the immutable paths listed in SYSTEM_CONTEXT (compose them instead).",
+    "Use English for all user-facing text."
   ],
   "nonGoals": [
-    "Implement staking mutations (stake, unstake, claim rewards).",
-    "Add any real-time updates or background polling beyond existing React Query defaults.",
-    "Add third-party auth or wallets (only Internet Identity is supported)."
+    "Implementing third-party authentication (only Internet Identity is allowed).",
+    "Adding real-time features (WebSockets/live subscriptions).",
+    "Introducing external databases or non-IC backend services.",
+    "Adding payments or wallet integrations."
   ],
   "imageRequirements": {
     "required": [],

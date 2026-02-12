@@ -17,6 +17,7 @@ import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
 import { formatTokenAmount } from '@/lib/formatTokenAmount';
 import { IconBubble } from '@/components/common/IconBubble';
 import { StakingSection } from '@/pages/profile/components/StakingSection';
+import { GovernanceSection } from '@/pages/profile/components/GovernanceSection';
 import { uiCopy } from '@/lib/uiCopy';
 import type { UserProfile } from '@/backend';
 
@@ -477,6 +478,8 @@ export default function ProfilePage() {
           </Card>
 
           <StakingSection />
+
+          <GovernanceSection />
         </div>
       </main>
     </div>

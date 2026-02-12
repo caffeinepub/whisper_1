@@ -6,7 +6,7 @@
 
 import type { SecretaryBrain, NavigationHandler } from './SecretaryBrain';
 import type { NodeViewModel, Action, FlowEventListener, SecretaryContext } from '../flow/types';
-import { FlowRunner } from '../flow/runner';
+import { FlowRunner, type FlowRunnerListener } from '../flow/runner';
 import { createInitialContext, addMessage, resetContext, resetSlotWithDependents } from '../state/secretaryContext';
 import { parseDeepLink } from '@/lib/secretaryNavigation';
 import type { backendInterface, USState, USCounty, USPlace } from '@/backend';
@@ -40,10 +40,11 @@ export class FlowEngineBrain implements SecretaryBrain {
   private countiesForState: USCounty[] = [];
   private placesForState: USPlace[] = [];
   private complaintSuggestions: string[] = [];
+  private listenerAdapters: Map<FlowEventListener, FlowRunnerListener> = new Map();
 
   constructor(actor: backendInterface | null) {
     const context = createInitialContext();
-    this.runner = new FlowRunner(context, actor);
+    this.runner = new FlowRunner(actor, context);
   }
 
   /**
@@ -111,17 +112,33 @@ export class FlowEngineBrain implements SecretaryBrain {
   }
 
   /**
-   * Register a flow event listener
+   * Register a flow event listener (adapts FlowEventListener to FlowRunnerListener)
    */
   addListener(listener: FlowEventListener): void {
-    this.runner.addListener(listener);
+    // Create an adapter that converts NodeViewModel to FlowEvent
+    const adapter: FlowRunnerListener = (viewModel: NodeViewModel) => {
+      const event = {
+        type: 'node-entered' as const,
+        nodeId: this.runner.getContext().currentNode,
+        timestamp: Date.now(),
+      };
+      listener(event);
+    };
+    
+    // Store the adapter so we can remove it later
+    this.listenerAdapters.set(listener, adapter);
+    this.runner.addListener(adapter);
   }
 
   /**
    * Remove a flow event listener
    */
   removeListener(listener: FlowEventListener): void {
-    this.runner.removeListener(listener);
+    const adapter = this.listenerAdapters.get(listener);
+    if (adapter) {
+      this.runner.removeListener(adapter);
+      this.listenerAdapters.delete(listener);
+    }
   }
 
   /**
@@ -516,30 +533,18 @@ export class FlowEngineBrain implements SecretaryBrain {
         fillSlot(context.slots, 'issue_category', action.payload);
         trace('slot-filled', { slot: 'issue_category', value: action.payload, source: 'suggestion' });
         addMessage(context, 'user', action.payload);
-        addMessage(context, 'assistant', `Got it, you selected "${action.payload}".`);
         await this.continueIntentSlotFilling();
-        return;
-      } else if (action.type === 'back-to-menu') {
-        // Reset all state when returning to menu
-        context.activeIntent = null;
-        context.currentNode = 'menu';
-        context.messages = [];
-        addMessage(context, 'assistant', 'How can I help you today?');
         return;
       }
     }
 
-    // Handle standard flow actions
+    // Handle regular flow actions
     await this.runner.handleAction(action);
   }
 
-  async handleCategorySelection(category: string): Promise<void> {
+  private async handleCategorySelection(category: string): Promise<void> {
     const context = this.runner.getContext();
-    
-    // Store the selected category in the description field (legacy flow compatibility)
     context.reportIssueDescription = category;
-    
-    // Transition to complete
     await this.runner.handleAction({ type: 'custom-category-submitted', payload: category });
   }
 }

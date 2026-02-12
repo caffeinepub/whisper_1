@@ -94,10 +94,54 @@ function AppContent() {
       },
     });
 
+    register({
+      id: 'staking',
+      label: 'Staking',
+      keywords: ['staking', 'stake', 'unstake', 'rewards', 'lock', 'locked', 'tokens'],
+      action: () => {
+        // Navigate to profile page
+        const basePath = import.meta.env.BASE_URL || '/';
+        const profilePath = joinBasePath('/profile');
+        window.history.pushState({}, '', profilePath);
+        setCurrentPage('profile');
+        
+        // Scroll to staking section after a short delay to ensure page is rendered
+        setTimeout(() => {
+          const stakingElement = document.getElementById('staking-section');
+          if (stakingElement) {
+            stakingElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      },
+    });
+
+    register({
+      id: 'governance',
+      label: uiCopy.governance.title,
+      keywords: ['governance', 'vote', 'voting', 'govern', 'policy', 'policies'],
+      action: () => {
+        // Navigate to profile page
+        const basePath = import.meta.env.BASE_URL || '/';
+        const profilePath = joinBasePath('/profile');
+        window.history.pushState({}, '', profilePath);
+        setCurrentPage('profile');
+        
+        // Scroll to governance section after a short delay to ensure page is rendered
+        setTimeout(() => {
+          const governanceElement = document.getElementById('governance-section');
+          if (governanceElement) {
+            governanceElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      },
+    });
+
     return () => {
       unregister('proposals');
       unregister('create-instance');
       unregister('report-issue');
+      unregister('staking');
+      unregister('governance');
     };
   }, [register, unregister]);
 

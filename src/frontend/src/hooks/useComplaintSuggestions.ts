@@ -12,12 +12,8 @@ export function useComplaintSuggestions(
   return useQuery<string[]>({
     queryKey: ['complaintSuggestions', level, searchTerm],
     queryFn: async () => {
-      if (!actor || !level) return [];
-
-      const term = searchTerm.trim();
-
-      // Use the new unified backend method
-      return actor.getSecretaryCategorySuggestions(term, level);
+      // Backend method not yet implemented - return empty array
+      return [];
     },
     enabled: !!actor && !actorFetching && !!level && enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -30,18 +26,8 @@ export function useGetAllComplaintCategories(level: USHierarchyLevel | null) {
   return useQuery<string[]>({
     queryKey: ['allComplaintCategories', level],
     queryFn: async () => {
-      if (!actor || !level) return [];
-
-      switch (level) {
-        case USHierarchyLevel.place:
-          return actor.getAllCityComplaintCategories();
-        case USHierarchyLevel.county:
-          return actor.getAllCountyComplaintCategories();
-        case USHierarchyLevel.state:
-          return actor.getAllStateComplaintCategories();
-        default:
-          return [];
-      }
+      // Backend methods not yet implemented - return empty array
+      return [];
     },
     enabled: !!actor && !actorFetching && !!level,
     staleTime: 60 * 60 * 1000, // 1 hour

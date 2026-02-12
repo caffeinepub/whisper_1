@@ -1,16 +1,40 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project now includes staking functionality work: adding a basic getStakingInfo method and a read-only frontend staking UI.",
+  "summary": "Project to implement governance proposals: connect proposals to backend, add staking/governance UI, and expand Secretary routing to proposals.",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-implement-a-read-only-staking-ui-in-the-profile-page-that-fetches-staking-info-from-the-backend-using-getstakinginfo-and-displays-total-staked-available-balance-locked-balance-and-pending-rewards-with-loading-and-empty-states",
-      "title": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
+      "id": "feature-connect-the-existing-proposals-list-detail-ui-to-real-backend-data-by-implementing-and-wiring-backend-query-update-methods-for-proposals-list-proposals-fetch-a-proposal-by-identifier-and-any-required-proposal-lifecycle-updates-used-by-the-ui-ensure-the-frontend-react-query-hooks-used-by-proposalssection-and-proposaldetaildialog-use-these-backend-methods-no-placeholder-stub-data-and-preserve-current-loading-empty-error-states",
+      "title": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-staking-backend-support-and-connect-it-to-the-existing-staking-ui-and-hooks-add-canister-methods-required-by-the-current-frontend-contract-at-minimum-getstakinginfo-stake-amount-and-unstake-amount-update-token-staking-state-consistently-and-replace-the-placeholder-errors-in-usestake-useunstake-so-the-profile-staking-section-can-successfully-stake-and-unstake",
+      "title": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-governance-ui-for-governance-proposals-create-list-view-details-and-vote-and-implement-the-corresponding-backend-methods-for-governance-proposals-and-voting-the-governance-ui-should-be-accessible-from-an-appropriate-existing-navigation-entry-point-e-g-profile-page-section-and-or-a-dedicated-route-and-must-use-authenticated-canister-calls-reuse-existing-design-system-components-and-patterns-cards-dialogs-badges-loading-states",
+      "title": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-expand-the-secretary-routing-navigation-system-so-the-secretary-can-route-users-to-the-proposals-area-and-also-deep-link-open-a-specific-proposal-when-the-secretary-navigation-payload-includes-a-proposal-identifier-name-ensure-the-registry-keywords-and-deep-link-parsing-support-proposal-destinations-and-that-the-proposals-ui-responds-by-opening-the-correct-proposal-detail-dialog",
+      "title": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -18,26 +42,24 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add a basic getStakingInfo method",
+      "summary": "Connect proposals flow to backend (Run Connect proposals to backend).",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add frontend staking UI (read-only)",
+      "summary": "Add staking and governance UI.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Add a basic backend query method named getStakingInfo that returns the caller’s staking information using the existing StakingRecord type and stakingRecords storage.",
-      "reqIds": [
-        "REQ-1"
-      ],
+      "summary": "Expand Secretary routing to handle proposals.",
+      "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add backend getStakingInfo query and read-only staking UI",
+  "projectName": "Connect proposals to backend, add staking & governance UI, and expand Secretary routing to proposals",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,33 +1,126 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Read-only staking info UI on Profile page (getStakingInfo)",
+  "title": "Frontend wiring for proposals, staking, governance UI, and Secretary proposal deep-links",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add a Profile-page staking section that queries getStakingInfo via a React Query hook and renders formatted read-only staking balances with loading and empty states.",
+      "id": "REQ-1",
+      "summary": "Ensure Proposals list/detail React Query hooks use real canister calls (no placeholder data) and preserve existing loading/empty/error UI behavior with English user-facing errors.",
       "acceptanceCriteria": [
-        "A React Query hook exists to fetch staking info from the backend getStakingInfo method (identity-scoped caching, consistent with existing query patterns).",
-        "The Profile page renders a Staking section card (read-only) showing the four staking fields formatted with the existing token amount formatter.",
-        "While the query is loading, the staking section shows a loading indicator.",
-        "When the backend returns null, the staking section shows an English empty-state message indicating no staking record is available.",
-        "No stake/unstake actions or inputs are present in the staking UI."
+        "Frontend proposals queries resolve to real canister calls and the existing Proposals list renders with data returned from the backend.",
+        "Proposal detail dialog opens and displays details for a selected proposal using backend-provided data.",
+        "All user-facing errors remain in English and use existing error handling patterns (e.g., userFacingError mapping)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useStakingInfo.ts",
-          "operation": "create",
-          "description": "Create a dedicated React Query hook (patterned after existing identity-scoped hooks like useWspBalance) that calls the actor's getStakingInfo capability and uses an identity-scoped queryKey to prevent cross-user cache leaks. Use core-infrastructure actor wiring via useActor. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Harden proposals query hooks (useGetAllProposals/useGetProposal) to rely strictly on canister calls when actor is available (no placeholder/stub fallbacks), and map thrown errors through the existing user-facing English error patterns. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
+          "operation": "modify",
+          "description": "Ensure the detail dialog’s live proposal fetch preserves current loading state behavior while handling canister-call failures gracefully in English (consistent with existing patterns). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Connect staking UI mutations to real canister calls and ensure successful stake/unstake refreshes staking info and WSP balance with friendly English errors.",
+      "acceptanceCriteria": [
+        "useStake and useUnstake mutations perform real canister calls and no longer throw 'not yet implemented in backend' errors.",
+        "After a successful stake/unstake, the staking info and WSP balance queries invalidate and the UI refreshes to the updated values.",
+        "Staking operations enforce basic validation (e.g., cannot stake more than available, cannot unstake more than staked) and surface user-friendly English error messages on failure."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useStakingMutations.ts",
+          "operation": "modify",
+          "description": "Replace placeholder stake/unstake implementations with real actor.stake(amount) and actor.unstake(amount) calls; interpret ok/err results, map failures via getUserFacingError, and keep existing query invalidation for stakingInfo and wspBalance. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/profile/components/StakingSection.tsx",
           "operation": "modify",
-          "description": "Update the StakingSection to fetch staking info using the new getStakingInfo hook (instead of the existing getCallerStakingRecord hook), keep the read-only Card UI, keep/ensure a loading spinner state, and adjust the empty-state copy to clearly state that no staking record is available. Ensure no stake/unstake actions or inputs are added. Uses shadcn-ui Card for the section container; verify the component's usage instructions before implementing."
+          "description": "Align UI error/success behavior with the updated staking hooks, ensuring English messages and consistent handling for validation vs. canister-call failures. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add governance proposals UI (create, list, detail, vote) using authenticated canister calls and existing design system patterns, accessible from an existing navigation entry point.",
+      "acceptanceCriteria": [
+        "Frontend provides a governance proposals list with loading/empty/error states and a detail view for a selected governance proposal.",
+        "Frontend provides a create-governance-proposal flow with title/description inputs and clear success/failure feedback in English.",
+        "Frontend provides voting controls (approve/reject) and reflects updated tallies/status after voting via query invalidation/refetch.",
+        "Non-authenticated users are prompted to log in (or see an appropriate auth-required state) before creating/voting."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useGovernanceProposals.ts",
+          "operation": "create",
+          "description": "Create React Query hooks for governance: list proposals, get proposal details, create proposal, and vote; enforce identity/actor availability for authenticated actions; on success invalidate/refetch relevant governance queries and use English user-facing error mapping. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/GovernanceSection.tsx",
+          "operation": "create",
+          "description": "Implement a Profile page Governance section that lists governance proposals with loading/empty/error states and opens detail/create dialogs; reuse shadcn-ui Card, Dialog, Badge, Button patterns. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
+          "operation": "create",
+          "description": "Add a governance proposal detail dialog showing description, status, tallies, and vote controls (approve/reject) with authenticated gating and query invalidation on vote. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
+          "operation": "create",
+          "description": "Add a create-governance-proposal dialog with title/description inputs, submit pending state, and clear English success/failure feedback; uses authenticated canister calls and invalidates governance lists after create. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Ensure the Profile page renders the StakingSection card in the profile layout (wired into the page content so it is reachable during normal navigation), without introducing any staking actions/inputs. Verify the component's usage instructions before implementing."
+          "description": "Wire the new GovernanceSection into the Profile page as a new card/section (no orphan components) and ensure the section is reachable for authenticated users. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Register a Secretary navigation destination for governance that navigates to the Profile page and scrolls to the governance section; keep base-path-safe navigation consistent with existing registry patterns. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/uiCopy.ts",
+          "operation": "modify",
+          "description": "Add English UI copy strings for governance list/detail/create/vote states (titles, empty/error/loading, success/failure, auth-required prompts) and reuse across the new governance components. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Extend Secretary navigation to support proposals destination and deep-linking to open a specific proposal detail dialog by identifier/name, with graceful not-found handling.",
+      "acceptanceCriteria": [
+        "Secretary navigation includes a destination for proposals and can trigger navigation to the proposals view using the existing navigation registry/keyword matching approach.",
+        "When the Secretary emits a navigation event targeting a specific proposal, the Proposals UI opens the proposal detail dialog for that proposal (when it exists in the loaded dataset).",
+        "If the requested proposal is not found, the UI fails gracefully (no crash) and remains on the proposals page with an English error/toast/message consistent with existing patterns.",
+        "No changes are made to immutable frontend paths; Secretary routing changes are implemented in editable modules that compose existing hooks/components."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/secretaryNavigation.ts",
+          "operation": "modify",
+          "description": "Expand deep-link creation/parsing to support proposals destinations with an optional proposal identifier/name payload (in addition to section-only IDs), while preserving existing keyword matching. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/secretaryProjectNavigation.ts",
+          "operation": "modify",
+          "description": "Extend the Secretary project navigation payload shape (as needed) to carry a proposal identifier/name for proposal deep-link/open behaviors, keeping event-based navigation as the integration point. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
+          "operation": "modify",
+          "description": "Update Secretary navigation event handling to: (1) support lookup by proposal identifier/name, (2) open the proposal detail dialog when found, and (3) show an English toast/message on not-found while staying on the proposals section (no crash). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire deep-link handling on app load/navigation so proposal deep-links navigate to the proposals section and emit the existing project-navigation event to trigger opening the correct proposal detail dialog. Verify the component's usage instructions before implementing."
         }
       ]
     }

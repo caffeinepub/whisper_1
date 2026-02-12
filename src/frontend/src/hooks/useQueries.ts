@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
+import { getUserFacingError } from '@/utils/userFacingError';
 import type { UserProfile, Proposal, UserRole, USHierarchyLevel, USState, USCounty, USPlace, StakingRecord } from '@/backend';
 
 export function useGetCallerUserProfile() {
@@ -63,8 +64,12 @@ export function useGetAllProposals() {
   return useQuery<[string, Proposal][]>({
     queryKey: ['proposals'],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllProposals();
+      if (!actor) throw new Error('Actor not available');
+      try {
+        return await actor.getAllProposals();
+      } catch (error: any) {
+        throw new Error(getUserFacingError(error));
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -77,7 +82,11 @@ export function useGetProposal(instanceName: string | null) {
     queryKey: ['proposal', instanceName],
     queryFn: async () => {
       if (!actor || !instanceName) return null;
-      return actor.getProposal(instanceName);
+      try {
+        return await actor.getProposal(instanceName);
+      } catch (error: any) {
+        throw new Error(getUserFacingError(error));
+      }
     },
     enabled: !!actor && !isFetching && !!instanceName,
   });
@@ -93,22 +102,22 @@ export function useGetTopIssuesForLocation(
   return useQuery<string[]>({
     queryKey: ['topIssues', locationLevel, locationId],
     queryFn: async () => {
-      if (!actor || !locationLevel) return [];
-      return actor.getTopIssuesForLocation(locationLevel, locationId);
+      // Backend method not yet implemented - return empty array
+      return [];
     },
     enabled: !!actor && !isFetching && !!locationLevel && enabled,
   });
 }
 
-// New query hooks for Step 1: Geography by ID endpoints
+// Geography by ID hooks - backend methods not yet implemented
 export function useGetStateById(stateId: string | null) {
   const { actor, isFetching } = useActor();
 
   return useQuery<USState | null>({
     queryKey: ['state', stateId],
     queryFn: async () => {
-      if (!actor || !stateId) return null;
-      return actor.getStateById(stateId);
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!stateId,
   });
@@ -120,8 +129,8 @@ export function useGetCountyById(countyId: string | null) {
   return useQuery<USCounty | null>({
     queryKey: ['county', countyId],
     queryFn: async () => {
-      if (!actor || !countyId) return null;
-      return actor.getCountyById(countyId);
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!countyId,
   });
@@ -133,14 +142,14 @@ export function useGetCityById(cityId: string | null) {
   return useQuery<USPlace | null>({
     queryKey: ['city', cityId],
     queryFn: async () => {
-      if (!actor || !cityId) return null;
-      return actor.getCityById(cityId);
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!cityId,
   });
 }
 
-// Staking query hooks for Step 1
+// Staking query hooks
 export function useGetCallerStakingRecord() {
   const { actor, isFetching: actorFetching } = useActor();
   const { identity } = useInternetIdentity();

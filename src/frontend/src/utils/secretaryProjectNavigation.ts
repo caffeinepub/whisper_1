@@ -1,7 +1,8 @@
 // Event-based navigation signaling for Secretary-to-project flow
 
 export interface SecretaryProjectNavigationPayload {
-  proposalName: string;
+  proposalName?: string;
+  proposalId?: string;
   category?: string;
   origin?: 'standard' | 'chat';
 }
@@ -11,6 +12,7 @@ export const SECRETARY_PROJECT_NAVIGATION_EVENT = 'secretary:navigate-to-project
 /**
  * Signal project navigation with optional origin flag to mark Secretary-triggered actions.
  * The origin flag is used downstream to show 'chat' toast variants when applicable.
+ * Now supports both proposalName and proposalId for flexible navigation.
  */
 export function signalProjectNavigation(payload: SecretaryProjectNavigationPayload) {
   const event = new CustomEvent<SecretaryProjectNavigationPayload>(

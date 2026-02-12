@@ -1,6 +1,6 @@
 /**
  * Normalizes errors into user-facing English messages.
- * Handles authorization, geography, proposal, task, contribution, and WSP token operation errors.
+ * Handles authorization, geography, proposal, task, contribution, WSP token operation, and staking errors.
  */
 export function getUserFacingError(error: any): string {
   if (!error) return 'An unexpected error occurred';
@@ -53,6 +53,14 @@ export function getUserFacingError(error: any): string {
     if (error.includes('Insufficient balance')) return 'Insufficient token balance';
     if (error.includes('Only admins can mint')) return 'Only admins can mint tokens';
     if (error.includes('Only admins can burn')) return 'Only admins can burn tokens';
+
+    // Staking errors
+    if (error.includes('not yet implemented') || error.includes('not implemented')) {
+      return 'Staking functionality is coming soon';
+    }
+    if (error.includes('Insufficient staked balance')) return 'Insufficient staked balance';
+    if (error.includes('Cannot unstake locked')) return 'Cannot unstake locked tokens';
+    if (error.includes('Staking period not complete')) return 'Staking period has not completed yet';
 
     // Return the original error if no pattern matches
     return error;

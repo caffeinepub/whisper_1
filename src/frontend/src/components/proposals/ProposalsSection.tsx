@@ -8,6 +8,7 @@ import { useGetAllProposals } from '@/hooks/useQueries';
 import { formatProposalGeography } from '@/lib/formatProposalGeography';
 import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { listenForProjectNavigation, type SecretaryProjectNavigationPayload } from '@/utils/secretaryProjectNavigation';
+import { toast } from 'sonner';
 import { uiCopy } from '@/lib/uiCopy';
 import type { Proposal } from '@/backend';
 
@@ -20,12 +21,23 @@ export function ProposalsSection() {
   // Listen for Secretary navigation events
   useEffect(() => {
     const cleanup = listenForProjectNavigation((payload: SecretaryProjectNavigationPayload) => {
-      // Find the proposal by name
-      const proposal = proposals?.find(([name]) => name === payload.proposalName);
+      // Find the proposal by name or ID
+      let proposal: [string, Proposal] | undefined;
+      
+      if (payload.proposalName) {
+        proposal = proposals?.find(([name]) => name === payload.proposalName);
+      } else if (payload.proposalId) {
+        proposal = proposals?.find(([name]) => name === payload.proposalId);
+      }
+      
       if (proposal) {
         setSelectedProposal(proposal[1]);
         setAutoOpenCategory(payload.category);
         setDialogOpen(true);
+      } else {
+        // Proposal not found - show friendly error
+        const identifier = payload.proposalName || payload.proposalId || 'unknown';
+        toast.error(`Proposal "${identifier}" not found. It may have been removed or does not exist.`);
       }
     });
 

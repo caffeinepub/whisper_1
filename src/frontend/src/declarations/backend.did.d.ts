@@ -47,6 +47,7 @@ export interface GovernanceProposal {
   'id' : bigint,
   'status' : GovernanceProposalStatus,
   'title' : string,
+  'votes' : GovernanceVotes,
   'createdAt' : bigint,
   'description' : string,
   'proposer' : Principal,
@@ -56,6 +57,15 @@ export type GovernanceProposalStatus = { 'active' : null } |
   { 'approved' : null } |
   { 'rejected' : null } |
   { 'executed' : null };
+export interface GovernanceVote {
+  'voter' : Principal,
+  'approve' : boolean,
+  'timestamp' : bigint,
+}
+export interface GovernanceVotes {
+  'tally' : { 'approved' : bigint, 'rejected' : bigint },
+  'votes' : Array<GovernanceVote>,
+}
 export type HierarchicalGeoId = string;
 export type LogContributionEventError = { 'referenceIdEmpty' : null } |
   { 'referenceIdRequired' : null } |
@@ -73,12 +83,6 @@ export interface Proposal {
   'county' : string,
   'censusBoundaryId' : string,
   'population2020' : string,
-}
-export interface SecretaryCategorySuggestion {
-  'statesByGeoId' : Array<USState>,
-  'searchTerm' : string,
-  'locationLevel' : USHierarchyLevel,
-  'proposedCategories' : Array<string>,
 }
 export interface StakingRecord {
   'availableBalance' : bigint,
@@ -181,10 +185,6 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addContributionPoints' : ActorMethod<[bigint, string, string], undefined>,
-  'addOrUpdateLocationBasedIssues' : ActorMethod<
-    [USHierarchyLevel, [] | [string], Array<string>],
-    undefined
-  >,
   'adminBurnWSP' : ActorMethod<
     [Principal, bigint],
     { 'ok' : null } |
@@ -205,23 +205,10 @@ export interface _SERVICE {
   >,
   'adminMintWSP' : ActorMethod<[Principal, bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'backend_getIssueCategoriesByHierarchyLevel' : ActorMethod<
-    [USHierarchyLevel, [] | [string]],
-    Array<string>
-  >,
-  'backend_getUSCountyByHierarchicalId' : ActorMethod<
-    [string],
-    [] | [USCounty]
-  >,
-  'backend_getUSPlaceByHierarchicalId' : ActorMethod<[string], [] | [USPlace]>,
-  'backend_getUSStateByHierarchicalId' : ActorMethod<[string], [] | [USState]>,
   'createTask' : ActorMethod<[string, string], bigint>,
   'deleteProposal' : ActorMethod<[string], boolean>,
   'getAdminModerationQueue' : ActorMethod<[], Array<[string, Proposal]>>,
-  'getAllCityComplaintCategories' : ActorMethod<[], Array<string>>,
-  'getAllCountyComplaintCategories' : ActorMethod<[], Array<string>>,
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
-  'getAllStateComplaintCategories' : ActorMethod<[], Array<string>>,
   'getAllStates' : ActorMethod<[], Array<USState>>,
   'getCallerContributionHistory' : ActorMethod<
     [bigint],
@@ -231,34 +218,16 @@ export interface _SERVICE {
   'getCallerStakingRecord' : ActorMethod<[], [] | [StakingRecord]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCityById' : ActorMethod<[string], [] | [USPlace]>,
-  'getCityComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getContributionCriteria' : ActorMethod<
     [],
     Array<[string, ContributionCriteria]>
   >,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
-  'getCountyById' : ActorMethod<[string], [] | [USCounty]>,
-  'getCountyComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getPlacesForState' : ActorMethod<[GeoId], Array<USPlace>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
-  'getSecretaryCategorySuggestion' : ActorMethod<
-    [string, USHierarchyLevel],
-    SecretaryCategorySuggestion
-  >,
-  'getSecretaryCategorySuggestions' : ActorMethod<
-    [string, USHierarchyLevel],
-    Array<string>
-  >,
   'getStakingInfo' : ActorMethod<[], [] | [StakingRecord]>,
-  'getStateById' : ActorMethod<[string], [] | [USState]>,
-  'getStateComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
-  'getTopIssuesForLocation' : ActorMethod<
-    [USHierarchyLevel, [] | [string]],
-    Array<string>
-  >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserStakingRecord' : ActorMethod<[Principal], [] | [StakingRecord]>,
   'governanceCreateProposal' : ActorMethod<
@@ -298,6 +267,7 @@ export interface _SERVICE {
     [string, ContributionCriteria],
     undefined
   >,
+  'stake' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,
   'submitProposal' : ActorMethod<
     [
       string,
@@ -312,6 +282,7 @@ export interface _SERVICE {
     ],
     SubmitProposalResult
   >,
+  'unstake' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,
   'updateProposalStatus' : ActorMethod<[string, string], boolean>,
   'updateTaskStatus' : ActorMethod<[string, bigint, boolean], boolean>,
 }

@@ -3,118 +3,84 @@
  * Produces assistant messages and UI state, calls existing canister actor capabilities.
  */
 
-import type {
-  SecretaryContext,
-  NodeId,
-  Action,
-  NodeViewModel,
-  FlowEvent,
-  FlowEventListener,
-} from './types';
+import type { SecretaryContext, NodeId, NodeViewModel, Action } from './types';
 import { nodeDefinitions, transitions } from './flows';
-import { addMessage, resetDiscoveryState, resetReportIssueState } from '../state/secretaryContext';
-import { decideReportIssueNextNode } from '../decisions/secretaryDecisions';
+import { secretaryCopy } from '../copy/secretaryCopy';
 import { createEmptySlotBag } from '../intent/slotState';
 import type { backendInterface } from '@/backend';
 
-/**
- * Flow runner manages state transitions and produces view models
- */
+export type FlowRunnerListener = (viewModel: NodeViewModel) => void;
+
 export class FlowRunner {
   private context: SecretaryContext;
   private actor: backendInterface | null;
-  private listeners: FlowEventListener[] = [];
+  private listeners: Set<FlowRunnerListener> = new Set();
 
-  constructor(context: SecretaryContext, actor: backendInterface | null) {
+  constructor(actor: backendInterface | null, context: SecretaryContext) {
+    this.actor = actor;
     this.context = context;
-    this.actor = actor;
   }
 
-  /**
-   * Update actor reference
-   */
-  setActor(actor: backendInterface | null): void {
-    this.actor = actor;
+  addListener(listener: FlowRunnerListener): void {
+    this.listeners.add(listener);
   }
 
-  /**
-   * Register a flow event listener
-   */
-  addListener(listener: FlowEventListener): void {
-    this.listeners.push(listener);
+  removeListener(listener: FlowRunnerListener): void {
+    this.listeners.delete(listener);
   }
 
-  /**
-   * Remove a flow event listener
-   */
-  removeListener(listener: FlowEventListener): void {
-    this.listeners = this.listeners.filter((l) => l !== listener);
+  private notifyListeners(viewModel: NodeViewModel): void {
+    this.listeners.forEach((listener) => listener(viewModel));
   }
 
-  /**
-   * Emit a flow event to all listeners
-   */
-  private emitEvent(event: FlowEvent): void {
-    this.listeners.forEach((listener) => listener(event));
-  }
-
-  /**
-   * Get the current context (for external inspection)
-   */
-  getContext(): SecretaryContext {
-    return this.context;
-  }
-
-  /**
-   * Get the current node view model
-   */
-  getViewModel(): NodeViewModel {
-    const node = nodeDefinitions[this.context.currentNode];
-    if (!node) {
-      console.error(`Unknown node: ${this.context.currentNode}`);
+  getCurrentViewModel(): NodeViewModel {
+    const currentNode = nodeDefinitions[this.context.currentNode];
+    if (!currentNode) {
+      console.error(`Node ${this.context.currentNode} not found`);
       return this.getDefaultViewModel();
     }
-    return node.getViewModel(this.context);
+    return currentNode.getViewModel(this.context);
   }
 
-  /**
-   * Get a default fallback view model
-   */
+  getViewModel(): NodeViewModel {
+    return this.getCurrentViewModel();
+  }
+
   private getDefaultViewModel(): NodeViewModel {
     return {
-      assistantMessages: ['Something went wrong. Please return to the menu.'],
+      assistantMessages: [],
       showTextInput: false,
       showTypeahead: false,
-      buttons: [
-        {
-          label: 'Back to Menu',
-          action: { type: 'back-to-menu' },
-          variant: 'outline',
-        },
-      ],
+      buttons: [],
       showTopIssues: false,
       showSuggestions: false,
     };
   }
 
-  /**
-   * Handle an action and transition to the next node
-   */
-  async handleAction(action: Action): Promise<void> {
-    this.emitEvent({
-      type: 'action-taken',
-      action,
-      timestamp: Date.now(),
-    });
+  async handleInput(userText: string): Promise<void> {
+    // Input handling is delegated to the brain
+    console.warn('handleInput called on FlowRunner - should be handled by brain');
+  }
 
+  async handleAction(action: Action): Promise<void> {
+    const currentNodeId = this.context.currentNode;
+    
     // Find matching transition
     const transition = transitions.find(
-      (t) => t.from === this.context.currentNode && t.action === action.type
+      (t) => t.from === currentNodeId && t.action === action.type
     );
 
     if (!transition) {
-      console.warn(`No transition found for action ${action.type} from node ${this.context.currentNode}`);
+      console.warn(`No transition found for action ${action.type} from node ${currentNodeId}`);
       return;
+    }
+
+    // Determine target node
+    let targetNodeId: NodeId;
+    if (typeof transition.to === 'function') {
+      targetNodeId = transition.to(this.context, action.payload);
+    } else {
+      targetNodeId = transition.to;
     }
 
     // Check guard if present
@@ -122,111 +88,39 @@ export class FlowRunner {
       return;
     }
 
-    // Determine next node
-    const nextNode =
-      typeof transition.to === 'function'
-        ? transition.to(this.context, action.payload)
-        : transition.to;
+    await this.transitionTo(targetNodeId);
+  }
 
-    // Exit current node
+  private async transitionTo(targetNodeId: NodeId): Promise<void> {
+    const targetNode = nodeDefinitions[targetNodeId];
+    if (!targetNode) {
+      console.error(`Node ${targetNodeId} not found`);
+      return;
+    }
+
+    // Execute onExit hook if present
     const currentNode = nodeDefinitions[this.context.currentNode];
     if (currentNode?.onExit) {
       await currentNode.onExit(this.context);
     }
 
-    // Update context
-    this.context.currentNode = nextNode;
+    // Update current node
+    this.context.currentNode = targetNodeId;
 
-    // Enter new node
-    const newNode = nodeDefinitions[nextNode];
-    if (newNode?.onEnter) {
-      await newNode.onEnter(this.context);
+    // Execute onEnter hook if present
+    if (targetNode.onEnter) {
+      await targetNode.onEnter(this.context);
     }
 
-    this.emitEvent({
-      type: 'node-entered',
-      nodeId: nextNode,
-      timestamp: Date.now(),
-    });
-
-    // Handle special node logic
-    await this.handleNodeSpecialLogic(nextNode);
+    const viewModel = this.getCurrentViewModel();
+    this.notifyListeners(viewModel);
   }
 
-  /**
-   * Handle special logic for certain nodes (e.g., loading data)
-   */
-  private async handleNodeSpecialLogic(nodeId: NodeId): Promise<void> {
-    switch (nodeId) {
-      case 'menu':
-        // Reset all flow state when returning to menu
-        resetDiscoveryState(this.context);
-        resetReportIssueState(this.context);
-        this.context.slots = createEmptySlotBag();
-        this.context.activeIntent = null;
-        break;
-
-      case 'report-loading':
-        // Auto-load report issue data
-        await this.loadReportIssueData();
-        break;
-    }
+  getContext(): SecretaryContext {
+    return this.context;
   }
 
-  /**
-   * Load report issue data and transition to appropriate node
-   */
-  private async loadReportIssueData(): Promise<void> {
-    if (!this.actor) {
-      addMessage(this.context, 'assistant', 'Unable to load data. Please try again.');
-      await this.handleAction({ type: 'back-to-menu' });
-      return;
-    }
-
-    try {
-      const { reportIssueGeographyLevel, reportIssueGeographyId } = this.context;
-
-      if (reportIssueGeographyLevel && reportIssueGeographyId) {
-        // Fetch top issues
-        const issues = await this.actor.getTopIssuesForLocation(
-          reportIssueGeographyLevel,
-          reportIssueGeographyId
-        );
-
-        this.context.reportIssueTopIssues = issues.slice(0, 50);
-
-        // Decide next node based on whether we have issues
-        const nextNode = decideReportIssueNextNode(this.context);
-
-        if (nextNode === 'report-top-issues') {
-          addMessage(
-            this.context,
-            'assistant',
-            'Here are the most common issues in your area. Select one or describe something else:'
-          );
-        } else {
-          addMessage(
-            this.context,
-            'assistant',
-            'No common issues have been recorded for this location yet. Please describe your issue:'
-          );
-        }
-
-        // Transition to the decided node
-        this.context.currentNode = nextNode;
-        const node = nodeDefinitions[nextNode];
-        if (node?.onEnter) {
-          await node.onEnter(this.context);
-        }
-      } else {
-        // No geography, go straight to description
-        addMessage(this.context, 'assistant', 'Please describe the issue you\'d like to report:');
-        this.context.currentNode = 'report-collect-description';
-      }
-    } catch (error) {
-      console.error('Error loading report issue data:', error);
-      addMessage(this.context, 'assistant', 'I\'m having trouble loading issue data. Please try again.');
-      await this.handleAction({ type: 'back-to-menu' });
-    }
+  setActor(actor: backendInterface | null): void {
+    this.actor = actor;
   }
 }
