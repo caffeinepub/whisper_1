@@ -1,89 +1,47 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T02:25:48.245Z",
-  "summary": "Frontend additions cover WSP balance querying hook, token amount formatting, a staking UI section (localStorage), and an admin Token Operations UI with React Query mutations. Backend diff shows a migration adding `invalidated` to contribution log entries and adds governance types, but the diff summary does not provide evidence of the core embedded ICRC-1 ledger implementation, contribution-event-driven minting, admin mint/burn backend methods, burn/slash auditing, or governance stub methods.",
+  "generatedAt": "2026-02-12T03:22:49.313Z",
+  "summary": "Diff adds a new backend/migration.mo and wires migration into backend/main.mo, but the diff summary does not show implementation of the required read-only staking query methods nor clear upgrade-safe initialization/restore of staking state for older deployments. It also introduces unrelated governance proposal type stubs and updates project_state.json, neither of which are requested by the BuildRequest.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Implement an embedded ICRC-1-style token ledger for WSP inside the backend single actor (persistent balances, total supply, and public methods name/symbol/decimals, total_supply, balance_of, transfer).",
-      "reason": "Frontend calls `actor.icrc1_balance_of(...)`, but the backend diff summary (truncated) does not show any ICRC-1 ledger state (balances map / total supply) nor the required public methods (`icrc1_name`, `icrc1_symbol`, `icrc1_decimals`, `icrc1_total_supply`, `icrc1_balance_of`, `icrc1_transfer`) or transfer validation/error result types.",
+      "requirement": "Add read-only backend query methods for staking records: (1) caller’s staking record gated by existing #user permission check; (2) staking record for arbitrary Principal allowed only for self or admin, otherwise trap with Unauthorized (English). Queries must be strictly read-only and return null/empty/default when unset.",
+      "reason": "The provided backend/main.mo diff snippet does not show any new public query methods for staking records, nor any permission gating or Unauthorized traps in English related to staking queries. No staking record storage accessors are visible in the truncated section.",
       "evidence": [
-        "frontend/src/hooks/useWspBalance.ts",
-        "backend/main.mo (truncated)"
+        "backend/main.mo"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Mint WSP for valid (non-duplicate) contribution events with deterministic conversion, idempotent with duplicate-prevention.",
-      "reason": "The diff summary does not show backend logic connecting accepted contribution events to minting WSP or any documented conversion rule in code comments. The modified frontend contribution logger handles duplicates client-side, but does not establish backend minting behavior.",
-      "evidence": [
-        "frontend/src/hooks/useContributionEventLogger.ts (truncated)",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Add admin-only burn/slash/invalidation pathway that burns corresponding WSP (up to available balance), and store an auditable record/log of slashing/invalidation actions.",
-      "reason": "A migration adds `invalidated : Bool` to contribution log entries, but the diff summary does not show any admin-only backend method to invalidate/slash, any WSP burn accounting tied to invalidation, nor any auditable slashing record. Frontend includes admin burn hook/UI calling `adminBurnWSP`, but backend implementation and audit logging are not evidenced.",
+      "requirement": "Ensure upgrade-safe persistence for staking state so staking records are persisted/restored correctly and older deployments upgrade with staking state initialized to empty/defaults (without regressing existing state).",
+      "reason": "backend/migration.mo defines OldActor/NewActor as both requiring stakingRecords and returns old unchanged. This does not demonstrate handling upgrades from older deployments that lack stakingRecords, nor explicit initialization to empty/defaults. The truncated main.mo snippet also does not show stakingRecords being stored as stable state or included in preupgrade/postupgrade persistence.",
       "evidence": [
         "backend/migration.mo",
-        "frontend/src/hooks/useAdminWspTokenOperations.ts",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Add governance stubs in backend (types plus placeholder methods such as createProposal, vote, listProposals) that deterministically return 'not implemented' and do not mutate state unexpectedly.",
-      "reason": "Backend diff shows governance types (`GovernanceProposal`, `GovernanceProposalStatus`) but does not show any placeholder governance methods or their deterministic 'not implemented' behavior.",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Expose admin-gated backend methods to mint/burn WSP (reject non-admins) and have Admin UI invoke them with success/failure feedback and cache invalidation.",
-      "reason": "Frontend adds Admin UI and hooks calling `actor.adminMintWSP`/`actor.adminBurnWSP` and invalidates queries, but the backend diff summary does not show these admin-only methods or their authorization checks / supply+balance updates.",
-      "evidence": [
-        "frontend/src/hooks/useAdminWspTokenOperations.ts",
-        "frontend/src/pages/admin/components/TokenOperationsSection.tsx (truncated)",
-        "backend/main.mo (truncated)"
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Large set of frontend documentation, styling, routing, geography/proposal/task-related changes not requested by Phase 3 WSP token accounting/mint-burn/staking/admin-controls scope.",
-      "reason": "The BuildRequest focuses on WSP embedded ledger, mint/burn, staking UI fields, governance stubs, WSP balance on Profile, and admin token operations. The diff summary indicates substantial unrelated additions/changes (docs, Tailwind/theme, App routing/base-path navigation, geography hooks, create-instance/proposals/task hooks/components).",
+      "description": "Governance proposal types/stubs added to backend/main.mo.",
+      "reason": "BuildRequest non-goals explicitly exclude governance voting logic; adding governance proposal type definitions is not requested for this phase.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Client-side contribution logging dedupe registries and optimistic/UX behavior changes beyond the requested backend minting idempotence requirement.",
-      "reason": "REQ-2 asks for backend idempotent minting tied to duplicate-prevention. The diff adds new client-side dedupe registries and duplicate-tolerant behavior in the logging hook, which was not explicitly requested.",
+      "description": "project_state.json updated to add tracking entries AR-1/AR-2.",
+      "reason": "BuildRequest does not request modifications to project_state.json; this appears to be internal tracking metadata rather than required functionality.",
       "evidence": [
-        "frontend/src/hooks/useContributionEventLogger.ts (truncated)"
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
-    "frontend-file-summaries.txt",
-    "frontend/src/hooks/useAdminWspTokenOperations.ts",
-    "frontend/src/hooks/useContributionEventLogger.ts",
-    "frontend/src/hooks/useCreateInstanceProposal.ts",
-    "frontend/src/hooks/useIssueProjectTasks.ts",
-    "frontend/src/hooks/useWspBalance.ts",
-    "frontend/src/lib/formatTokenAmount.ts",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/admin/AdminModerationPage.tsx",
-    "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-    "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
-    "frontend/src/pages/profile/components/StakingSection.tsx",
-    "frontend/src/utils/userFacingError.ts",
     "project_state.json"
   ]
 }

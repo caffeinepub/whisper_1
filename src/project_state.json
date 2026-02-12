@@ -1,115 +1,30 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement Phase 3 WSP Economic Layer (Soft Launch): introduce WSP ICRC-1 tokenization of contribution points with mint/burn logic, UI profile staking fields, governance stubs, balances UI, and admin-only token controls (test mode).",
-  "architectural_notes": [
-    "Phase 3 uses a placeholder ICRC-1 ledger implementation inside the application/canister; real on-chain WSP deployment can be activated later."
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [
-    {
-      "id": "feature-update-the-profile-page-ui-to-show-basic-wsp-token-balance-sourced-from-the-backend-ledger-and-display-it-alongside-existing-contribution-points",
-      "title": "Update the Profile page UI to show basic WSP token balance sourced from the backend ledger, and display it alongside existing contribution points.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-staking-fields-to-user-profiles-on-the-frontend-only-no-backend-persistence-required-including-inputs-and-basic-client-side-validation",
-      "title": "Add staking fields to user profiles on the frontend only (no backend persistence required), including inputs and basic client-side validation.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-admin-only-token-operations-controls-test-mode-to-the-existing-admin-area-ui-including-the-ability-to-mint-and-burn-wsp-for-a-specified-principal-backed-by-admin-gated-backend-methods",
-      "title": "Add admin-only token operations controls (test mode) to the existing Admin area UI, including the ability to mint and burn WSP for a specified principal, backed by admin-gated backend methods.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Convert contribution points into an ICRC-1 token (WSP)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add mint logic for valid contribution events (WSP)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add burn logic for slashing/invalidated events (WSP)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add staking fields to user profiles (front-end only)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Add governance stubs for future DAO proposals",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add basic on-chain token balances to profile UI",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Add admin-only controls for token operations (test mode)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Implement an embedded ICRC-1-style token ledger for WSP inside the existing backend single actor, including persistent balances, total supply, and the core public query/update methods needed to read balances and perform transfers.",
+      "summary": "Add read-only backend query methods for staking records without changing existing user profile APIs: (1) a query that returns the caller’s staking record (returning null/empty/default when unset) and is gated by the existing #user permission check; (2) a query that returns a staking record for an arbitrary Principal, allowed only when the caller is that Principal or the caller is an admin, otherwise trap with an Unauthorized error message in English.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-9",
-      "summary": "Add minting logic that mints WSP for valid contribution events, ensuring minting is idempotent with existing duplicate-prevention for contribution events.",
+      "id": "AR-2",
+      "summary": "Ensure canister upgrades remain safe after adding staking state by updating the existing upgrade persistence mechanism (preupgrade/postupgrade and/or backend/migration.mo per the current codebase pattern) so staking records are persisted and restored correctly, and older deployments can upgrade with staking state initialized to empty/defaults.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Add burn logic to support slashing/invalidated contribution events, including a backend pathway to mark events invalidated and burn the corresponding WSP from the contributor when applicable.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-11",
-      "summary": "Add governance stubs in the backend for future DAO proposals, including types and placeholder methods that compile and can be safely called but clearly indicate \"not implemented\" behavior.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
     }
   ],
-  "projectName": "Phase 3: Add WSP ICRC-1 token accounting, mint/burn, staking UI fields, governance stubs, balances UI, and admin token controls",
+  "projectName": "Phase 4 Staking: Add read-only staking queries and upgrade-safe persistence",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

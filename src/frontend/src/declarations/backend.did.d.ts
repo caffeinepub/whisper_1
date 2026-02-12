@@ -80,6 +80,12 @@ export interface SecretaryCategorySuggestion {
   'locationLevel' : USHierarchyLevel,
   'proposedCategories' : Array<string>,
 }
+export interface StakingRecord {
+  'availableBalance' : bigint,
+  'pendingRewards' : bigint,
+  'lockedBalance' : bigint,
+  'totalStaked' : bigint,
+}
 export type SubmitProposalResult = { 'error' : { 'message' : string } } |
   { 'success' : { 'proposal' : Proposal } };
 export interface Task {
@@ -222,6 +228,7 @@ export interface _SERVICE {
     Array<ContributionLogEntry>
   >,
   'getCallerContributionSummary' : ActorMethod<[], ContributionSummary>,
+  'getCallerStakingRecord' : ActorMethod<[], [] | [StakingRecord]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCityById' : ActorMethod<[string], [] | [USPlace]>,
@@ -252,6 +259,7 @@ export interface _SERVICE {
     Array<string>
   >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserStakingRecord' : ActorMethod<[Principal], [] | [StakingRecord]>,
   'governanceCreateProposal' : ActorMethod<
     [string, string],
     { 'ok' : bigint } |

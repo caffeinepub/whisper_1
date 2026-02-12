@@ -1,145 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Phase 3: Add WSP ICRC-1 token accounting, mint/burn, staking UI fields, governance stubs, balances UI, and admin token controls",
+  "title": "Phase 4 Staking: Add read-only staking queries and upgrade-safe persistence",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement an embedded ICRC-1-style token ledger for WSP inside the existing backend single actor, including persistent balances, total supply, and the core public query/update methods needed to read balances and perform transfers.",
+      "text": "Add read-only backend query methods for staking records without changing existing user profile APIs: (1) a query that returns the caller’s staking record (returning null/empty/default when unset) and is gated by the existing #user permission check; (2) a query that returns a staking record for an arbitrary Principal, allowed only when the caller is that Principal or the caller is an admin, otherwise trap with an Unauthorized error message in English.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Run the following steps: Step 15: Convert contribution points into an ICRC‑1 token (WSP) ... Step 20: Add basic on‑chain token balances to profile UI"
+          "Run steps 2 and 3"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes public methods consistent with ICRC-1 basics: name/symbol/decimals, total_supply, balance_of, and transfer (caller-initiated).",
-        "Balances are tracked per Principal and changes persist across calls (and across upgrades if stable state already exists or via conditional migration if required).",
-        "Transfers validate sufficient balance, reject invalid amounts, and return a clear success/error result type (no silent failures)."
+        "When the caller lacks #user permission, the caller-staking query traps with an Unauthorized message in English.",
+        "When the caller has #user permission and has no staking record stored, the caller-staking query returns a null/empty/default response (whichever matches the existing frontend expectations).",
+        "When querying staking for an arbitrary Principal: (a) caller==target principal returns the record (or null/empty/default when unset); (b) admin caller returns the record (or null/empty/default when unset); (c) all other callers trap with an Unauthorized message in English.",
+        "No staking/unstaking/reward logic is added; queries are strictly read-only."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add minting logic that mints WSP for valid contribution events, ensuring minting is idempotent with existing duplicate-prevention for contribution events.",
+      "text": "Ensure canister upgrades remain safe after adding staking state by updating the existing upgrade persistence mechanism (preupgrade/postupgrade and/or backend/migration.mo per the current codebase pattern) so staking records are persisted and restored correctly, and older deployments can upgrade with staking state initialized to empty/defaults.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Step 16: Add mint logic for valid contribution events"
+          "Run steps 2 and 3"
         ]
       },
       "acceptanceCriteria": [
-        "When a contribution event is successfully accepted as non-duplicate, WSP is minted to the contributor according to a deterministic conversion rule (documented in code comments).",
-        "Duplicate contribution events do not mint additional WSP.",
-        "Minting updates both the recipient balance and total supply consistently."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add burn logic to support slashing/invalidated contribution events, including a backend pathway to mark events invalidated and burn the corresponding WSP from the contributor when applicable.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Step 17: Add burn logic for slashing or invalidated events"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend provides an admin-only method to slash a user or invalidate a specific contribution log entry, and burns the corresponding WSP amount (or burns up to available balance if the user has already transferred tokens away).",
-        "Slashing/invalidation actions are auditable via a stored record or log entry that can be surfaced to admins.",
-        "Non-admin callers cannot invoke slash/burn operations (must trap or return an authorization error consistent with existing auth patterns)."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add governance stubs in the backend for future DAO proposals, including types and placeholder methods that compile and can be safely called but clearly indicate \"not implemented\" behavior.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Step 19: Add governance stubs for future DAO proposals"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend defines minimal governance types (e.g., proposal, vote, proposal status) and exposes placeholder methods (e.g., createProposal, vote, listProposals) that compile.",
-        "Calling governance stub methods returns a deterministic \"not implemented\" result (or traps with a clear message), without mutating state unexpectedly.",
-        "No UI is required for full governance flows in this build; only backend scaffolding is added."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Update the Profile page UI to show basic WSP token balance sourced from the backend ledger, and display it alongside existing contribution points.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Step 20: Add basic on‑chain token balances to profile UI"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Profile page displays the caller’s WSP balance using a backend call (not derived from cached contribution points).",
-        "UI handles loading and error states gracefully (no crashes, shows a user-friendly error).",
-        "Displayed balances use consistent formatting (e.g., integer if decimals=0, or fixed decimals if decimals>0)."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Add staking fields to user profiles on the frontend only (no backend persistence required), including inputs and basic client-side validation.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Step 18: Add staking fields to user profiles (front‑end only)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Profile page includes a clearly labeled \"Staking\" section with fields such as amount to stake and an optional lock/term selector (front-end only).",
-        "Staking fields do not modify the backend UserProfile type or save payload; they are stored client-side only (e.g., component state or localStorage) and persist across reloads if localStorage is used.",
-        "Client-side validation prevents negative/invalid values and shows English inline validation messages."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Add admin-only token operations controls (test mode) to the existing Admin area UI, including the ability to mint and burn WSP for a specified principal, backed by admin-gated backend methods.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Step 21: Add admin‑only controls for token operations (test mode)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Admin UI shows a \"Token Operations (Test Mode)\" section only when the caller is an admin (consistent with existing admin gating patterns).",
-        "Admin can enter a target principal and an amount, then invoke mint or burn; UI shows success/failure feedback in English.",
-        "Backend exposes admin-only mint/burn methods that update balances and total supply consistently and reject non-admin callers.",
-        "After a successful operation, relevant React Query caches are invalidated/refetched so updated balances are visible (e.g., on Profile or in the admin panel if displayed)."
+        "After an upgrade, existing non-staking state continues to load as before (no regressions).",
+        "After an upgrade, staking records map/state is present and initialized (empty if none existed previously).",
+        "If staking records existed pre-upgrade, they are retained post-upgrade.",
+        "The upgrade path does not introduce new staking logic beyond persistence initialization."
       ]
     }
   ],
   "constraints": [
-    "Backend changes must remain within the existing single-actor architecture in backend/main.mo.",
-    "Do not edit any frontend files under the immutable paths listed in SYSTEM_CONTEXT (compose existing UI components instead).",
-    "Use English for all user-facing UI text added or modified."
+    "Backend must remain a single-actor architecture with all Motoko logic in backend/main.mo (do not introduce additional backend services).",
+    "Use English for any user-facing error text (e.g., Unauthorized traps)."
   ],
   "nonGoals": [
-    "Launching or deploying an external WSP ledger canister on ICP (WSP is implemented as an embedded/placeholder ledger for Phase 3).",
-    "Full DAO governance UI and end-to-end proposal execution (only backend stubs are required).",
-    "Third-party wallet integrations or external token explorers."
+    "Do not implement staking/unstaking actions, locking/terms, reward accrual, or any governance voting logic.",
+    "Do not modify existing user profile APIs or add profile fields as part of Steps 2 and 3."
   ],
   "imageRequirements": {
     "required": [],

@@ -98,6 +98,12 @@ export const ContributionSummary = IDL.Record({
   'totalPoints' : IDL.Nat,
   'contributor' : IDL.Principal,
 });
+export const StakingRecord = IDL.Record({
+  'availableBalance' : IDL.Nat,
+  'pendingRewards' : IDL.Nat,
+  'lockedBalance' : IDL.Nat,
+  'totalStaked' : IDL.Nat,
+});
 export const ProfileImage = IDL.Vec(IDL.Nat8);
 export const TokenBalance = IDL.Record({
   'staked' : IDL.Nat,
@@ -280,6 +286,7 @@ export const idlService = IDL.Service({
       [ContributionSummary],
       ['query'],
     ),
+  'getCallerStakingRecord' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCityById' : IDL.Func([IDL.Text], [IDL.Opt(USPlace)], ['query']),
@@ -332,6 +339,11 @@ export const idlService = IDL.Service({
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
+  'getUserStakingRecord' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(StakingRecord)],
       ['query'],
     ),
   'governanceCreateProposal' : IDL.Func(
@@ -488,6 +500,12 @@ export const idlFactory = ({ IDL }) => {
     'totalTokenPoints' : IDL.Nat,
     'totalPoints' : IDL.Nat,
     'contributor' : IDL.Principal,
+  });
+  const StakingRecord = IDL.Record({
+    'availableBalance' : IDL.Nat,
+    'pendingRewards' : IDL.Nat,
+    'lockedBalance' : IDL.Nat,
+    'totalStaked' : IDL.Nat,
   });
   const ProfileImage = IDL.Vec(IDL.Nat8);
   const TokenBalance = IDL.Record({
@@ -671,6 +689,11 @@ export const idlFactory = ({ IDL }) => {
         [ContributionSummary],
         ['query'],
       ),
+    'getCallerStakingRecord' : IDL.Func(
+        [],
+        [IDL.Opt(StakingRecord)],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCityById' : IDL.Func([IDL.Text], [IDL.Opt(USPlace)], ['query']),
@@ -723,6 +746,11 @@ export const idlFactory = ({ IDL }) => {
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
+    'getUserStakingRecord' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(StakingRecord)],
         ['query'],
       ),
     'governanceCreateProposal' : IDL.Func(

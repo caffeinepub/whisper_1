@@ -1,41 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IconBubble } from '@/components/common/IconBubble';
-import { Coins } from 'lucide-react';
-import { useLocalStorageState } from '@/hooks/useLocalStorageState';
-import { useState } from 'react';
+import { Coins, Loader2 } from 'lucide-react';
+import { useGetCallerStakingRecord } from '@/hooks/useQueries';
+import { formatTokenAmount } from '@/lib/formatTokenAmount';
 
 /**
- * Frontend-only staking UI section with client-side validation and localStorage persistence.
- * Does not modify backend UserProfile; values are stored locally only.
+ * Staking section displaying backend staking data (read-only for Step 1).
+ * Shows total staked, available balance, locked balance, and pending rewards from backend StakingRecord.
  */
 export function StakingSection() {
-  const [stakeAmount, setStakeAmount] = useLocalStorageState<string>('whisper_stake_amount', '');
-  const [lockTerm, setLockTerm] = useLocalStorageState<string>('whisper_lock_term', '30');
-  const [amountError, setAmountError] = useState<string>('');
-
-  const handleAmountChange = (value: string) => {
-    setStakeAmount(value);
-
-    // Client-side validation
-    if (value === '') {
-      setAmountError('');
-      return;
-    }
-
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      setAmountError('Please enter a valid number');
-    } else if (numValue < 0) {
-      setAmountError('Amount cannot be negative');
-    } else if (numValue === 0) {
-      setAmountError('Amount must be greater than zero');
-    } else {
-      setAmountError('');
-    }
-  };
+  const { data: stakingRecord, isLoading } = useGetCallerStakingRecord();
 
   return (
     <Card>
@@ -46,45 +20,45 @@ export function StakingSection() {
           </IconBubble>
           <div>
             <CardTitle>Staking</CardTitle>
-            <CardDescription>Configure your staking preferences (frontend only)</CardDescription>
+            <CardDescription>View your staking information</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="stake-amount">Amount to Stake</Label>
-          <Input
-            id="stake-amount"
-            type="number"
-            min="0"
-            step="1"
-            value={stakeAmount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="Enter amount"
-          />
-          {amountError && (
-            <p className="text-sm text-destructive">{amountError}</p>
-          )}
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : stakingRecord ? (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm font-medium text-muted-foreground">Total Staked</span>
+              <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.totalStaked)} WSP</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm font-medium text-muted-foreground">Available Balance</span>
+              <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.availableBalance)} WSP</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm font-medium text-muted-foreground">Locked Balance</span>
+              <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.lockedBalance)} WSP</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-sm font-medium text-muted-foreground">Pending Rewards</span>
+              <span className="text-sm font-semibold text-accent">{formatTokenAmount(stakingRecord.pendingRewards)} WSP</span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground text-center">
+              No staking record found. Staking functionality coming soon.
+            </p>
+          </div>
+        )}
 
-        <div className="space-y-2">
-          <Label htmlFor="lock-term">Lock Term (Days)</Label>
-          <Select value={lockTerm} onValueChange={setLockTerm}>
-            <SelectTrigger id="lock-term">
-              <SelectValue placeholder="Select lock term" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30">30 days</SelectItem>
-              <SelectItem value="90">90 days</SelectItem>
-              <SelectItem value="180">180 days</SelectItem>
-              <SelectItem value="365">365 days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="bg-muted/50 rounded-lg p-3">
+        <div className="bg-muted/50 rounded-lg p-3 mt-4">
           <p className="text-sm text-muted-foreground">
-            Note: Staking functionality is coming soon. These settings are stored locally and do not affect your actual token balance.
+            Note: Staking operations (stake/unstake) will be available in the next phase.
           </p>
         </div>
       </CardContent>

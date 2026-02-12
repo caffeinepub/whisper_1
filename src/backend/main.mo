@@ -9,6 +9,7 @@ import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
 import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
@@ -468,6 +469,16 @@ actor {
 
   // New Map to store location-based complaints
   let locationBasedComplaintMap = Map.empty<Text, [Text]>();
+
+  // Staking types and state
+  public type StakingRecord = {
+    totalStaked : Nat;
+    availableBalance : Nat;
+    lockedBalance : Nat;
+    pendingRewards : Nat;
+  };
+
+  let stakingRecords = Map.empty<Principal, StakingRecord>();
 
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
     switch (level) {
@@ -1550,5 +1561,23 @@ actor {
     };
 
     locationBasedComplaintMap.add(key, issues.sliceToArray(0, Nat.min(issues.size(), 50)));
+  };
+
+  // ===================== Staking Queries ========================
+
+  // User-scope: only the caller can fetch their own staking data
+  public query ({ caller }) func getCallerStakingRecord() : async ?StakingRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access staking records");
+    };
+    stakingRecords.get(caller);
+  };
+
+  // Admin/self-scoped: must be the caller or an admin to fetch arbitrary users' staking data
+  public query ({ caller }) func getUserStakingRecord(user : Principal) : async ?StakingRecord {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own staking record unless admin");
+    };
+    stakingRecords.get(user);
   };
 };

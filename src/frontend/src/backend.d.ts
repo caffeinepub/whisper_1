@@ -18,6 +18,12 @@ export interface ContributionLogEntry {
     invalidated: boolean;
     contributor: Principal;
 }
+export interface StakingRecord {
+    availableBalance: bigint;
+    pendingRewards: bigint;
+    lockedBalance: bigint;
+    totalStaked: bigint;
+}
 export interface SecretaryCategorySuggestion {
     statesByGeoId: Array<USState>;
     searchTerm: string;
@@ -195,6 +201,7 @@ export interface backendInterface {
     getAllStates(): Promise<Array<USState>>;
     getCallerContributionHistory(limit: bigint): Promise<Array<ContributionLogEntry>>;
     getCallerContributionSummary(): Promise<ContributionSummary>;
+    getCallerStakingRecord(): Promise<StakingRecord | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCityById(cityId: string): Promise<USPlace | null>;
@@ -213,6 +220,7 @@ export interface backendInterface {
     getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
     getTopIssuesForLocation(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserStakingRecord(user: Principal): Promise<StakingRecord | null>;
     governanceCreateProposal(title: string, description: string): Promise<{
         __kind__: "ok";
         ok: bigint;

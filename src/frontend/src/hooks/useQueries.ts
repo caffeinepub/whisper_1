@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import type { UserProfile, Proposal, UserRole, USHierarchyLevel, USState, USCounty, USPlace } from '@/backend';
+import type { UserProfile, Proposal, UserRole, USHierarchyLevel, USState, USCounty, USPlace, StakingRecord } from '@/backend';
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -137,5 +137,21 @@ export function useGetCityById(cityId: string | null) {
       return actor.getCityById(cityId);
     },
     enabled: !!actor && !isFetching && !!cityId,
+  });
+}
+
+// Staking query hooks for Step 1
+export function useGetCallerStakingRecord() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useQuery<StakingRecord | null>({
+    queryKey: ['stakingRecord', principal],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getCallerStakingRecord();
+    },
+    enabled: !!actor && !actorFetching && !!identity,
   });
 }

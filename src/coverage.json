@@ -1,89 +1,28 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T02:25:48.249Z",
+  "generatedAt": "2026-02-12T03:22:49.316Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 7,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Implement an embedded ICRC-1-style token ledger for WSP inside the existing backend single actor, including persistent balances, total supply, and the core public query/update methods needed to read balances and perform transfers.",
+        "summary": "Add read-only backend query methods for staking records without changing existing user profile APIs: (1) a query that returns the caller’s staking record (returning null/empty/default when unset) and is gated by the existing #user permission check; (2) a query that returns a staking record for an arbitrary Principal, allowed only when the caller is that Principal or the caller is an admin, otherwise trap with an Unauthorized error message in English.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Add minting logic that mints WSP for valid contribution events, ensuring minting is idempotent with existing duplicate-prevention for contribution events.",
+        "summary": "Ensure canister upgrades remain safe after adding staking state by updating the existing upgrade persistence mechanism (preupgrade/postupgrade and/or backend/migration.mo per the current codebase pattern) so staking records are persisted and restored correctly, and older deployments can upgrade with staking state initialized to empty/defaults.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Add burn logic to support slashing/invalidated contribution events, including a backend pathway to mark events invalidated and burn the corresponding WSP from the contributor when applicable.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Add governance stubs in the backend for future DAO proposals, including types and placeholder methods that compile and can be safely called but clearly indicate \"not implemented\" behavior.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Update the Profile page UI to show basic WSP token balance sourced from the backend ledger, and display it alongside existing contribution points.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useWspBalance.ts",
-          "frontend/src/lib/formatTokenAmount.ts",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/utils/userFacingError.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useWspBalance.ts",
-          "frontend/src/lib/formatTokenAmount.ts",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/utils/userFacingError.ts"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Add staking fields to user profiles on the frontend only (no backend persistence required), including inputs and basic client-side validation.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Add admin-only token operations controls (test mode) to the existing Admin area UI, including the ability to mint and burn WSP for a specified principal, backed by admin-gated backend methods.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useAdminWspTokenOperations.ts",
-          "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
-          "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "frontend/src/utils/userFacingError.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useAdminWspTokenOperations.ts",
-          "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
-          "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "frontend/src/utils/userFacingError.ts"
-        ]
       }
     ]
   },
@@ -92,24 +31,11 @@
     "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useAdminWspTokenOperations.ts",
-    "frontend/src/hooks/useContributionEventLogger.ts",
-    "frontend/src/hooks/useCreateInstanceProposal.ts",
-    "frontend/src/hooks/useIssueProjectTasks.ts",
-    "frontend/src/hooks/useWspBalance.ts",
-    "frontend/src/lib/formatTokenAmount.ts",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/admin/AdminModerationPage.tsx",
-    "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-    "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
-    "frontend/src/pages/profile/components/StakingSection.tsx",
-    "frontend/src/utils/userFacingError.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
