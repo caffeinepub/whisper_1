@@ -1,13 +1,34 @@
 /**
- * Barrel export module providing a single discoverable entry point
- * for the intent/slot system.
+ * Barrel export module for the intent/slot system.
+ * Provides single discoverable entry point for intent classification,
+ * slot management, flow registry, and geography lookup.
  */
 
 export { classifyIntent } from './intentClassifier';
-export { initializeFlowRegistry, getFlowDefinition, getNavigationHandler } from './flowRegistry';
-export { getNextMissingSlot, areAllRequiredSlotsFilled, fillSlot } from './flowRunner';
-export { getSlotPrompt } from './flowRunner';
-export { executeCompletion } from './flowRunner';
-export { looksLikeRepair, parseRepairSlot, applyRepair } from './repair';
-export { lookupUSGeographyFromText } from './geographyLookup';
+export { getFlowDefinition, initializeFlowRegistry, getNavigationHandler } from './flowRegistry';
+export {
+  getNextMissingSlot,
+  areAllRequiredSlotsFilled,
+  fillSlot,
+  getSlotPrompt,
+  executeCompletion,
+} from './flowRunner';
+export {
+  getSlot,
+  setSlot,
+  clearSlot,
+  clearDependentSlots,
+  isSlotFilled,
+  createEmptySlotBag,
+} from './slotState';
+export {
+  lookupUSStateFromText,
+  lookupUSCountyFromText,
+  lookupUSPlaceFromText,
+  lookupUSGeographyFromText,
+  resolveLocationIdFromSlots,
+} from './geographyLookup';
+export { executeTaskIntent } from './taskExecutor';
+export { parseTaskId, parseTaskStatus, deriveLocationId, parseLocationId } from './taskSlotParsing';
 export type { SecretaryIntent, SecretarySlot, SlotBag, IntentContext } from './types';
+export type { IntentFlowDefinition } from './flowRegistry';

@@ -1,6 +1,7 @@
 /**
  * Rule-based client-side intent classifier.
  * Maps user free text to supported intents using keyword/pattern matching.
+ * Extended with task management intent recognition.
  */
 
 import type { SecretaryIntent } from './types';
@@ -12,7 +13,32 @@ import type { SecretaryIntent } from './types';
 export function classifyIntent(text: string): SecretaryIntent | null {
   const normalized = text.toLowerCase().trim();
 
-  // Top issues patterns (new - check first for specificity)
+  // Task intent patterns (check early for specificity)
+  // Create task patterns
+  if (
+    (normalized.includes('create') || normalized.includes('add') || normalized.includes('new') || normalized.includes('make')) &&
+    normalized.includes('task')
+  ) {
+    return 'create_task';
+  }
+
+  // Find/list tasks patterns
+  if (
+    (normalized.includes('show') || normalized.includes('list') || normalized.includes('find') || normalized.includes('view') || normalized.includes('see')) &&
+    (normalized.includes('task') || normalized.includes('tasks'))
+  ) {
+    return 'find_tasks';
+  }
+
+  // Update task patterns
+  if (
+    (normalized.includes('update') || normalized.includes('mark') || normalized.includes('complete') || normalized.includes('done') || normalized.includes('change') || normalized.includes('close')) &&
+    normalized.includes('task')
+  ) {
+    return 'update_task';
+  }
+
+  // Top issues patterns (check before generic issue patterns)
   if (
     (normalized.includes('top') || normalized.includes('common') || normalized.includes('most')) &&
     (normalized.includes('issue') || normalized.includes('problem') || normalized.includes('complaint'))

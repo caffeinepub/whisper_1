@@ -15,6 +15,10 @@ import type { NavigationRequest } from '@/secretary/brain/SecretaryBrain';
 const GeographyPage = lazy(() => import('@/pages/GeographyPage'));
 const AdminModerationPage = lazy(() => import('@/pages/admin/AdminModerationPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const FeedPage = lazy(() => import('@/pages/FeedPage'));
+const TasksListPage = lazy(() => import('@/pages/tasks/TasksListPage'));
+const TaskDetailPage = lazy(() => import('@/pages/tasks/TaskDetailPage'));
+const TaskCreatePage = lazy(() => import('@/pages/tasks/TaskCreatePage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,12 +29,29 @@ const queryClient = new QueryClient({
   },
 });
 
+type PageType = 'home' | 'geography' | 'admin' | 'profile' | 'feed' | 'tasks-list' | 'task-detail' | 'task-create';
+
+interface TasksRouteParams {
+  locationId?: string;
+  taskId?: string;
+}
+
 function AppContent() {
   const [secretaryOpen, setSecretaryOpen] = useState(false);
   const [secretaryInitialFlow, setSecretaryInitialFlow] = useState<'discovery' | null>(null);
-  const [currentPage, setCurrentPage] = useState<'home' | 'geography' | 'admin' | 'profile'>('home');
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [tasksRouteParams, setTasksRouteParams] = useState<TasksRouteParams>({});
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const { register, unregister, navigate: navigateToDestination, findByKeyword } = useSecretaryNavigationRegistry();
+
+  // Auto-open Secretary on initial page load (once per session)
+  useEffect(() => {
+    const hasAutoOpened = sessionStorage.getItem('secretary-auto-opened');
+    if (!hasAutoOpened && currentPage === 'home') {
+      setSecretaryOpen(true);
+      sessionStorage.setItem('secretary-auto-opened', 'true');
+    }
+  }, [currentPage]);
 
   // Listen to popstate events to update currentPage
   useEffect(() => {
@@ -44,12 +65,30 @@ function AppContent() {
         ? path.slice(normalizedBase.length) 
         : path;
       
-      if (relativePath.includes('geography')) {
+      // Parse tasks routes
+      const tasksMatch = relativePath.match(/^\/tasks\/([^/]+)(?:\/new)?$/);
+      const taskDetailMatch = relativePath.match(/^\/tasks\/([^/]+)\/(\d+)$/);
+      
+      if (taskDetailMatch) {
+        setCurrentPage('task-detail');
+        setTasksRouteParams({ locationId: taskDetailMatch[1], taskId: taskDetailMatch[2] });
+      } else if (tasksMatch) {
+        const isNew = relativePath.endsWith('/new');
+        if (isNew) {
+          setCurrentPage('task-create');
+          setTasksRouteParams({ locationId: tasksMatch[1] });
+        } else {
+          setCurrentPage('tasks-list');
+          setTasksRouteParams({ locationId: tasksMatch[1] });
+        }
+      } else if (relativePath.includes('geography')) {
         setCurrentPage('geography');
       } else if (relativePath.includes('admin')) {
         setCurrentPage('admin');
       } else if (relativePath.includes('profile')) {
         setCurrentPage('profile');
+      } else if (relativePath.includes('feed')) {
+        setCurrentPage('feed');
       } else {
         setCurrentPage('home');
       }
@@ -100,7 +139,6 @@ function AppContent() {
       keywords: ['staking', 'stake', 'unstake', 'rewards', 'lock', 'locked', 'tokens'],
       action: () => {
         // Navigate to profile page
-        const basePath = import.meta.env.BASE_URL || '/';
         const profilePath = joinBasePath('/profile');
         window.history.pushState({}, '', profilePath);
         setCurrentPage('profile');
@@ -121,7 +159,6 @@ function AppContent() {
       keywords: ['governance', 'vote', 'voting', 'govern', 'policy', 'policies'],
       action: () => {
         // Navigate to profile page
-        const basePath = import.meta.env.BASE_URL || '/';
         const profilePath = joinBasePath('/profile');
         window.history.pushState({}, '', profilePath);
         setCurrentPage('profile');
@@ -136,12 +173,24 @@ function AppContent() {
       },
     });
 
+    register({
+      id: 'feed',
+      label: 'Feed',
+      keywords: ['feed', 'posts', 'latest posts', 'community feed', 'social'],
+      action: () => {
+        const feedPath = joinBasePath('/feed');
+        window.history.pushState({}, '', feedPath);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      },
+    });
+
     return () => {
       unregister('proposals');
       unregister('create-instance');
       unregister('report-issue');
       unregister('staking');
       unregister('governance');
+      unregister('feed');
     };
   }, [register, unregister]);
 
@@ -194,6 +243,38 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
         <ProfilePage />
+      </Suspense>
+    );
+  }
+
+  if (currentPage === 'feed') {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <FeedPage />
+      </Suspense>
+    );
+  }
+
+  if (currentPage === 'tasks-list' && tasksRouteParams.locationId) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <TasksListPage locationId={tasksRouteParams.locationId} />
+      </Suspense>
+    );
+  }
+
+  if (currentPage === 'task-detail' && tasksRouteParams.locationId && tasksRouteParams.taskId) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <TaskDetailPage locationId={tasksRouteParams.locationId} taskId={tasksRouteParams.taskId} />
+      </Suspense>
+    );
+  }
+
+  if (currentPage === 'task-create' && tasksRouteParams.locationId) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <TaskCreatePage locationId={tasksRouteParams.locationId} />
       </Suspense>
     );
   }

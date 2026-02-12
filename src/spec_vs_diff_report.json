@@ -1,57 +1,43 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T06:27:11.261Z",
-  "summary": "The diff adds new NLP helper(s) and wiring in the Secretary widget/brain for slot-filling interactions, but it does not provide clear evidence that category suggestions are actually fetched/rendered during slot-filling, nor that completion resets the conversation with an English confirmation message after navigation.",
+  "generatedAt": "2026-02-12T17:36:20.013Z",
+  "summary": "Core intent/slot type additions and classifier updates for create_task/find_tasks/update_task are present, along with new task execution helpers and slot prompts. However, the flow registry completion hooks for the new intents are placeholders (no trigger of create/list/update or navigation), and the diff summary does not provide sufficient evidence that the Secretary runtime fully wires slot-filling + completion execution from chat input end-to-end.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on currently filled geography level and issue_description, and allow clicking a suggestion to fill the slot and advance.",
-      "reason": "While prompt-copy helpers and click handlers are introduced, the diff summary does not show any implementation that fetches category suggestions (API/hook call) or that the UI renders a list of suggested categories when issue_category is the next missing slot, nor the fallback behavior when no suggestions are returned.",
-      "evidence": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx (adds handleSuggestionClick but no rendering shown in truncated snippet)",
-        "frontend/src/secretary/copy/secretaryPrompts.ts (adds category suggestion/no-suggestion prompts)",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts (mentions complaint suggestions but truncated; no visible fetching logic)"
-      ]
-    },
-    {
       "id": "REQ-4",
-      "requirement": "After all required slots are filled, execute the existing completion navigation for that intent and then reset back to the main menu with an English confirmation message.",
-      "reason": "Completion navigation is present in the flow registry, but there is no evidence of a post-completion reset to the main menu or an English confirmation message like “Done! Anything else I can help with?” being added to the conversation/state.",
+      "requirement": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent that trigger the corresponding task operation (create/list/update) or navigation.",
+      "reason": "Flows are registered with requiredSlots/slotOrder, but each new intent's onComplete is explicitly a placeholder and does not call task operations or navigate.",
       "evidence": [
-        "frontend/src/secretary/intent/flowRegistry.ts (onComplete navigates but no reset/confirmation behavior)",
-        "frontend/src/secretary/intent/flowRunner.ts (executeCompletion only calls onComplete; no reset/confirmation)",
-        "frontend/src/secretary/flow/flows.ts (menu clears messages, but no evidence it is invoked after completion)"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Speech-to-text microphone functionality in the Secretary widget UI.",
-      "reason": "The BuildRequest is focused on slot-filling, category suggestions, typeahead selection, and completion behavior; it does not request adding speech-to-text input.",
-      "evidence": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx (imports Mic/MicOff and useSpeechToText, manages transcript/listening state)"
+        "frontend/src/secretary/intent/flowRegistry.ts"
       ]
     },
     {
-      "description": "Portal logic that creates/manages an overlay-root container and instantiates FlowEngineBrain inside the portal.",
-      "reason": "Not requested by the BuildRequest; the change appears to be architectural/UI mounting refactor beyond slot-filling requirements.",
+      "id": "REQ-6",
+      "requirement": "Integrate the task intent system into the Secretary runtime so task intents are executed from chat input: classify, run slot-filling via flow runner, and on completion call existing task backend methods and present confirmation/results in chat.",
+      "reason": "Although task execution helpers (taskExecutor/taskIntentActions) are added and FlowEngineBrain is modified to import them, the provided diff snippet for FlowEngineBrain is truncated before showing the actual chat-input handling, slot-filling loop, and completion invocation that would call createTask/listTasksByLocation/getTask+updateTask and print results.",
       "evidence": [
-        "frontend/src/components/secretary/SecretaryWidgetPortal.tsx (creates overlay-root, owns FlowEngineBrain instance, wires geography hooks)"
+        "frontend/src/secretary/brain/FlowEngineBrain.ts (truncated)",
+        "frontend/src/secretary/intent/taskExecutor.ts",
+        "frontend/src/secretary/intent/taskIntentActions.ts"
       ]
     }
   ],
-  "confidence": 0.62,
+  "hallucinated_features": [],
+  "confidence": 0.66,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
     "frontend/src/secretary/brain/FlowEngineBrain.ts",
     "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/flow/flows.ts",
     "frontend/src/secretary/intent/flowRegistry.ts",
-    "frontend/src/secretary/intent/flowRunner.ts",
-    "frontend/src/secretary/intent/issueDescriptionNlp.ts",
+    "frontend/src/secretary/intent/geographyLookup.ts",
+    "frontend/src/secretary/intent/index.ts",
+    "frontend/src/secretary/intent/intentClassifier.ts",
+    "frontend/src/secretary/intent/slotState.ts",
+    "frontend/src/secretary/intent/taskExecutor.ts",
+    "frontend/src/secretary/intent/taskIntentActions.ts",
+    "frontend/src/secretary/intent/taskSlotParsing.ts",
+    "frontend/src/secretary/intent/types.ts",
     "project_state.json"
   ]
 }

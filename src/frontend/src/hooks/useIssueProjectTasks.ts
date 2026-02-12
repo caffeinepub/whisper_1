@@ -34,7 +34,7 @@ export function useGetTasks(proposalId: string) {
       if (!actor) throw new Error('Backend connection not available');
       
       try {
-        const tasksArray = await actor.getTasks(proposalId);
+        const tasksArray = await actor.getTasks_legacy(proposalId);
         return tasksArray.map(([id, task]) => ({
           id,
           description: task.description,
@@ -64,7 +64,7 @@ export function useCreateTask(proposalId: string) {
       if (!actor) throw new Error('Backend connection not available');
       
       try {
-        const taskId = await actor.createTask(proposalId, description);
+        const taskId = await actor.createTask_legacy(proposalId, description);
         return { taskId };
       } catch (error) {
         const errorMessage = getUserFacingError(error);
@@ -117,7 +117,7 @@ export function useUpdateTaskStatus(proposalId: string) {
       if (!actor) throw new Error('Backend connection not available');
       
       try {
-        const result = await actor.updateTaskStatus(proposalId, taskId, completed);
+        const result = await actor.updateTaskStatus_legacy(proposalId, taskId, completed);
         return result;
       } catch (error) {
         const errorMessage = getUserFacingError(error);

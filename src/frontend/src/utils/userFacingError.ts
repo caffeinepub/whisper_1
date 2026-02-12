@@ -1,6 +1,6 @@
 /**
  * Normalizes errors into user-facing English messages.
- * Handles authorization, geography, proposal, task, contribution, WSP token operation, staking, and complaint category errors.
+ * Handles authorization, geography, proposal, task, contribution, WSP token operation, staking, complaint category, and post errors.
  */
 export function getUserFacingError(error: any): string {
   if (!error) return 'An unexpected error occurred';
@@ -32,6 +32,9 @@ export function getUserFacingError(error: any): string {
     if (error.includes('Proposal does not exist')) return 'The proposal could not be found';
     if (error.includes('No tasks found')) return 'No tasks found for this proposal';
     if (error.includes('Task does not exist')) return 'The task could not be found';
+    if (error.includes('Task not associated with provided locationId')) {
+      return 'Task does not belong to this location';
+    }
 
     // Contribution event errors
     if (error.includes('invalid actionType') || error.includes('invalidActionType')) {
@@ -66,6 +69,14 @@ export function getUserFacingError(error: any): string {
     if (error.includes('complaint categories') || error.includes('complaint category')) {
       return 'Unable to load complaint categories. Please try again.';
     }
+
+    // Post errors
+    if (error.includes('Post content cannot be empty')) return 'Post content cannot be empty';
+    if (error.includes('Instance name cannot be empty')) return 'Instance name cannot be empty';
+    if (error.includes('Post not found')) return 'Post not found';
+    if (error.includes('Cannot update deleted post')) return 'Cannot update deleted post';
+    if (error.includes('Post already deleted')) return 'Post already deleted';
+    if (error.includes('Only post author or admin')) return 'Only the post author or an admin can perform this action';
 
     // Return the original error if no pattern matches
     return error;

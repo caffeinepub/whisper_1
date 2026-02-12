@@ -54,6 +54,7 @@ export class FlowRunner {
       buttons: [],
       showTopIssues: false,
       showSuggestions: false,
+      showConfirmationSummary: false,
     };
   }
 

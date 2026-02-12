@@ -1,62 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
+import type { Proposal, USState, USCounty, USPlace, ContributionLogEntry, StakingRecord, GovernanceProposal, Post } from '@/backend';
 import { getUserFacingError } from '@/utils/userFacingError';
-import type { UserProfile, Proposal, UserRole, USHierarchyLevel, USState, USCounty, USPlace, StakingRecord } from '@/backend';
-
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile', principal],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
-    },
-    enabled: !!actor && !actorFetching && !!identity,
-    retry: false,
-  });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
-}
-
-export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.saveCallerUserProfile(profile);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
-  });
-}
-
-export function useIsCallerAdmin() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<boolean>({
-    queryKey: ['isCallerAdmin', principal],
-    queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
-    },
-    enabled: !!actor && !actorFetching && !!identity,
-    staleTime: 0,
-    refetchOnMount: true,
-  });
-}
+import { USHierarchyLevel } from '@/backend';
 
 export function useGetAllProposals() {
   const { actor, isFetching } = useActor();
@@ -64,12 +10,8 @@ export function useGetAllProposals() {
   return useQuery<[string, Proposal][]>({
     queryKey: ['proposals'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      try {
-        return await actor.getAllProposals();
-      } catch (error: any) {
-        throw new Error(getUserFacingError(error));
-      }
+      if (!actor) return [];
+      return actor.getAllProposals();
     },
     enabled: !!actor && !isFetching,
   });
@@ -82,9 +24,186 @@ export function useGetProposal(instanceName: string | null) {
     queryKey: ['proposal', instanceName],
     queryFn: async () => {
       if (!actor || !instanceName) return null;
+      return actor.getProposal(instanceName);
+    },
+    enabled: !!actor && !isFetching && !!instanceName,
+  });
+}
+
+export function useGetAllStates() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USState[]>({
+    queryKey: ['states'],
+    queryFn: async () => {
+      if (!actor) return [];
       try {
-        return await actor.getProposal(instanceName);
-      } catch (error: any) {
+        return await actor.getAllStates();
+      } catch (error) {
+        console.error('Error fetching states:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetCountiesForState(stateGeoId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USCounty[]>({
+    queryKey: ['counties', stateGeoId],
+    queryFn: async () => {
+      if (!actor || !stateGeoId) return [];
+      try {
+        return await actor.getCountiesForState(stateGeoId);
+      } catch (error) {
+        console.error('Error fetching counties:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching && !!stateGeoId,
+  });
+}
+
+export function useGetPlacesForCounty(countyGeoId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USPlace[]>({
+    queryKey: ['places', countyGeoId],
+    queryFn: async () => {
+      if (!actor || !countyGeoId) return [];
+      try {
+        return await actor.getPlacesForCounty(countyGeoId);
+      } catch (error) {
+        console.error('Error fetching places:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching && !!countyGeoId,
+  });
+}
+
+export function useGetPlacesForState(stateGeoId: string | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<USPlace[]>({
+    queryKey: ['places-state', stateGeoId],
+    queryFn: async () => {
+      if (!actor || !stateGeoId) return [];
+      try {
+        return await actor.getPlacesForState(stateGeoId);
+      } catch (error) {
+        console.error('Error fetching places for state:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching && !!stateGeoId,
+  });
+}
+
+export function useGetComplaintCategories(level: USHierarchyLevel, searchTerm: string | null = null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['complaintCategories', level, searchTerm],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getComplaintCategoriesByGeographyLevel(level, searchTerm);
+      } catch (error) {
+        console.error('Error fetching complaint categories:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetStakingInfo() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<StakingRecord | null>({
+    queryKey: ['stakingInfo'],
+    queryFn: async () => {
+      if (!actor) return null;
+      try {
+        return await actor.getStakingInfo();
+      } catch (error) {
+        console.error('Error fetching staking info:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetContributionHistory(limit: number = 50) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<ContributionLogEntry[]>({
+    queryKey: ['contributionHistory', limit],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getCallerContributionHistory(BigInt(limit));
+      } catch (error) {
+        console.error('Error fetching contribution history:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetGovernanceProposals() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<GovernanceProposal[]>({
+    queryKey: ['governanceProposals'],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.governanceListProposals();
+      } catch (error) {
+        console.error('Error fetching governance proposals:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetGovernanceProposal(proposalId: bigint | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<GovernanceProposal | null>({
+    queryKey: ['governanceProposal', proposalId?.toString()],
+    queryFn: async () => {
+      if (!actor || proposalId === null) return null;
+      try {
+        return await actor.governanceGetProposal(proposalId);
+      } catch (error) {
+        console.error('Error fetching governance proposal:', error);
+        throw new Error(getUserFacingError(error));
+      }
+    },
+    enabled: !!actor && !isFetching && proposalId !== null,
+  });
+}
+
+// Social Feed Queries
+export function useGetPostsByInstance(instanceName: string, limit: number = 20, offset: number = 0) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Post[]>({
+    queryKey: ['posts', instanceName, limit, offset],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getPostsByInstance(instanceName, BigInt(limit), BigInt(offset));
+      } catch (error) {
+        console.error('Error fetching posts:', error);
         throw new Error(getUserFacingError(error));
       }
     },
@@ -92,75 +211,20 @@ export function useGetProposal(instanceName: string | null) {
   });
 }
 
-export function useGetTopIssuesForLocation(
-  locationLevel: USHierarchyLevel | null,
-  locationId: string | null,
-  enabled: boolean = true
-) {
+export function useGetPost(postId: bigint | null) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<string[]>({
-    queryKey: ['topIssues', locationLevel, locationId],
+  return useQuery<Post | null>({
+    queryKey: ['post', postId?.toString()],
     queryFn: async () => {
-      // Backend method not yet implemented - return empty array
-      return [];
+      if (!actor || postId === null) return null;
+      try {
+        return await actor.getPost(postId);
+      } catch (error) {
+        console.error('Error fetching post:', error);
+        throw new Error(getUserFacingError(error));
+      }
     },
-    enabled: !!actor && !isFetching && !!locationLevel && enabled,
-  });
-}
-
-// Geography by ID hooks - backend methods not yet implemented
-export function useGetStateById(stateId: string | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<USState | null>({
-    queryKey: ['state', stateId],
-    queryFn: async () => {
-      // Backend method not yet implemented - return null
-      return null;
-    },
-    enabled: !!actor && !isFetching && !!stateId,
-  });
-}
-
-export function useGetCountyById(countyId: string | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<USCounty | null>({
-    queryKey: ['county', countyId],
-    queryFn: async () => {
-      // Backend method not yet implemented - return null
-      return null;
-    },
-    enabled: !!actor && !isFetching && !!countyId,
-  });
-}
-
-export function useGetCityById(cityId: string | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<USPlace | null>({
-    queryKey: ['city', cityId],
-    queryFn: async () => {
-      // Backend method not yet implemented - return null
-      return null;
-    },
-    enabled: !!actor && !isFetching && !!cityId,
-  });
-}
-
-// Staking query hooks
-export function useGetCallerStakingRecord() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<StakingRecord | null>({
-    queryKey: ['stakingRecord', principal],
-    queryFn: async () => {
-      if (!actor) return null;
-      return actor.getCallerStakingRecord();
-    },
-    enabled: !!actor && !actorFetching && !!identity,
+    enabled: !!actor && !isFetching && postId !== null,
   });
 }

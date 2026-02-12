@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-enable-the-secretary-s-intent-slot-filling-mode-to-automatically-pre-fill-slots-from-a-single-user-message-at-minimum-geography-slots-and-for-the-report-issue-intent-the-initial-issue-description-and-then-ask-only-for-the-remaining-missing-required-slots",
-      "featureTitle": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
+      "featureId": "feature-extend-the-secretary-intent-type-system-to-include-three-new-intents-create-task-find-tasks-and-update-task",
+      "featureTitle": "Extend the Secretary intent type system to include three new intents: create_task, find_tasks, and update_task.",
       "files": [
-        "frontend/src/secretary/brain/FlowEngineBrain.ts",
-        "frontend/src/secretary/intent/issueDescriptionNlp.ts"
+        "frontend/src/secretary/intent/types.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -23,12 +22,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-wire-complaint-category-suggestions-into-slot-filling-when-the-next-missing-slot-is-issue-category-fetch-and-present-category-suggestions-based-on-the-currently-filled-geography-level-and-the-current-issue-description-slot-and-allow-the-user-to-choose-a-suggestion-to-fill-the-category-slot",
-      "featureTitle": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
+      "featureId": "feature-add-task-related-slot-definitions-required-to-fulfill-the-new-task-intents-including-at-minimum-task-title-task-description-task-category-location-identifier-and-task-identifier-for-updates-ensure-an-empty-slot-bag-can-be-created-and-slot-fill-clear-checks-work-for-the-new-slots",
+      "featureTitle": "Add task-related slot definitions required to fulfill the new task intents, including at minimum: task title, task description, task category, location identifier, and task identifier (for updates). Ensure an empty slot bag can be created and slot fill/clear checks work for the new slots.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts",
-        "frontend/src/secretary/copy/secretaryPrompts.ts"
+        "frontend/src/secretary/intent/slotState.ts",
+        "frontend/src/secretary/intent/types.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -45,11 +43,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-secretary-location-typeahead-selection-so-it-works-for-any-active-geography-slot-state-county-or-place-and-correctly-advances-slot-filling-after-selection",
-      "featureTitle": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
+      "featureId": "feature-update-the-rule-based-intent-classifier-to-recognize-the-new-intents-from-common-user-phrasing-e-g-create-a-task-show-tasks-find-tasks-update-task-mark-task-done-without-breaking-existing-intents",
+      "featureTitle": "Update the rule-based intent classifier to recognize the new intents from common user phrasing (e.g., “create a task”, “show tasks”, “find tasks”, “update task”, “mark task done”), without breaking existing intents.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        "frontend/src/secretary/intent/intentClassifier.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -66,11 +63,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-slot-filling-completion-behavior-is-user-visible-and-consistent-after-all-required-slots-for-an-intent-are-filled-the-secretary-executes-the-existing-completion-navigation-for-that-intent-and-then-resets-back-to-the-main-menu-with-an-english-confirmation-message",
-      "featureTitle": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
+      "featureId": "feature-register-the-new-intents-in-the-intent-flow-registry-with-required-optional-slots-and-a-slot-fill-order-and-define-completion-behavior-hooks-for-each-intent",
+      "featureTitle": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        "frontend/src/secretary/intent/flowRegistry.ts",
+        "frontend/src/secretary/intent/taskIntentActions.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -83,6 +80,49 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-english-slot-filling-prompts-for-the-new-task-slots-so-the-secretary-can-ask-for-missing-task-information-during-an-intent-flow-e-g-ask-for-title-description-location-category-and-which-task-to-update",
+      "featureTitle": "Add English slot-filling prompts for the new task slots so the Secretary can ask for missing task information during an intent flow (e.g., ask for title, description, location, category, and which task to update).",
+      "files": [
+        "frontend/src/secretary/copy/secretaryPrompts.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-integrate-the-task-intent-system-into-the-secretary-runtime-so-task-intents-are-actually-executed-from-chat-input-when-user-text-is-received-classify-to-a-task-intent-when-appropriate-run-slot-filling-using-the-intent-flow-runner-and-on-completion-call-the-existing-task-backend-methods-via-the-current-actor-createtask-listtasksbylocation-gettask-updatetask-and-present-a-short-english-confirmation-result-message-in-the-secretary-chat",
+      "featureTitle": "Integrate the task intent system into the Secretary runtime so task intents are actually executed from chat input: when user text is received, classify to a task intent when appropriate, run slot-filling using the intent flow runner, and on completion call the existing task backend methods via the current actor (createTask, listTasksByLocation, getTask/updateTask) and present a short English confirmation/result message in the Secretary chat.",
+      "files": [
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/geographyLookup.ts",
+        "frontend/src/secretary/intent/taskExecutor.ts",
+        "frontend/src/secretary/intent/taskSlotParsing.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

@@ -1,6 +1,7 @@
 /**
  * Core flow-engine types for the Secretary assistant.
  * Defines nodes, transitions, actions, context, and view models.
+ * Extended with guided report-issue flow nodes and confirmation step support.
  */
 
 import type { USState, USCounty, USPlace, USHierarchyLevel } from '@/backend';
@@ -22,7 +23,11 @@ export type NodeId =
   | 'report-custom-category'
   | 'report-complete'
   | 'unknown-input-recovery'
-  | 'intent-slot-filling';
+  | 'intent-slot-filling'
+  | 'guided-report-location'
+  | 'guided-report-category'
+  | 'guided-report-details'
+  | 'guided-report-confirmation';
 
 /**
  * Action types that can trigger transitions
@@ -42,7 +47,14 @@ export type ActionType =
   | 'navigate-external'
   | 'free-text-input'
   | 'intent-recognized'
-  | 'slot-filled';
+  | 'slot-filled'
+  | 'guided-location-selected'
+  | 'guided-category-selected'
+  | 'guided-details-submitted'
+  | 'guided-confirm-submit'
+  | 'guided-edit-location'
+  | 'guided-edit-category'
+  | 'guided-edit-details';
 
 /**
  * Action payload for triggering transitions
@@ -73,6 +85,19 @@ export interface NodeDefinition {
 }
 
 /**
+ * Guided report-issue draft state
+ */
+export interface GuidedReportDraft {
+  location: {
+    state: USState | null;
+    county: USCounty | null;
+    place: USPlace | null;
+  };
+  category: string;
+  details: string;
+}
+
+/**
  * Secretary conversation context/state
  */
 export interface SecretaryContext {
@@ -87,6 +112,9 @@ export interface SecretaryContext {
   reportIssueGeographyLevel: USHierarchyLevel | null;
   reportIssueGeographyId: string | null;
   reportIssueSuggestions: string[];
+
+  // Guided report-issue draft
+  guidedReportDraft: GuidedReportDraft;
 
   // Intent/slot flow state
   activeIntent: SecretaryIntent;
@@ -133,6 +161,14 @@ export interface NodeViewModel {
   // Suggestions display
   showSuggestions: boolean;
   suggestions?: string[];
+
+  // Confirmation summary display
+  showConfirmationSummary: boolean;
+  confirmationSummary?: {
+    location: string;
+    category: string;
+    details: string;
+  };
 }
 
 /**

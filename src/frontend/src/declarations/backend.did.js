@@ -35,6 +35,25 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const CreatePostRequest = IDL.Record({
+  'content' : IDL.Text,
+  'instanceName' : IDL.Text,
+});
+export const Post = IDL.Record({
+  'id' : IDL.Nat,
+  'deleted' : IDL.Bool,
+  'content' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'authorName' : IDL.Text,
+  'flaggedByModerator' : IDL.Bool,
+  'author' : IDL.Principal,
+  'updatedAt' : IDL.Opt(IDL.Int),
+  'flaggedReason' : IDL.Opt(IDL.Text),
+  'flaggedAt' : IDL.Opt(IDL.Int),
+  'flaggedBy' : IDL.Opt(IDL.Principal),
+  'instanceName' : IDL.Text,
+  'isFlagged' : IDL.Bool,
+});
 export const USHierarchyLevel = IDL.Variant({
   'country' : IDL.Null,
   'state' : IDL.Null,
@@ -130,6 +149,30 @@ export const USPlace = IDL.Record({
   'censusPlaceType' : IDL.Text,
   'censusStateCode' : CensusStateCode,
 });
+export const TaskStatus = IDL.Variant({
+  'resolved' : IDL.Null,
+  'blocked' : IDL.Null,
+  'in_progress' : IDL.Null,
+  'open' : IDL.Null,
+});
+export const TaskHistoryEntry = IDL.Record({
+  'status' : TaskStatus,
+  'description' : IDL.Text,
+  'timestamp' : IDL.Int,
+});
+export const StructuredCivicTask = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : TaskStatus,
+  'assignee' : IDL.Opt(IDL.Principal),
+  'title' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'description' : IDL.Text,
+  'history' : IDL.Vec(TaskHistoryEntry),
+  'updatedAt' : IDL.Int,
+  'issueId' : IDL.Opt(IDL.Text),
+  'locationId' : IDL.Text,
+  'category' : IDL.Text,
+});
 export const Task = IDL.Record({
   'id' : IDL.Nat,
   'completed' : IDL.Bool,
@@ -174,6 +217,10 @@ export const LogContributionEventError = IDL.Variant({
 export const SubmitProposalResult = IDL.Variant({
   'error' : IDL.Record({ 'message' : IDL.Text }),
   'success' : IDL.Record({ 'proposal' : Proposal }),
+});
+export const UpdatePostRequest = IDL.Record({
+  'content' : IDL.Text,
+  'postId' : IDL.Nat,
 });
 
 export const idlService = IDL.Service({
@@ -227,8 +274,43 @@ export const idlService = IDL.Service({
     ),
   'adminMintWSP' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'clearFlag' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'convertIssueToTask' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
+  'createPost' : IDL.Func(
+      [CreatePostRequest],
+      [IDL.Variant({ 'ok' : Post, 'err' : IDL.Text })],
+      [],
+    ),
+  'createTask' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+      [IDL.Nat],
+      [],
+    ),
+  'createTask_legacy' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'deletePost' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'deleteProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'flagPost' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'flagPostByModerator' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'getAdminModerationQueue' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
@@ -264,11 +346,26 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+  'getFlaggedPostLimit' : IDL.Func([IDL.Nat], [IDL.Vec(Post)], ['query']),
+  'getFlaggedPosts' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Vec(Post)], ['query']),
+  'getFlaggedPostsCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
   'getPlacesForState' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
+  'getPost' : IDL.Func([IDL.Nat], [IDL.Opt(Post)], ['query']),
+  'getPostsByAuthor' : IDL.Func(
+      [IDL.Principal, IDL.Nat, IDL.Nat],
+      [IDL.Vec(Post)],
+      ['query'],
+    ),
+  'getPostsByInstance' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Nat],
+      [IDL.Vec(Post)],
+      ['query'],
+    ),
   'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
   'getStakingInfo' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
-  'getTasks' : IDL.Func(
+  'getTask' : IDL.Func([IDL.Nat, IDL.Text], [StructuredCivicTask], ['query']),
+  'getTasks_legacy' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
       ['query'],
@@ -315,6 +412,16 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isParent' : IDL.Func([IDL.Principal, IDL.Principal], [IDL.Bool], ['query']),
+  'listTasksByIssueId' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(StructuredCivicTask)],
+      ['query'],
+    ),
+  'listTasksByLocation' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(StructuredCivicTask)],
+      ['query'],
+    ),
   'logContributionEvent' : IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
       [IDL.Variant({ 'ok' : IDL.Nat, 'err' : LogContributionEventError })],
@@ -351,8 +458,22 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
       [],
     ),
+  'updatePost' : IDL.Func(
+      [UpdatePostRequest],
+      [IDL.Variant({ 'ok' : Post, 'err' : IDL.Text })],
+      [],
+    ),
   'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-  'updateTaskStatus' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [IDL.Bool], []),
+  'updateTask' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, TaskStatus],
+      [IDL.Bool],
+      [],
+    ),
+  'updateTaskStatus_legacy' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Bool],
+      [IDL.Bool],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -384,6 +505,25 @@ export const idlFactory = ({ IDL }) => {
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const CreatePostRequest = IDL.Record({
+    'content' : IDL.Text,
+    'instanceName' : IDL.Text,
+  });
+  const Post = IDL.Record({
+    'id' : IDL.Nat,
+    'deleted' : IDL.Bool,
+    'content' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'authorName' : IDL.Text,
+    'flaggedByModerator' : IDL.Bool,
+    'author' : IDL.Principal,
+    'updatedAt' : IDL.Opt(IDL.Int),
+    'flaggedReason' : IDL.Opt(IDL.Text),
+    'flaggedAt' : IDL.Opt(IDL.Int),
+    'flaggedBy' : IDL.Opt(IDL.Principal),
+    'instanceName' : IDL.Text,
+    'isFlagged' : IDL.Bool,
   });
   const USHierarchyLevel = IDL.Variant({
     'country' : IDL.Null,
@@ -480,6 +620,30 @@ export const idlFactory = ({ IDL }) => {
     'censusPlaceType' : IDL.Text,
     'censusStateCode' : CensusStateCode,
   });
+  const TaskStatus = IDL.Variant({
+    'resolved' : IDL.Null,
+    'blocked' : IDL.Null,
+    'in_progress' : IDL.Null,
+    'open' : IDL.Null,
+  });
+  const TaskHistoryEntry = IDL.Record({
+    'status' : TaskStatus,
+    'description' : IDL.Text,
+    'timestamp' : IDL.Int,
+  });
+  const StructuredCivicTask = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : TaskStatus,
+    'assignee' : IDL.Opt(IDL.Principal),
+    'title' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'description' : IDL.Text,
+    'history' : IDL.Vec(TaskHistoryEntry),
+    'updatedAt' : IDL.Int,
+    'issueId' : IDL.Opt(IDL.Text),
+    'locationId' : IDL.Text,
+    'category' : IDL.Text,
+  });
   const Task = IDL.Record({
     'id' : IDL.Nat,
     'completed' : IDL.Bool,
@@ -524,6 +688,10 @@ export const idlFactory = ({ IDL }) => {
   const SubmitProposalResult = IDL.Variant({
     'error' : IDL.Record({ 'message' : IDL.Text }),
     'success' : IDL.Record({ 'proposal' : Proposal }),
+  });
+  const UpdatePostRequest = IDL.Record({
+    'content' : IDL.Text,
+    'postId' : IDL.Nat,
   });
   
   return IDL.Service({
@@ -577,8 +745,43 @@ export const idlFactory = ({ IDL }) => {
       ),
     'adminMintWSP' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'createTask' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'clearFlag' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'convertIssueToTask' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
+    'createPost' : IDL.Func(
+        [CreatePostRequest],
+        [IDL.Variant({ 'ok' : Post, 'err' : IDL.Text })],
+        [],
+      ),
+    'createTask' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+        [IDL.Nat],
+        [],
+      ),
+    'createTask_legacy' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'deletePost' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'deleteProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'flagPost' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'flagPostByModerator' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'getAdminModerationQueue' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, Proposal))],
@@ -618,11 +821,30 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCountiesForState' : IDL.Func([GeoId], [IDL.Vec(USCounty)], ['query']),
+    'getFlaggedPostLimit' : IDL.Func([IDL.Nat], [IDL.Vec(Post)], ['query']),
+    'getFlaggedPosts' : IDL.Func(
+        [IDL.Nat, IDL.Nat],
+        [IDL.Vec(Post)],
+        ['query'],
+      ),
+    'getFlaggedPostsCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getPlacesForCounty' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
     'getPlacesForState' : IDL.Func([GeoId], [IDL.Vec(USPlace)], ['query']),
+    'getPost' : IDL.Func([IDL.Nat], [IDL.Opt(Post)], ['query']),
+    'getPostsByAuthor' : IDL.Func(
+        [IDL.Principal, IDL.Nat, IDL.Nat],
+        [IDL.Vec(Post)],
+        ['query'],
+      ),
+    'getPostsByInstance' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Nat],
+        [IDL.Vec(Post)],
+        ['query'],
+      ),
     'getProposal' : IDL.Func([IDL.Text], [IDL.Opt(Proposal)], ['query']),
     'getStakingInfo' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
-    'getTasks' : IDL.Func(
+    'getTask' : IDL.Func([IDL.Nat, IDL.Text], [StructuredCivicTask], ['query']),
+    'getTasks_legacy' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IDL.Tuple(IDL.Nat, Task))],
         ['query'],
@@ -673,6 +895,16 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Bool],
         ['query'],
       ),
+    'listTasksByIssueId' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(StructuredCivicTask)],
+        ['query'],
+      ),
+    'listTasksByLocation' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(StructuredCivicTask)],
+        ['query'],
+      ),
     'logContributionEvent' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
         [IDL.Variant({ 'ok' : IDL.Nat, 'err' : LogContributionEventError })],
@@ -709,8 +941,18 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
         [],
       ),
+    'updatePost' : IDL.Func(
+        [UpdatePostRequest],
+        [IDL.Variant({ 'ok' : Post, 'err' : IDL.Text })],
+        [],
+      ),
     'updateProposalStatus' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-    'updateTaskStatus' : IDL.Func(
+    'updateTask' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, TaskStatus],
+        [IDL.Bool],
+        [],
+      ),
+    'updateTaskStatus_legacy' : IDL.Func(
         [IDL.Text, IDL.Nat, IDL.Bool],
         [IDL.Bool],
         [],

@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Add automatic intent slot-filling to the Secretary so it can extract details from a single user message, prompt only for missing required info, and complete flows consistently.
+**Goal:** Extend the Secretary chat assistant to support task management via new intents for creating, finding, and updating tasks.
 
 **Planned changes:**
-- Enable slot-filling mode to pre-fill slots from a single user message (at minimum: geography slots and an initial issue description for the report-issue intent), then prompt only for missing required slots using existing English prompt copy.
-- Add complaint category suggestions during report-issue slot-filling when issue_category is the next missing slot; allow selecting a suggestion to fill the slot, and fall back to typed input if no suggestions are available.
-- Fix location typeahead selection so it correctly fills whichever geography slot is currently active (state/county/place) and advances slot-filling reliably.
-- Ensure consistent, user-visible completion behavior: after all required slots are filled, run the existing intent completion navigation, then reset back to the main menu with an English confirmation message.
+- Add new `SecretaryIntent` values: `create_task`, `find_tasks`, and `update_task`.
+- Add task-related slot definitions (title, description, category, location identifier, task identifier) and ensure slot bag creation, fill checks, and clearing logic work for these slots.
+- Update the rule-based intent classifier to recognize common task-related user phrases and map them to the new intents without breaking existing intent behavior.
+- Register the new intents in the intent flow registry, including required/optional slots, slot fill order, and `onComplete` hooks for create/list/update task operations (or navigation to an appropriate task UI route if needed).
+- Add English slot-filling prompts for the new task slots so the Secretary can request missing information during the intent flows.
+- Wire task intents into the Secretary runtime so chat input triggers classification, slot-filling, and then execution via existing task backend methods (createTask, listTasksByLocation, getTask/updateTask), returning short English confirmations/results in chat.
 
-**User-visible outcome:** Users can describe an issue in one message (e.g., “Potholes in Omaha, Nebraska near 72nd street”), see the Secretary auto-fill what it can, answer only the remaining questions (including choosing from suggested categories when applicable), and then be taken to the existing completion destination and returned to the main menu with a clear English confirmation.
+**User-visible outcome:** Users can type messages like “create a task”, “show my tasks”, or “mark task done”, and the Secretary will ask for any missing details, then create tasks, list tasks for a location, or update a task and confirm the result in the chat.

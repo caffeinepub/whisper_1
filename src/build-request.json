@@ -1,89 +1,121 @@
 {
   "kind": "build_request",
-  "title": "Add automatic slot-filling to the Secretary so it gathers missing details",
+  "title": "Phase 4 Secretary integration: add task intents (create_task, find_tasks, update_task)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
+      "text": "Extend the Secretary intent type system to include three new intents: create_task, find_tasks, and update_task.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "recent-messages-1"
         ],
         "quotes": [
-          "Run Add slot-filling so the Secretary can gather missing details automatically"
+          "Run Phase 4: Secretary integration • Add Secretary intents: create_task, find_tasks, update_task."
         ]
       },
       "acceptanceCriteria": [
-        "When the user types a single message like “Potholes in Omaha, Nebraska near 72nd street”, the Secretary enters slot-filling mode, pre-fills the state (and place when possible), sets a reasonable initial issue_description, and only prompts for missing required slots (e.g., category) instead of restarting at the menu.",
-        "When geography cannot be reliably extracted, the Secretary prompts for the missing geography slot using the existing slot prompt copy.",
-        "All prompts and recovery messages shown during slot-filling are in English."
+        "TypeScript type `SecretaryIntent` (frontend/src/secretary/intent/types.ts) includes 'create_task', 'find_tasks', and 'update_task'.",
+        "All intent-related modules compile without TypeScript errors after adding the new intents."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
+      "text": "Add task-related slot definitions required to fulfill the new task intents, including at minimum: task title, task description, task category, location identifier, and task identifier (for updates). Ensure an empty slot bag can be created and slot fill/clear checks work for the new slots.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "recent-messages-1"
         ],
         "quotes": [
-          "Run Add slot-filling so the Secretary can gather missing details automatically"
+          "Add Secretary intents: create_task, find_tasks, update_task."
         ]
       },
       "acceptanceCriteria": [
-        "During report_issue slot-filling, once issue_description is filled and issue_category is the next missing slot, the UI shows suggested categories.",
-        "Clicking a suggested category fills the issue_category slot and advances the slot-filling flow.",
-        "If no suggestions are returned, the Secretary asks the user to type a category (English prompt) and uses the next user message to fill issue_category."
+        "`SecretarySlot`, `SlotBag`, and `createEmptySlotBag()` support the new task slots in frontend/src/secretary/intent/types.ts and frontend/src/secretary/intent/slotState.ts.",
+        "`isSlotFilled`, `clearSlot`, and any dependent-slot clearing logic handle the new task slots correctly (no runtime exceptions when clearing/filling)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
+      "text": "Update the rule-based intent classifier to recognize the new intents from common user phrasing (e.g., “create a task”, “show tasks”, “find tasks”, “update task”, “mark task done”), without breaking existing intents.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "recent-messages-1"
         ],
         "quotes": [
-          "Run Add slot-filling so the Secretary can gather missing details automatically"
+          "Add Secretary intents: create_task, find_tasks, update_task."
         ]
       },
       "acceptanceCriteria": [
-        "When the next slot is state, selecting a state from the typeahead fills the state slot and triggers the next prompt.",
-        "When the next slot is county or place, selecting an option from the typeahead fills the correct slot and triggers the next prompt.",
-        "Typeahead selection does not rely on undefined/non-existent brain methods; slot determination and filling works reliably."
+        "frontend/src/secretary/intent/intentClassifier.ts returns 'create_task' for at least one create-task phrasing, 'find_tasks' for at least one list/find phrasing, and 'update_task' for at least one update/mark-done phrasing.",
+        "Existing classifications (e.g., report_issue, find_instance, create_instance, ask_category, top_issues) still work as before (no dead code or unreachable logic introduced)."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
+      "text": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "recent-messages-1"
         ],
         "quotes": [
-          "Run Add slot-filling so the Secretary can gather missing details automatically"
+          "Add Secretary intents: create_task, find_tasks, update_task."
         ]
       },
       "acceptanceCriteria": [
-        "For report_issue, once required slots are filled, the Secretary navigates via the existing navigation handler to the proposals/reporting destination and closes the widget when requested by the completion handler.",
-        "After completion, the Secretary conversation resets and shows an English prompt like “Done! Anything else I can help with?” on the next visible state."
+        "frontend/src/secretary/intent/flowRegistry.ts contains flow definitions for create_task, find_tasks, and update_task, each with a `slotOrder` and `requiredSlots`.",
+        "Each new intent has an `onComplete` implementation that triggers the corresponding task operation (create/list/update) or navigates to an appropriate task UI route when necessary."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add English slot-filling prompts for the new task slots so the Secretary can ask for missing task information during an intent flow (e.g., ask for title, description, location, category, and which task to update).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-1"
+        ],
+        "quotes": [
+          "Use English for any user-facing text in the build request."
+        ]
+      },
+      "acceptanceCriteria": [
+        "frontend/src/secretary/copy/secretaryPrompts.ts `buildSlotPrompt(...)` returns appropriate English prompts for each new task slot.",
+        "When a task intent is active and a required slot is missing, the UI shows the corresponding prompt rather than the generic fallback prompt."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Integrate the task intent system into the Secretary runtime so task intents are actually executed from chat input: when user text is received, classify to a task intent when appropriate, run slot-filling using the intent flow runner, and on completion call the existing task backend methods via the current actor (createTask, listTasksByLocation, getTask/updateTask) and present a short English confirmation/result message in the Secretary chat.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-1"
+        ],
+        "quotes": [
+          "Run Phase 4: Secretary integration • Add Secretary intents: create_task, find_tasks, update_task."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When the user types a create-task message, the Secretary gathers missing required slots (via prompts) and then calls the existing create task backend path (as used by frontend/src/hooks/useTasks.ts `useCreateTask`).",
+        "When the user types a find-tasks message and provides/has a location, the Secretary calls the existing list tasks backend path (as used by frontend/src/hooks/useTasks.ts `useListTasksByLocation`) and prints a readable summary (e.g., first N tasks with titles and statuses) in the chat.",
+        "When the user types an update-task message and provides/has enough identifiers, the Secretary calls the existing update task backend path (as used by frontend/src/hooks/useTasks.ts `useUpdateTaskStatus`, i.e., actor.updateTask(...)) and confirms the update in chat.",
+        "No changes are made to immutable frontend paths (per SYSTEM_CONTEXT), and the app builds successfully."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (read-only shadcn components).",
-    "Do not modify any files listed in frontend.immutablePaths in SYSTEM_CONTEXT.",
-    "Backend must remain a single Motoko actor (no additional backend canisters/services for this change)."
+    "Do not modify any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui (these paths are immutable).",
+    "Keep all backend logic in the single Motoko actor (backend/main.mo); only add backend changes if the existing task APIs needed by the Secretary intents are missing."
   ],
   "nonGoals": [
-    "Implementing the WSP token canister or token operations.",
-    "Implementing new backend geography datasets or changing geography storage schemas.",
-    "Adding new intents beyond the existing intent set; focus on making slot-filling work reliably for current intents."
+    "Add third-party authentication providers (only Internet Identity is supported).",
+    "Add real-time messaging or WebSocket-based updates for tasks.",
+    "Introduce new backend services or external databases."
   ],
   "imageRequirements": {
     "required": [],

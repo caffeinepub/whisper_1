@@ -1,6 +1,7 @@
 /**
  * Pure slot-state utilities for independent reset/repair and future reuse.
  * Provides getSlot, setSlot, clearSlot, clearDependentSlots, isSlotFilled.
+ * Extended with task-related slot support.
  */
 
 import type { SlotBag, SecretarySlot } from './types';
@@ -47,6 +48,24 @@ export function clearSlot(slots: SlotBag, slotName: SecretarySlot): void {
     case 'issue_category':
       slots.issue_category = '';
       break;
+    case 'task_title':
+      slots.task_title = '';
+      break;
+    case 'task_description':
+      slots.task_description = '';
+      break;
+    case 'task_category':
+      slots.task_category = '';
+      break;
+    case 'task_location_id':
+      slots.task_location_id = '';
+      break;
+    case 'task_id':
+      slots.task_id = '';
+      break;
+    case 'task_status':
+      slots.task_status = null;
+      break;
   }
 }
 
@@ -64,6 +83,10 @@ export function clearDependentSlots(slots: SlotBag, changedSlot: SecretarySlot):
     case 'county':
       // Changing county clears place
       slots.place = null;
+      break;
+    case 'task_location_id':
+      // Changing location clears task-specific identifiers
+      slots.task_id = '';
       break;
     // Other slots don't have dependents
   }
@@ -92,5 +115,11 @@ export function createEmptySlotBag(): SlotBag {
     place: null,
     issue_description: '',
     issue_category: '',
+    task_title: '',
+    task_description: '',
+    task_category: '',
+    task_location_id: '',
+    task_id: '',
+    task_status: null,
   };
 }

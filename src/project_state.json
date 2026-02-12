@@ -1,48 +1,58 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Whisper civic platform with an existing “Secretary” chat popup that should remain normal-sized (not full screen). Planned: automatic slot-filling and multi-step conversational flows for issue reporting with geography-aware suggestions (city/county/state), cross-referencing a locations database and a “50 most common issues” database, plus auto-creation of missing Whisper instances using a naming convention (e.g., WhisperOmaha-NE). Also planned: adding a WSP (Whisper Coin) token on ICP via a separate ICRC-1 ledger canister and integrating read-only balance display, with later phases for minting/rewards, staking, and governance.",
+  "summary": "Phase 4: integrate a conversational 'Secretary' layer to manage tasks via intents.",
   "architectural_notes": [
-    "Secretary refers to the existing chat popup UI; it should not become full-screen.",
-    "Slot-filling and multi-step flows should trigger automatically for all user messages (not only via button/keyword).",
-    "Geography handling should use fuzzy matching against a city/county/state database, then ask whether the issue is city/county/state.",
-    "If a referenced city/county/state instance does not exist, prompt founding-member flow and auto-create required instances using naming like \"WhisperOmaha-NE\".",
-    "WSP token must be deployed as a separate ICRC-1 ledger canister (not embedded in the main Whisper canister); Whisper stores the ledger canister ID for integration."
+    "Secretary layer will use explicit intents (create_task, find_tasks, update_task) to route task actions to backend APIs."
   ],
-  "known_issues": [
-    "Caffeine/AI build execution intermittently fails or returns 'couldn't implement' during token/flow implementation attempts; may require smaller, more specific build steps."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-enable-the-secretary-s-intent-slot-filling-mode-to-automatically-pre-fill-slots-from-a-single-user-message-at-minimum-geography-slots-and-for-the-report-issue-intent-the-initial-issue-description-and-then-ask-only-for-the-remaining-missing-required-slots",
-      "title": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
+      "id": "feature-extend-the-secretary-intent-type-system-to-include-three-new-intents-create-task-find-tasks-and-update-task",
+      "title": "Extend the Secretary intent type system to include three new intents: create_task, find_tasks, and update_task.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-wire-complaint-category-suggestions-into-slot-filling-when-the-next-missing-slot-is-issue-category-fetch-and-present-category-suggestions-based-on-the-currently-filled-geography-level-and-the-current-issue-description-slot-and-allow-the-user-to-choose-a-suggestion-to-fill-the-category-slot",
-      "title": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
+      "id": "feature-add-task-related-slot-definitions-required-to-fulfill-the-new-task-intents-including-at-minimum-task-title-task-description-task-category-location-identifier-and-task-identifier-for-updates-ensure-an-empty-slot-bag-can-be-created-and-slot-fill-clear-checks-work-for-the-new-slots",
+      "title": "Add task-related slot definitions required to fulfill the new task intents, including at minimum: task title, task description, task category, location identifier, and task identifier (for updates). Ensure an empty slot bag can be created and slot fill/clear checks work for the new slots.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-secretary-location-typeahead-selection-so-it-works-for-any-active-geography-slot-state-county-or-place-and-correctly-advances-slot-filling-after-selection",
-      "title": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
+      "id": "feature-update-the-rule-based-intent-classifier-to-recognize-the-new-intents-from-common-user-phrasing-e-g-create-a-task-show-tasks-find-tasks-update-task-mark-task-done-without-breaking-existing-intents",
+      "title": "Update the rule-based intent classifier to recognize the new intents from common user phrasing (e.g., “create a task”, “show tasks”, “find tasks”, “update task”, “mark task done”), without breaking existing intents.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-slot-filling-completion-behavior-is-user-visible-and-consistent-after-all-required-slots-for-an-intent-are-filled-the-secretary-executes-the-existing-completion-navigation-for-that-intent-and-then-resets-back-to-the-main-menu-with-an-english-confirmation-message",
-      "title": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
+      "id": "feature-register-the-new-intents-in-the-intent-flow-registry-with-required-optional-slots-and-a-slot-fill-order-and-define-completion-behavior-hooks-for-each-intent",
+      "title": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent.",
       "reqIds": [
         "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-english-slot-filling-prompts-for-the-new-task-slots-so-the-secretary-can-ask-for-missing-task-information-during-an-intent-flow-e-g-ask-for-title-description-location-category-and-which-task-to-update",
+      "title": "Add English slot-filling prompts for the new task slots so the Secretary can ask for missing task information during an intent flow (e.g., ask for title, description, location, category, and which task to update).",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-task-intent-system-into-the-secretary-runtime-so-task-intents-are-actually-executed-from-chat-input-when-user-text-is-received-classify-to-a-task-intent-when-appropriate-run-slot-filling-using-the-intent-flow-runner-and-on-completion-call-the-existing-task-backend-methods-via-the-current-actor-createtask-listtasksbylocation-gettask-updatetask-and-present-a-short-english-confirmation-result-message-in-the-secretary-chat",
+      "title": "Integrate the task intent system into the Secretary runtime so task intents are actually executed from chat input: when user text is received, classify to a task intent when appropriate, run slot-filling using the intent flow runner, and on completion call the existing task backend methods via the current actor (createTask, listTasksByLocation, getTask/updateTask) and present a short English confirmation/result message in the Secretary chat.",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -50,43 +60,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Implement automatic slot-filling in the existing Secretary chat popup to gather missing details from user messages",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Implement multi-step conversational flows in the Secretary (issue reporting, instance creation, category routing, guidance, etc.)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Keep the Secretary chat popup in normal sizing (not full screen)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add geography-aware autosuggest and clarification (city/county/state) using a location database; cross-reference existing instances and allow founding-member auto-creation of missing instances",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Integrate a '50 most common issues' database to suggest categories during reporting flows",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Create WSP (Whisper Coin) on ICP as a dedicated ICRC-1 ledger canister and integrate Whisper to read/display balances (later phases: minting rewards, staking, governance/SNS)",
+      "summary": "Secretary integration: add intents create_task, find_tasks, update_task to connect conversational commands to the task backend",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Whisper",
+  "projectName": "Phase 4 Secretary integration: add task intents (create_task, find_tasks, update_task)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

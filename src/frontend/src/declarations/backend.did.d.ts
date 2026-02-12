@@ -42,6 +42,10 @@ export interface ContributionSummary {
   'totalPoints' : bigint,
   'contributor' : Principal,
 }
+export interface CreatePostRequest {
+  'content' : string,
+  'instanceName' : string,
+}
 export type GeoId = string;
 export interface GovernanceProposal {
   'id' : bigint,
@@ -71,6 +75,21 @@ export type LogContributionEventError = { 'referenceIdEmpty' : null } |
   { 'referenceIdRequired' : null } |
   { 'duplicateContribution' : null } |
   { 'invalidActionType' : null };
+export interface Post {
+  'id' : bigint,
+  'deleted' : boolean,
+  'content' : string,
+  'createdAt' : bigint,
+  'authorName' : string,
+  'flaggedByModerator' : boolean,
+  'author' : Principal,
+  'updatedAt' : [] | [bigint],
+  'flaggedReason' : [] | [string],
+  'flaggedAt' : [] | [bigint],
+  'flaggedBy' : [] | [Principal],
+  'instanceName' : string,
+  'isFlagged' : boolean,
+}
 export type ProfileImage = Uint8Array;
 export interface Proposal {
   'status' : string,
@@ -90,6 +109,19 @@ export interface StakingRecord {
   'lockedBalance' : bigint,
   'totalStaked' : bigint,
 }
+export interface StructuredCivicTask {
+  'id' : bigint,
+  'status' : TaskStatus,
+  'assignee' : [] | [Principal],
+  'title' : string,
+  'createdAt' : bigint,
+  'description' : string,
+  'history' : Array<TaskHistoryEntry>,
+  'updatedAt' : bigint,
+  'issueId' : [] | [string],
+  'locationId' : string,
+  'category' : string,
+}
 export type SubmitProposalResult = { 'error' : { 'message' : string } } |
   { 'success' : { 'proposal' : Proposal } };
 export interface Task {
@@ -97,6 +129,15 @@ export interface Task {
   'completed' : boolean,
   'description' : string,
 }
+export interface TaskHistoryEntry {
+  'status' : TaskStatus,
+  'description' : string,
+  'timestamp' : bigint,
+}
+export type TaskStatus = { 'resolved' : null } |
+  { 'blocked' : null } |
+  { 'in_progress' : null } |
+  { 'open' : null };
 export interface TokenBalance {
   'staked' : bigint,
   'total' : bigint,
@@ -147,6 +188,7 @@ export interface USState {
   'censusAcreage' : bigint,
   'termType' : string,
 }
+export interface UpdatePostRequest { 'content' : string, 'postId' : bigint }
 export interface UserProfile {
   'profileImage' : [] | [ProfileImage],
   'name' : string,
@@ -205,8 +247,33 @@ export interface _SERVICE {
   >,
   'adminMintWSP' : ActorMethod<[Principal, bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'createTask' : ActorMethod<[string, string], bigint>,
+  'clearFlag' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,
+  'convertIssueToTask' : ActorMethod<
+    [string, string, string, string, string],
+    bigint
+  >,
+  'createPost' : ActorMethod<
+    [CreatePostRequest],
+    { 'ok' : Post } |
+      { 'err' : string }
+  >,
+  'createTask' : ActorMethod<
+    [string, string, string, string, [] | [string]],
+    bigint
+  >,
+  'createTask_legacy' : ActorMethod<[string, string], bigint>,
+  'deletePost' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,
   'deleteProposal' : ActorMethod<[string], boolean>,
+  'flagPost' : ActorMethod<
+    [bigint, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'flagPostByModerator' : ActorMethod<
+    [bigint, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'getAdminModerationQueue' : ActorMethod<[], Array<[string, Proposal]>>,
   'getAllProposals' : ActorMethod<[], Array<[string, Proposal]>>,
   'getAllStates' : ActorMethod<[], Array<USState>>,
@@ -227,11 +294,18 @@ export interface _SERVICE {
     Array<[string, ContributionCriteria]>
   >,
   'getCountiesForState' : ActorMethod<[GeoId], Array<USCounty>>,
+  'getFlaggedPostLimit' : ActorMethod<[bigint], Array<Post>>,
+  'getFlaggedPosts' : ActorMethod<[bigint, bigint], Array<Post>>,
+  'getFlaggedPostsCount' : ActorMethod<[], bigint>,
   'getPlacesForCounty' : ActorMethod<[GeoId], Array<USPlace>>,
   'getPlacesForState' : ActorMethod<[GeoId], Array<USPlace>>,
+  'getPost' : ActorMethod<[bigint], [] | [Post]>,
+  'getPostsByAuthor' : ActorMethod<[Principal, bigint, bigint], Array<Post>>,
+  'getPostsByInstance' : ActorMethod<[string, bigint, bigint], Array<Post>>,
   'getProposal' : ActorMethod<[string], [] | [Proposal]>,
   'getStakingInfo' : ActorMethod<[], [] | [StakingRecord]>,
-  'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,
+  'getTask' : ActorMethod<[bigint, string], StructuredCivicTask>,
+  'getTasks_legacy' : ActorMethod<[string], Array<[bigint, Task]>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserStakingRecord' : ActorMethod<[Principal], [] | [StakingRecord]>,
   'governanceCreateProposal' : ActorMethod<
@@ -261,6 +335,8 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
+  'listTasksByIssueId' : ActorMethod<[string], Array<StructuredCivicTask>>,
+  'listTasksByLocation' : ActorMethod<[string], Array<StructuredCivicTask>>,
   'logContributionEvent' : ActorMethod<
     [string, [] | [string], [] | [string]],
     { 'ok' : bigint } |
@@ -287,8 +363,17 @@ export interface _SERVICE {
     SubmitProposalResult
   >,
   'unstake' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,
+  'updatePost' : ActorMethod<
+    [UpdatePostRequest],
+    { 'ok' : Post } |
+      { 'err' : string }
+  >,
   'updateProposalStatus' : ActorMethod<[string, string], boolean>,
-  'updateTaskStatus' : ActorMethod<[string, bigint, boolean], boolean>,
+  'updateTask' : ActorMethod<
+    [bigint, string, string, string, string, TaskStatus],
+    boolean
+  >,
+  'updateTaskStatus_legacy' : ActorMethod<[string, bigint, boolean], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

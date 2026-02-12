@@ -7,6 +7,17 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface ContributionLogEntry {
+    id: bigint;
+    pointsAwarded: bigint;
+    actionType: string;
+    referenceId?: string;
+    rewardType: string;
+    timestamp: bigint;
+    details?: string;
+    invalidated: boolean;
+    contributor: Principal;
+}
 export interface StakingRecord {
     availableBalance: bigint;
     pendingRewards: bigint;
@@ -56,6 +67,19 @@ export interface USPlace {
     censusPlaceType: string;
     censusStateCode: CensusStateCode;
 }
+export interface StructuredCivicTask {
+    id: bigint;
+    status: TaskStatus;
+    assignee?: Principal;
+    title: string;
+    createdAt: bigint;
+    description: string;
+    history: Array<TaskHistoryEntry>;
+    updatedAt: bigint;
+    issueId?: string;
+    locationId: string;
+    category: string;
+}
 export interface GovernanceProposal {
     id: bigint;
     status: GovernanceProposalStatus;
@@ -64,6 +88,21 @@ export interface GovernanceProposal {
     createdAt: bigint;
     description: string;
     proposer: Principal;
+}
+export interface Post {
+    id: bigint;
+    deleted: boolean;
+    content: string;
+    createdAt: bigint;
+    authorName: string;
+    flaggedByModerator: boolean;
+    author: Principal;
+    updatedAt?: bigint;
+    flaggedReason?: string;
+    flaggedAt?: bigint;
+    flaggedBy?: Principal;
+    instanceName: string;
+    isFlagged: boolean;
 }
 export interface USCounty {
     censusLandAreaSqMeters: string;
@@ -75,6 +114,15 @@ export interface USCounty {
     shortName: string;
     censusWaterAreaSqMeters: string;
     population2010: string;
+}
+export interface CreatePostRequest {
+    content: string;
+    instanceName: string;
+}
+export interface TaskHistoryEntry {
+    status: TaskStatus;
+    description: string;
+    timestamp: bigint;
 }
 export interface GovernanceVotes {
     tally: {
@@ -100,6 +148,10 @@ export interface USGeographyDataChunk {
     states: Array<USState>;
     places: Array<USPlace>;
     counties: Array<USCounty>;
+}
+export interface UpdatePostRequest {
+    content: string;
+    postId: bigint;
 }
 export interface ContributionSummary {
     totalCityPoints: bigint;
@@ -132,17 +184,6 @@ export interface TokenBalance {
     voting: bigint;
     bounty: bigint;
 }
-export interface ContributionLogEntry {
-    id: bigint;
-    pointsAwarded: bigint;
-    actionType: string;
-    referenceId?: string;
-    rewardType: string;
-    timestamp: bigint;
-    details?: string;
-    invalidated: boolean;
-    contributor: Principal;
-}
 export interface UserProfile {
     profileImage?: ProfileImage;
     name: string;
@@ -161,6 +202,12 @@ export enum LogContributionEventError {
     referenceIdRequired = "referenceIdRequired",
     duplicateContribution = "duplicateContribution",
     invalidActionType = "invalidActionType"
+}
+export enum TaskStatus {
+    resolved = "resolved",
+    blocked = "blocked",
+    in_progress = "in_progress",
+    open = "open"
 }
 export enum USHierarchyLevel {
     country = "country",
@@ -193,8 +240,45 @@ export interface backendInterface {
     }>;
     adminMintWSP(recipient: Principal, amount: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    createTask(proposalId: string, description: string): Promise<bigint>;
+    clearFlag(postId: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    convertIssueToTask(title: string, description: string, category: string, locationId: string, issueId: string): Promise<bigint>;
+    createPost(request: CreatePostRequest): Promise<{
+        __kind__: "ok";
+        ok: Post;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createTask(title: string, description: string, category: string, locationId: string, issueId: string | null): Promise<bigint>;
+    createTask_legacy(proposalId: string, description: string): Promise<bigint>;
+    deletePost(postId: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     deleteProposal(instanceName: string): Promise<boolean>;
+    flagPost(postId: bigint, reason: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    flagPostByModerator(postId: bigint, reason: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getAdminModerationQueue(): Promise<Array<[string, Proposal]>>;
     getAllProposals(): Promise<Array<[string, Proposal]>>;
     getAllStates(): Promise<Array<USState>>;
@@ -206,11 +290,18 @@ export interface backendInterface {
     getComplaintCategoriesByGeographyLevel(level: USHierarchyLevel, searchTerm: string | null): Promise<Array<string>>;
     getContributionCriteria(): Promise<Array<[string, ContributionCriteria]>>;
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
+    getFlaggedPostLimit(limit: bigint): Promise<Array<Post>>;
+    getFlaggedPosts(limit: bigint, offset: bigint): Promise<Array<Post>>;
+    getFlaggedPostsCount(): Promise<bigint>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getPlacesForState(stateGeoId: GeoId): Promise<Array<USPlace>>;
+    getPost(postId: bigint): Promise<Post | null>;
+    getPostsByAuthor(author: Principal, limit: bigint, offset: bigint): Promise<Array<Post>>;
+    getPostsByInstance(instanceName: string, limit: bigint, offset: bigint): Promise<Array<Post>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
     getStakingInfo(): Promise<StakingRecord | null>;
-    getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
+    getTask(taskId: bigint, locationId: string): Promise<StructuredCivicTask>;
+    getTasks_legacy(proposalId: string): Promise<Array<[bigint, Task]>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserStakingRecord(user: Principal): Promise<StakingRecord | null>;
     governanceCreateProposal(title: string, description: string): Promise<{
@@ -243,6 +334,8 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
+    listTasksByIssueId(issueId: string): Promise<Array<StructuredCivicTask>>;
+    listTasksByLocation(locationId: string): Promise<Array<StructuredCivicTask>>;
     logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<{
         __kind__: "ok";
         ok: bigint;
@@ -267,6 +360,14 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    updatePost(request: UpdatePostRequest): Promise<{
+        __kind__: "ok";
+        ok: Post;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
-    updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
+    updateTask(taskId: bigint, title: string, description: string, category: string, locationId: string, status: TaskStatus): Promise<boolean>;
+    updateTaskStatus_legacy(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
 }

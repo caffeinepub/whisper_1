@@ -5,6 +5,7 @@ import { UserProfileMenu } from './UserProfileMenu';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useCurrentPath } from '@/hooks/useCurrentPath';
 import { resolveAssetUrl, joinBasePath } from '@/utils/assetUrl';
+import { getLastUsedLocationId } from '@/utils/instanceScope';
 
 export function HomeHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,6 +19,12 @@ export function HomeHeader() {
     window.history.pushState({}, '', fullPath);
     window.dispatchEvent(new PopStateEvent('popstate'));
     setMobileMenuOpen(false);
+  };
+
+  const handleTasksNavigation = () => {
+    const lastLocationId = getLastUsedLocationId();
+    const tasksPath = lastLocationId ? `/tasks/${lastLocationId}` : '/tasks/default';
+    handleNavigation(tasksPath);
   };
 
   const isActive = (path: string) => {
@@ -55,47 +62,43 @@ export function HomeHeader() {
           <nav className="hidden md:flex items-center gap-6">
             <button
               onClick={() => handleNavigation('/')}
-              className={`text-white hover:text-secondary transition-colors ${
-                isActive('/') ? 'text-secondary' : ''
+              className={`text-sm font-medium transition-colors ${
+                isActive('/') ? 'text-secondary' : 'text-slate-300 hover:text-white'
               }`}
             >
               Home
             </button>
             <button
+              onClick={() => handleNavigation('/feed')}
+              className={`text-sm font-medium transition-colors ${
+                isActive('/feed') ? 'text-secondary' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Feed
+            </button>
+            <button
+              onClick={handleTasksNavigation}
+              className={`text-sm font-medium transition-colors ${
+                isActive('/tasks') ? 'text-secondary' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Tasks
+            </button>
+            <button
               onClick={() => handleNavigation('/geography')}
-              className={`text-white hover:text-secondary transition-colors ${
-                isActive('/geography') ? 'text-secondary' : ''
+              className={`text-sm font-medium transition-colors ${
+                isActive('/geography') ? 'text-secondary' : 'text-slate-300 hover:text-white'
               }`}
             >
               Geography
             </button>
-            {isAuthenticated && (
-              <button
-                onClick={() => handleNavigation('/admin')}
-                className={`text-white hover:text-secondary transition-colors ${
-                  isActive('/admin') ? 'text-secondary' : ''
-                }`}
-              >
-                Admin
-              </button>
-            )}
-            {isAuthenticated ? (
-              <UserProfileMenu onNavigate={handleNavigation} />
-            ) : (
-              <Button
-                onClick={() => handleNavigation('/profile')}
-                variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/30"
-              >
-                Login
-              </Button>
-            )}
+            {isAuthenticated && <UserProfileMenu onNavigate={handleNavigation} />}
           </nav>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-white"
+            className="md:hidden text-white hover:text-secondary transition-colors"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -107,49 +110,45 @@ export function HomeHeader() {
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => handleNavigation('/')}
-                className={`text-white hover:text-secondary transition-colors text-left ${
-                  isActive('/') ? 'text-secondary' : ''
+                className={`text-sm font-medium text-left transition-colors ${
+                  isActive('/') ? 'text-secondary' : 'text-slate-300'
                 }`}
               >
                 Home
               </button>
               <button
+                onClick={() => handleNavigation('/feed')}
+                className={`text-sm font-medium text-left transition-colors ${
+                  isActive('/feed') ? 'text-secondary' : 'text-slate-300'
+                }`}
+              >
+                Feed
+              </button>
+              <button
+                onClick={handleTasksNavigation}
+                className={`text-sm font-medium text-left transition-colors ${
+                  isActive('/tasks') ? 'text-secondary' : 'text-slate-300'
+                }`}
+              >
+                Tasks
+              </button>
+              <button
                 onClick={() => handleNavigation('/geography')}
-                className={`text-white hover:text-secondary transition-colors text-left ${
-                  isActive('/geography') ? 'text-secondary' : ''
+                className={`text-sm font-medium text-left transition-colors ${
+                  isActive('/geography') ? 'text-secondary' : 'text-slate-300'
                 }`}
               >
                 Geography
               </button>
               {isAuthenticated && (
                 <button
-                  onClick={() => handleNavigation('/admin')}
-                  className={`text-white hover:text-secondary transition-colors text-left ${
-                    isActive('/admin') ? 'text-secondary' : ''
+                  onClick={() => handleNavigation('/profile')}
+                  className={`text-sm font-medium text-left transition-colors ${
+                    isActive('/profile') ? 'text-secondary' : 'text-slate-300'
                   }`}
                 >
-                  Admin
+                  Profile
                 </button>
-              )}
-              {isAuthenticated ? (
-                <>
-                  <button
-                    onClick={() => handleNavigation('/profile')}
-                    className={`text-white hover:text-secondary transition-colors text-left ${
-                      isActive('/profile') ? 'text-secondary' : ''
-                    }`}
-                  >
-                    Profile
-                  </button>
-                </>
-              ) : (
-                <Button
-                  onClick={() => handleNavigation('/profile')}
-                  variant="outline"
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/30 w-full"
-                >
-                  Login
-                </Button>
               )}
             </div>
           </nav>

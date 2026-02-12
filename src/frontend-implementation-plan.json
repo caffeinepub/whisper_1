@@ -1,93 +1,147 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Secretary slot-filling: auto-prefill, category suggestions, and robust geography typeahead selection",
+  "title": "Secretary Phase 4: task intents (create_task, find_tasks, update_task)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Auto-enter slot-filling from a single message, prefill geography and initial report_issue description, and prompt only for remaining required slots (English prompts).",
+      "summary": "Add new Secretary intents for task creation, listing, and updating to the intent type system.",
       "acceptanceCriteria": [
-        "When the user types a single message like “Potholes in Omaha, Nebraska near 72nd street”, the Secretary enters slot-filling mode, pre-fills the state (and place when possible), sets a reasonable initial issue_description, and only prompts for missing required slots (e.g., category) instead of restarting at the menu.",
-        "When geography cannot be reliably extracted, the Secretary prompts for the missing geography slot using the existing slot prompt copy.",
-        "All prompts and recovery messages shown during slot-filling are in English."
+        "TypeScript type `SecretaryIntent` (frontend/src/secretary/intent/types.ts) includes 'create_task', 'find_tasks', and 'update_task'.",
+        "All intent-related modules compile without TypeScript errors after adding the new intents."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "path": "frontend/src/secretary/intent/types.ts",
           "operation": "modify",
-          "description": "Extend slot-filling entry from the menu so that after intent classification it also pre-fills report_issue.issue_description from the same user message (using a simple, deterministic heuristic that removes detected geography phrases when possible), while retaining the existing geography prefill behavior and English slot prompts for any remaining required slots."
-        },
-        {
-          "path": "frontend/src/secretary/intent/issueDescriptionNlp.ts",
-          "operation": "create",
-          "description": "Add a small, deterministic helper to derive an initial issue_description from a single free-text message given any extracted state/county/place (e.g., strip matched geography tokens and common connectors like “in/near/at”, fallback to original text if stripping is unreliable)."
+          "description": "Extend `SecretaryIntent` to include `create_task`, `find_tasks`, and `update_task`, and update associated intent/slot typing to support task flows."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "When issue_category is the next missing slot during report_issue slot-filling, fetch and show category suggestions based on filled geography level and issue_description; allow click-to-fill or fallback to typed category (English).",
+      "summary": "Define and wire task-related intent slots (title, description, category, location identifier, task identifier) with correct empty-bag, fill, and clear behavior.",
       "acceptanceCriteria": [
-        "During report_issue slot-filling, once issue_description is filled and issue_category is the next missing slot, the UI shows suggested categories.",
-        "Clicking a suggested category fills the issue_category slot and advances the slot-filling flow.",
-        "If no suggestions are returned, the Secretary asks the user to type a category (English prompt) and uses the next user message to fill issue_category."
+        "`SecretarySlot`, `SlotBag`, and `createEmptySlotBag()` support the new task slots in frontend/src/secretary/intent/types.ts and frontend/src/secretary/intent/slotState.ts.",
+        "`isSlotFilled`, `clearSlot`, and any dependent-slot clearing logic handle the new task slots correctly (no runtime exceptions when clearing/filling)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "path": "frontend/src/secretary/intent/types.ts",
           "operation": "modify",
-          "description": "In intent-slot-filling mode, when next missing slot becomes issue_category for report_issue and issue_description is present, compute suggestions via the existing FlowRunner complaint-suggestion capability using the most specific filled geography level (place > county > state). Store the resulting suggestions for the UI; if none are returned, emit an English prompt that asks the user to type a category and allow the next user text to fill issue_category."
+          "description": "Add task-related `SecretarySlot` keys (at minimum: task title, task description, task category, location identifier, task identifier) and extend `SlotBag` accordingly."
         },
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/secretary/intent/slotState.ts",
           "operation": "modify",
-          "description": "Change suggested-category UI behavior so clicking a suggestion immediately submits it through the brain (treat as filling issue_category and advancing slot-filling), rather than only copying it into the input box."
+          "description": "Update `createEmptySlotBag()`, `clearSlot()`, `clearDependentSlots()`, and `isSlotFilled()` to handle task slots (including cascading clears where appropriate, e.g., clearing location should clear task-specific identifiers when needed)."
         },
         {
-          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "path": "frontend/src/secretary/flow/types.ts",
           "operation": "modify",
-          "description": "Refine issue_category prompting copy to support both cases: (1) suggestions available (English prompt introducing suggested categories), (2) no suggestions available (English prompt asking the user to type a category)."
+          "description": "Extend `SecretaryContext` with minimal additional intent-slot runtime state needed for slot filling (e.g., a tracked pending/expected slot) so an empty slot bag can be created and slot fill/clear checks can be orchestrated safely."
+        },
+        {
+          "path": "frontend/src/secretary/state/secretaryContext.ts",
+          "operation": "modify",
+          "description": "Initialize and reset any new intent-slot runtime state added to `SecretaryContext` (including ensuring an empty task-capable slot bag is created via `createEmptySlotBag()` during initial context creation and resets)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Make location typeahead selection fill whichever geography slot is currently active (state/county/place) and advance slot-filling reliably without relying on undefined brain methods.",
+      "summary": "Teach the rule-based intent classifier to recognize task-related phrasing while preserving existing intent behavior.",
       "acceptanceCriteria": [
-        "When the next slot is state, selecting a state from the typeahead fills the state slot and triggers the next prompt.",
-        "When the next slot is county or place, selecting an option from the typeahead fills the correct slot and triggers the next prompt.",
-        "Typeahead selection does not rely on undefined/non-existent brain methods; slot determination and filling works reliably."
+        "frontend/src/secretary/intent/intentClassifier.ts returns 'create_task' for at least one create-task phrasing, 'find_tasks' for at least one list/find phrasing, and 'update_task' for at least one update/mark-done phrasing.",
+        "Existing classifications (e.g., report_issue, find_instance, create_instance, ask_category, top_issues) still work as before (no dead code or unreachable logic introduced)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/secretary/intent/intentClassifier.ts",
           "operation": "modify",
-          "description": "Fix typeahead selection handler to determine the active geography slot using the shared slot-filling logic (import getNextMissingSlot from the intent runner), then delegate selection to the brain in a slot-aware way for state/county/place, and ensure the flow advances to the next prompt."
-        },
-        {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "operation": "modify",
-          "description": "Add a dedicated method for geography typeahead selections that fills the correct currently-missing geography slot using the selected option’s data (USState/USCounty/USPlace), clears dependent slots when appropriate (e.g., state change clears county/place), and then continues slot-filling to the next prompt."
+          "description": "Add task-intent heuristics for common phrasing (e.g., create/add task; show/list/find tasks; update/mark done/complete task), with ordering that avoids collisions with existing intents like `create_instance` (e.g., prefer task intent when 'task' is present)."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Ensure slot-filling completion triggers the existing intent navigation, then visibly resets to the main menu with an English confirmation message.",
+      "summary": "Register task intents in the intent flow registry with required/optional slots, slot fill order, and completion hooks.",
       "acceptanceCriteria": [
-        "For report_issue, once required slots are filled, the Secretary navigates via the existing navigation handler to the proposals/reporting destination and closes the widget when requested by the completion handler.",
-        "After completion, the Secretary conversation resets and shows an English prompt like “Done! Anything else I can help with?” on the next visible state."
+        "frontend/src/secretary/intent/flowRegistry.ts contains flow definitions for create_task, find_tasks, and update_task, each with a `slotOrder` and `requiredSlots`.",
+        "Each new intent has an `onComplete` implementation that triggers the corresponding task operation (create/list/update) or navigates to an appropriate task UI route when necessary."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/secretary/intent/flowRegistry.ts",
+          "operation": "modify",
+          "description": "Add flow definitions for `create_task`, `find_tasks`, and `update_task` including `requiredSlots`, `optionalSlots`, and `slotOrder`. Update completion hook typing if needed so task completions can execute async work and/or return a completion action for the runtime to execute."
+        },
+        {
+          "path": "frontend/src/secretary/intent/flowRunner.ts",
+          "operation": "modify",
+          "description": "Update intent slot-flow utilities to support the registry changes for task intents (e.g., async completion hooks or returning a completion action), while preserving existing intent slot selection behavior."
+        },
+        {
+          "path": "frontend/src/secretary/intent/taskIntentActions.ts",
+          "operation": "create",
+          "description": "Define intent-completion action helpers for task intents (e.g., create/list/update) that the Secretary runtime can execute after slot filling, keeping registry hooks lightweight and runtime-friendly."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add English slot-filling prompts for task slots so the Secretary can ask for missing task information.",
+      "acceptanceCriteria": [
+        "frontend/src/secretary/copy/secretaryPrompts.ts `buildSlotPrompt(...)` returns appropriate English prompts for each new task slot.",
+        "When a task intent is active and a required slot is missing, the UI shows the corresponding prompt rather than the generic fallback prompt."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "operation": "modify",
+          "description": "Extend `buildSlotPrompt(...)` to return clear English prompts for task slots (title, description, category, location identifier, task identifier, and any additional required update fields such as status), ensuring these are used instead of the generic fallback."
+        },
+        {
+          "path": "frontend/src/secretary/intent/flowRunner.ts",
+          "operation": "modify",
+          "description": "Ensure slot-prompt selection for task flows uses the new prompts when required slots are missing (i.e., task slot prompts are surfaced via the intent slot-filling flow)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Execute task intents end-to-end from chat: classify, run slot filling, call existing task backend methods via the actor, and post short English confirmations/results in chat.",
+      "acceptanceCriteria": [
+        "When the user types a create-task message, the Secretary gathers missing required slots (via prompts) and then calls the existing create task backend path (as used by frontend/src/hooks/useTasks.ts `useCreateTask`).",
+        "When the user types a find-tasks message and provides/has a location, the Secretary calls the existing list tasks backend path (as used by frontend/src/hooks/useTasks.ts `useListTasksByLocation`) and prints a readable summary (e.g., first N tasks with titles and statuses) in the chat.",
+        "When the user types an update-task message and provides/has enough identifiers, the Secretary calls the existing update task backend path (as used by frontend/src/hooks/useTasks.ts `useUpdateTaskStatus`, i.e., actor.updateTask(...)) and confirms the update in chat.",
+        "No changes are made to immutable frontend paths (per SYSTEM_CONTEXT), and the app builds successfully."
       ],
       "file_operations": [
         {
           "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
           "operation": "modify",
-          "description": "Harden completion behavior for intent-slot-filling: after all required slots are filled, invoke the existing completion navigation helper for that intent (ensuring it requests widget close where already defined), then reset context to menu state and enqueue a single English confirmation prompt for the next visible state."
+          "description": "Integrate the intent system into chat handling: on user text, classify to task intent when appropriate, orchestrate slot-filling using the intent flow runner, and on completion execute task actions through the current actor and append short English confirmation/result messages to the chat history."
         },
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/secretary/intent/taskExecutor.ts",
+          "operation": "create",
+          "description": "Implement task intent execution helpers that call the existing actor task capabilities (createTask, listTasksByLocation, getTask/updateTask) and return concise, user-facing English messages (including readable list summaries and update confirmations)."
+        },
+        {
+          "path": "frontend/src/secretary/intent/taskSlotParsing.ts",
+          "operation": "create",
+          "description": "Add small, deterministic parsing helpers for filling task slots from free text (e.g., extracting a numeric task id, detecting 'done/completed' to map to a TaskStatus) and resolving/deriving a location identifier from user text and/or existing geography slot state."
+        },
+        {
+          "path": "frontend/src/secretary/intent/geographyLookup.ts",
           "operation": "modify",
-          "description": "Ensure the widget message-sync logic correctly reflects the post-completion reset state (including the English confirmation message) after the brain triggers navigation/closure via the existing navigationHandler."
+          "description": "Expose or extend geography lookup utilities as needed so the runtime can resolve a user-provided location phrase into the appropriate location identifier used by tasks (without changing immutable auth/actor wiring)."
+        },
+        {
+          "path": "frontend/src/secretary/state/secretaryContext.ts",
+          "operation": "modify",
+          "description": "Ensure task intent execution can add assistant messages and reset/advance intent state cleanly after completion (e.g., clear active intent, pending slot, and any task-specific transient state as appropriate)."
         }
       ]
     }

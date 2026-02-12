@@ -8,7 +8,7 @@ This document provides instructions for deploying Whisper to the Internet Comput
 - Cycles wallet with sufficient cycles for deployment
 - Node.js and pnpm installed
 
-## Configuration
+## Local Development Deployment
 
-### dfx.json Sample
+### Initial Setup
 

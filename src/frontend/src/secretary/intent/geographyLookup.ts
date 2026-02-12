@@ -1,108 +1,101 @@
 /**
- * Frontend geography lookup utility that performs on-demand backend calls
- * to match state/county/place from free text without requiring pre-populated
- * React Query caches.
- * 
- * This enables the Secretary to fill geography slots immediately on first message,
- * even before any typeahead interactions have populated the geography hooks.
+ * Frontend geography lookup utility.
+ * Performs on-demand backend calls to match state/county/place from free text,
+ * enabling Secretary to fill geography slots immediately.
+ * Extended with location ID resolution for task intents.
  */
 
 import type { backendInterface, USState, USCounty, USPlace } from '@/backend';
 import { findStateInText, findCountyInText, findPlaceInText } from './geographyNlp';
 
-export interface GeographyLookupResult {
-  state: USState | null;
-  county: USCounty | null;
-  place: USPlace | null;
+/**
+ * Look up a US state from free text
+ */
+export async function lookupUSStateFromText(
+  text: string,
+  actor: backendInterface | null
+): Promise<USState | null> {
+  if (!actor) return null;
+
+  try {
+    const allStates = await actor.getAllStates();
+    return findStateInText(text, allStates);
+  } catch (error) {
+    console.error('Error looking up state:', error);
+    return null;
+  }
 }
 
 /**
- * Lookup U.S. geography from free text by calling backend actor methods.
- * Returns the most specific match found (place > county > state).
- * 
- * @param text - User's free-text input
- * @param actor - Backend actor instance
- * @returns Geography match result with state/county/place (nulls if not found)
+ * Look up a US county from free text (requires state context)
+ */
+export async function lookupUSCountyFromText(
+  text: string,
+  state: USState | null,
+  actor: backendInterface | null
+): Promise<USCounty | null> {
+  if (!actor || !state) return null;
+
+  try {
+    const counties = await actor.getCountiesForState(state.hierarchicalId);
+    return findCountyInText(text, counties);
+  } catch (error) {
+    console.error('Error looking up county:', error);
+    return null;
+  }
+}
+
+/**
+ * Look up a US place from free text (requires state context)
+ */
+export async function lookupUSPlaceFromText(
+  text: string,
+  state: USState | null,
+  actor: backendInterface | null
+): Promise<USPlace | null> {
+  if (!actor || !state) return null;
+
+  try {
+    const places = await actor.getPlacesForState(state.hierarchicalId);
+    return findPlaceInText(text, places);
+  } catch (error) {
+    console.error('Error looking up place:', error);
+    return null;
+  }
+}
+
+/**
+ * Resolve a location identifier from user text and/or existing geography slot state
+ */
+export function resolveLocationIdFromSlots(
+  state: USState | null,
+  county: USCounty | null,
+  place: USPlace | null
+): string | null {
+  // Prefer most specific geography available
+  if (place) {
+    return place.hierarchicalId;
+  }
+  if (county) {
+    return county.hierarchicalId;
+  }
+  if (state) {
+    return state.hierarchicalId;
+  }
+  return null;
+}
+
+/**
+ * Look up geography from text and derive location ID
  */
 export async function lookupUSGeographyFromText(
   text: string,
   actor: backendInterface | null
-): Promise<GeographyLookupResult> {
-  // Return nulls if no actor available
-  if (!actor) {
-    console.warn('Geography lookup: No actor available');
-    return { state: null, county: null, place: null };
-  }
+): Promise<{ state: USState | null; county: USCounty | null; place: USPlace | null; locationId: string | null }> {
+  const state = await lookupUSStateFromText(text, actor);
+  const county = state ? await lookupUSCountyFromText(text, state, actor) : null;
+  const place = state ? await lookupUSPlaceFromText(text, state, actor) : null;
+  const locationId = resolveLocationIdFromSlots(state, county, place);
 
-  try {
-    // Step 1: Fetch all states and find a match
-    const allStates = await actor.getAllStates();
-    const matchedState = findStateInText(text, allStates);
-
-    if (!matchedState) {
-      // No state found in text
-      return { state: null, county: null, place: null };
-    }
-
-    // Step 2: Fetch counties for the matched state
-    let countiesForState: USCounty[] = [];
-    try {
-      countiesForState = await actor.getCountiesForState(matchedState.hierarchicalId);
-    } catch (error) {
-      // Backend traps if no counties found; treat as empty array
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('No counties found')) {
-        console.error('Error fetching counties for state:', error);
-      }
-      countiesForState = [];
-    }
-
-    // Step 3: Fetch places for the matched state
-    let placesForState: USPlace[] = [];
-    try {
-      placesForState = await actor.getPlacesForState(matchedState.hierarchicalId);
-    } catch (error) {
-      // Backend traps if no places found; treat as empty array
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('No places found')) {
-        console.error('Error fetching places for state:', error);
-      }
-      placesForState = [];
-    }
-
-    // Step 4: Try to match a place (most specific)
-    const matchedPlace = findPlaceInText(text, placesForState);
-    if (matchedPlace) {
-      // Infer county from place's hierarchicalId prefix
-      const matchedCounty = countiesForState.find(c =>
-        matchedPlace.hierarchicalId.startsWith(c.hierarchicalId)
-      );
-      return {
-        state: matchedState,
-        county: matchedCounty || null,
-        place: matchedPlace,
-      };
-    }
-
-    // Step 5: Try to match a county
-    const matchedCounty = findCountyInText(text, countiesForState);
-    if (matchedCounty) {
-      return {
-        state: matchedState,
-        county: matchedCounty,
-        place: null,
-      };
-    }
-
-    // Step 6: Only state matched
-    return {
-      state: matchedState,
-      county: null,
-      place: null,
-    };
-  } catch (error) {
-    // Catch any unexpected errors and log them
-    console.error('Geography lookup failed:', error);
-    return { state: null, county: null, place: null };
-  }
+  return { state, county, place, locationId };
 }

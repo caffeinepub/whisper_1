@@ -1,6 +1,7 @@
 /**
  * Secretary chat widget with initial greeting message, geography data wiring, speech-to-text microphone button,
- * enhanced styling with visible card background and borders, and improved typeahead/suggestion selection that fills slots and advances flow directly.
+ * enhanced styling with visible card background and borders, improved typeahead/suggestion selection that fills slots and advances flow directly,
+ * and confirmation summary display for guided report-issue flow.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -167,6 +168,17 @@ export function SecretaryWidget({
                   </div>
                 </div>
               ))}
+
+              {viewModel?.showConfirmationSummary && viewModel.confirmationSummary && (
+                <div className="bg-muted rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground">Review your issue report:</p>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">Location:</span> {viewModel.confirmationSummary.location}</p>
+                    <p><span className="font-medium">Category:</span> {viewModel.confirmationSummary.category}</p>
+                    <p><span className="font-medium">Details:</span> {viewModel.confirmationSummary.details}</p>
+                  </div>
+                </div>
+              )}
 
               {viewModel?.buttons && viewModel.buttons.length > 0 && (
                 <div className="flex flex-wrap gap-2">

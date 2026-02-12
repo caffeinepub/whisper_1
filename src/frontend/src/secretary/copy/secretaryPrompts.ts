@@ -1,95 +1,109 @@
 /**
- * Composable prompt builders/templates for Secretary nodes with formatted strings
- * for top issues, discovery results, issue lists, unknown input, slot-filling prompts,
- * and repair confirmations. Extended with category suggestion prompts.
+ * Composable prompt builders for Secretary nodes including slot-filling prompts,
+ * category suggestion prompts, repair confirmations, and guided report-issue prompts in English.
+ * Extended with task-related slot prompts.
  */
 
-import type { USState, USCounty, USPlace } from '@/backend';
+import type { SecretarySlot } from '../intent/types';
+import type { GuidedReportDraft } from '../flow/types';
+import type { USState, USCounty } from '@/backend';
 
 /**
- * Build a prompt for top issues in a location
+ * Build a prompt for a missing slot
+ */
+export function buildSlotPrompt(slot: SecretarySlot, state: USState | null, county: USCounty | null): string {
+  switch (slot) {
+    case 'state':
+      return 'Which state are you interested in?';
+    case 'county':
+      if (state) {
+        return `Which county in ${state.longName}?`;
+      }
+      return 'Which county?';
+    case 'place':
+      if (county) {
+        return `Which city or place in ${county.shortName}?`;
+      } else if (state) {
+        return `Which city or place in ${state.longName}?`;
+      }
+      return 'Which city or place?';
+    case 'issue_description':
+      return 'Please describe the issue you\'d like to report.';
+    case 'issue_category':
+      return 'What category best describes this issue?';
+    case 'task_title':
+      return 'What should I call this task?';
+    case 'task_description':
+      return 'Can you describe the task in a bit more detail?';
+    case 'task_category':
+      return 'What category does this task belong to?';
+    case 'task_location_id':
+      return 'Which location should this task be associated with? (Please provide a location identifier)';
+    case 'task_id':
+      return 'Which task would you like to update? (Please provide the task ID)';
+    case 'task_status':
+      return 'What status should I set for this task? (open, in_progress, blocked, or resolved)';
+    default:
+      return 'Please provide more information.';
+  }
+}
+
+/**
+ * Build a prompt for top issues at a location
  */
 export function buildTopIssuesPrompt(locationName: string, issues: string[]): string {
   if (issues.length === 0) {
-    return `I couldn't find any top issues for ${locationName} yet. Would you like to report the first one?`;
+    return `No top issues are currently tracked for ${locationName}.`;
   }
-
-  const issueList = issues.map((issue, idx) => `${idx + 1}. ${issue}`).join('\n');
-  return `Here are the top issues in ${locationName}:\n\n${issueList}\n\nWould you like to report a new issue or view details on one of these?`;
+  return `Here are the top issues in ${locationName}:\n${issues.map((issue, i) => `${i + 1}. ${issue}`).join('\n')}`;
 }
 
 /**
- * Build a prompt for discovery results
+ * Build a prompt for discovery result
  */
-export function buildDiscoveryResultPrompt(
-  state: USState | null,
-  county: USCounty | null,
-  place: USPlace | null
-): string {
-  if (place) {
-    return `Great! I found ${place.fullName}. What would you like to do?`;
-  } else if (county) {
-    return `Great! I found ${county.fullName}. What would you like to do?`;
-  } else if (state) {
-    return `Great! I found ${state.longName}. What would you like to do?`;
-  }
-  return 'I couldn\'t find that location. Could you try again?';
+export function buildDiscoveryResultPrompt(locationName: string): string {
+  return `Great! I found information about ${locationName}.`;
 }
 
 /**
- * Build a prompt for unknown input recovery
+ * Build a prompt for category suggestions (with suggestions)
  */
-export function buildUnknownInputPrompt(): string {
-  return 'I didn\'t quite understand that. Could you try rephrasing, or use one of the menu options?';
+export function buildCategorySuggestionsPrompt(suggestions: string[]): string {
+  if (suggestions.length === 0) {
+    return 'Please enter a category for your issue.';
+  }
+  return 'Here are some suggested categories based on your description. Choose one or enter a custom category:';
 }
 
 /**
- * Build a slot-filling prompt for a specific slot
+ * Build a prompt for category suggestions (no suggestions)
  */
-export function buildSlotPrompt(
-  slot: string,
-  currentState: USState | null,
-  currentCounty: USCounty | null
-): string {
-  switch (slot) {
-    case 'state':
-      return 'Which state is this issue in?';
-    case 'county':
-      return currentState
-        ? `Which county in ${currentState.longName}?`
-        : 'Which county is this issue in?';
-    case 'place':
-      return currentCounty
-        ? `Which city or town in ${currentCounty.fullName}?`
-        : 'Which city or town is this issue in?';
-    case 'issue_description':
-      return 'Please describe the issue you\'d like to report:';
-    case 'issue_category':
-      return 'What category does this issue fall under?';
-    case 'instance_name':
-      return 'What would you like to name this instance?';
-    default:
-      return `Please provide: ${slot}`;
-  }
+export function buildNoCategorySuggestionsPrompt(): string {
+  return 'Please enter a category for your issue.';
 }
 
 /**
  * Build a repair confirmation prompt
  */
-export function buildRepairConfirmationPrompt(slot: string): string {
-  return `Okay, let's update your ${slot}.`;
+export function buildRepairConfirmationPrompt(slot: SecretarySlot, newValue: string): string {
+  return `Got it, I've updated the ${slot} to "${newValue}".`;
 }
 
 /**
- * Build a category suggestion prompt (with suggestions available)
+ * Build a guided report confirmation summary
  */
-export function buildCategorySuggestionPrompt(): string {
-  return 'Here are some suggested categories for your issue. Click one to select it, or type your own:';
-}
+export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): string {
+  const locationParts: string[] = [];
+  if (draft.location.place) {
+    locationParts.push(draft.location.place.shortName);
+  }
+  if (draft.location.county) {
+    locationParts.push(draft.location.county.shortName);
+  }
+  if (draft.location.state) {
+    locationParts.push(draft.location.state.shortName);
+  }
+  const locationStr = locationParts.join(', ') || 'Not specified';
 
-/**
- * Build a category prompt (no suggestions available)
- */
-export function buildCategoryNoSuggestionsPrompt(): string {
-  return 'Please type a category for your issue:';
+  return `**Location:** ${locationStr}\n**Category:** ${draft.category || 'Not specified'}\n**Details:** ${draft.details || 'Not specified'}`;
 }

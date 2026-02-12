@@ -1,67 +1,94 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T06:27:11.265Z",
+  "generatedAt": "2026-02-12T17:36:20.017Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 6,
+    "implemented": 6,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
+        "summary": "Extend the Secretary intent type system to include three new intents: create_task, find_tasks, and update_task.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/secretary/intent/issueDescriptionNlp.ts"
+          "frontend/src/secretary/intent/types.ts"
         ],
         "matchedFiles": [
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/secretary/intent/issueDescriptionNlp.ts"
+          "frontend/src/secretary/intent/types.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
+        "summary": "Add task-related slot definitions required to fulfill the new task intents, including at minimum: task title, task description, task category, location identifier, and task identifier (for updates). Ensure an empty slot bag can be created and slot fill/clear checks work for the new slots.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/secretary/copy/secretaryPrompts.ts"
+          "frontend/src/secretary/intent/types.ts",
+          "frontend/src/secretary/intent/slotState.ts",
+          "frontend/src/secretary/flow/types.ts",
+          "frontend/src/secretary/state/secretaryContext.ts"
         ],
         "matchedFiles": [
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/secretary/copy/secretaryPrompts.ts"
+          "frontend/src/secretary/intent/types.ts",
+          "frontend/src/secretary/intent/slotState.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
+        "summary": "Update the rule-based intent classifier to recognize the new intents from common user phrasing (e.g., “create a task”, “show tasks”, “find tasks”, “update task”, “mark task done”), without breaking existing intents.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+          "frontend/src/secretary/intent/intentClassifier.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts"
+          "frontend/src/secretary/intent/intentClassifier.ts"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
+        "summary": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/intent/flowRunner.ts",
+          "frontend/src/secretary/intent/taskIntentActions.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/intent/flowRegistry.ts",
+          "frontend/src/secretary/intent/taskIntentActions.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Add English slot-filling prompts for the new task slots so the Secretary can ask for missing task information during an intent flow (e.g., ask for title, description, location, category, and which task to update).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "frontend/src/secretary/intent/flowRunner.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/secretary/copy/secretaryPrompts.ts"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Integrate the task intent system into the Secretary runtime so task intents are actually executed from chat input: when user text is received, classify to a task intent when appropriate, run slot-filling using the intent flow runner, and on completion call the existing task backend methods via the current actor (createTask, listTasksByLocation, getTask/updateTask) and present a short English confirmation/result message in the Secretary chat.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/secretary/intent/taskExecutor.ts",
+          "frontend/src/secretary/intent/taskSlotParsing.ts",
+          "frontend/src/secretary/intent/geographyLookup.ts",
+          "frontend/src/secretary/state/secretaryContext.ts"
         ],
         "matchedFiles": [
           "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/secretary/intent/taskExecutor.ts",
+          "frontend/src/secretary/intent/taskSlotParsing.ts",
+          "frontend/src/secretary/intent/geographyLookup.ts"
         ]
       }
     ]
@@ -71,14 +98,17 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
     "frontend/src/secretary/brain/FlowEngineBrain.ts",
     "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/flow/flows.ts",
     "frontend/src/secretary/intent/flowRegistry.ts",
-    "frontend/src/secretary/intent/flowRunner.ts",
-    "frontend/src/secretary/intent/issueDescriptionNlp.ts",
+    "frontend/src/secretary/intent/geographyLookup.ts",
+    "frontend/src/secretary/intent/index.ts",
+    "frontend/src/secretary/intent/intentClassifier.ts",
+    "frontend/src/secretary/intent/slotState.ts",
+    "frontend/src/secretary/intent/taskExecutor.ts",
+    "frontend/src/secretary/intent/taskIntentActions.ts",
+    "frontend/src/secretary/intent/taskSlotParsing.ts",
+    "frontend/src/secretary/intent/types.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,11 +1,27 @@
 /**
  * Secretary conversation context/state container.
  * Manages state separate from UI components for testability.
+ * Extended with guided report-issue draft state management.
  */
 
-import type { SecretaryContext, NodeId } from '../flow/types';
+import type { SecretaryContext, NodeId, GuidedReportDraft } from '../flow/types';
 import { createEmptySlotBag, clearSlot, clearDependentSlots } from '../intent/slotState';
 import type { SecretarySlot } from '../intent/types';
+
+/**
+ * Create initial empty guided report draft
+ */
+function createEmptyGuidedReportDraft(): GuidedReportDraft {
+  return {
+    location: {
+      state: null,
+      county: null,
+      place: null,
+    },
+    category: '',
+    details: '',
+  };
+}
 
 /**
  * Create initial empty context
@@ -20,6 +36,7 @@ export function createInitialContext(): SecretaryContext {
     reportIssueGeographyLevel: null,
     reportIssueGeographyId: null,
     reportIssueSuggestions: [],
+    guidedReportDraft: createEmptyGuidedReportDraft(),
     activeIntent: null,
     slots: createEmptySlotBag(),
     messages: [],
@@ -40,6 +57,7 @@ export function resetContext(context: SecretaryContext): void {
   context.reportIssueGeographyLevel = null;
   context.reportIssueGeographyId = null;
   context.reportIssueSuggestions = [];
+  context.guidedReportDraft = createEmptyGuidedReportDraft();
   context.activeIntent = null;
   context.slots = createEmptySlotBag();
   context.messages = [];
@@ -66,6 +84,7 @@ export function returnToMenu(context: SecretaryContext): void {
   context.currentNode = 'menu';
   context.activeIntent = null;
   context.slots = createEmptySlotBag();
+  context.guidedReportDraft = createEmptyGuidedReportDraft();
 }
 
 /**
@@ -86,6 +105,13 @@ export function resetReportIssueState(context: SecretaryContext): void {
   context.reportIssueGeographyLevel = null;
   context.reportIssueGeographyId = null;
   context.reportIssueSuggestions = [];
+}
+
+/**
+ * Reset guided report draft
+ */
+export function resetGuidedReportDraft(context: SecretaryContext): void {
+  context.guidedReportDraft = createEmptyGuidedReportDraft();
 }
 
 /**

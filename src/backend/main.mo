@@ -2,9 +2,9 @@ import Map "mo:core/Map";
 import Array "mo:core/Array";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
+import List "mo:core/List";
 import Principal "mo:core/Principal";
 import Iter "mo:core/Iter";
-import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
@@ -14,19 +14,21 @@ import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-// Use migration on upgrade
+
 
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  var nextActionRewardId : Nat = 0;
-  var nextLogEntryId : Nat = 0;
-  var nextTaskId : Nat = 0;
-  var nextProposalId : Nat = 0;
-
   public type ProfileImage = Storage.ExternalBlob;
+
+  public type BasicUserProfile = {
+    name : Text;
+    profileImage : ?ProfileImage;
+    tokens : Nat;
+    points : { city : Nat; voting : Nat; bounty : Nat; token : Nat };
+  };
 
   public type ContributionPoints = {
     city : Nat;
@@ -139,12 +141,46 @@ actor {
     #error : { message : Text };
   };
 
+  // ===================== Social Feed Post Model ========================
+
+  public type Post = {
+    id : Nat;
+    author : Principal;
+    authorName : Text;
+    content : Text;
+    instanceName : Text;
+    createdAt : Int;
+    updatedAt : ?Int;
+    deleted : Bool;
+    isFlagged : Bool;
+    flaggedBy : ?Principal;
+    flaggedReason : ?Text;
+    flaggedAt : ?Int;
+    flaggedByModerator : Bool;
+  };
+
+  public type CreatePostRequest = {
+    content : Text;
+    instanceName : Text;
+  };
+
+  public type UpdatePostRequest = {
+    postId : Nat;
+    content : Text;
+  };
+
+  // ===================== Social Feed State ========================
+
+  let posts = Map.empty<Nat, Post>();
+  let postsByInstance = Map.empty<Text, List.List<Nat>>();
+  var nextPostId : Nat = 1;
+
   type GeoId = Text;
   type CensusId = Text;
   type HierarchicalGeoId = Text;
   type CensusStateCode = Text;
   type GeoRes = { #hierarchicalId : HierarchicalGeoId; #geoId : GeoId; #censusId : CensusId };
-  type HierarchicalGeoIdRes = { #hierarchicalGeoId : HierarchicalGeoId };
+  type HierarchicalGeoIdRes = { #hierarchicalId : HierarchicalGeoId };
   type HierarchicalGeoIdOrDescription = {
     #description : Text;
     #hierarchicalId : HierarchicalGeoId;
@@ -242,6 +278,45 @@ actor {
       message : Text;
     };
   };
+
+  // ===================== Structured Civic Tasks Models (Persistent) ========================
+
+  public type TaskStatus = {
+    #open;
+    #in_progress;
+    #blocked;
+    #resolved;
+  };
+
+  public type TaskHistoryEntry = {
+    timestamp : Int;
+    status : TaskStatus;
+    description : Text;
+  };
+
+  public type StructuredCivicTask = {
+    id : Nat;
+    title : Text;
+    description : Text;
+    category : Text;
+    locationId : Text;
+    issueId : ?Text;
+    status : TaskStatus;
+    assignee : ?Principal;
+    createdAt : Int;
+    updatedAt : Int;
+    history : [TaskHistoryEntry];
+  };
+
+  // ===================== Persistent Storage for Structured Civic Tasks ========================
+
+  // Storage for tasks (by id) and for locationId index
+  let structuredCivicTasks = Map.empty<Nat, StructuredCivicTask>();
+  let taskLocationIndex = Map.empty<Text, List.List<Nat>>();
+  var nextTaskId : Nat = 1;
+
+  // Add taskIssueIndex map to efficiently track tasks by issueId
+  let taskIssueIndex = Map.empty<Text, List.List<Nat>>();
 
   func emptyUSGeographyData() : USGeography {
     {
@@ -513,7 +588,6 @@ actor {
       case (#city) { complaintCategoriesCity };
       case (#county) { complaintCategoriesCounty };
       case (#state) { complaintCategoriesState };
-      case (_) { [] };
     };
   };
 
@@ -522,7 +596,6 @@ actor {
       case (#city) { complaintCategoriesCity.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
       case (#county) { complaintCategoriesCounty.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
       case (#state) { complaintCategoriesState.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
-      case (_) { [] };
     };
   };
 
@@ -587,6 +660,191 @@ actor {
     userProfiles.add(caller, profile);
   };
 
+  // ===================== Social Feed Functions ========================
+
+  // Create a new post - requires user authentication
+  public shared ({ caller }) func createPost(request : CreatePostRequest) : async { #ok : Post; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create posts");
+    };
+
+    if (request.content.size() == 0) {
+      return #err("Post content cannot be empty");
+    };
+
+    if (request.instanceName.size() == 0) {
+      return #err("Instance name cannot be empty");
+    };
+
+    let authorName = switch (userProfiles.get(caller)) {
+      case (?profile) { profile.name };
+      case (null) { "Anonymous" };
+    };
+
+    let now = Time.now();
+    let postId = nextPostId;
+    nextPostId += 1;
+
+    let post : Post = {
+      id = postId;
+      author = caller;
+      authorName;
+      content = request.content;
+      instanceName = request.instanceName;
+      createdAt = now;
+      updatedAt = null;
+      deleted = false;
+      isFlagged = false;
+      flaggedBy = null;
+      flaggedReason = null;
+      flaggedAt = null;
+      flaggedByModerator = false;
+    };
+
+    posts.add(postId, post);
+
+    let instancePosts = switch (postsByInstance.get(request.instanceName)) {
+      case (null) { List.empty<Nat>() };
+      case (?list) { list };
+    };
+    instancePosts.add(postId);
+    postsByInstance.add(request.instanceName, instancePosts);
+
+    #ok(post);
+  };
+
+  // Get posts for a specific instance - no authentication required (public feed)
+  public query func getPostsByInstance(instanceName : Text, limit : Nat, offset : Nat) : async [Post] {
+    let instancePosts = switch (postsByInstance.get(instanceName)) {
+      case (null) { return [] };
+      case (?list) { list };
+    };
+
+    let postIds = instancePosts.toArray();
+    let sortedPostIds = postIds.sort(
+      func(a : Nat, b : Nat) : { #less; #equal; #greater } {
+        let postA = posts.get(a);
+        let postB = posts.get(b);
+        switch (postA, postB) {
+          case (?pA, ?pB) {
+            if (pA.createdAt > pB.createdAt) { #less } else if (pA.createdAt < pB.createdAt) { #greater } else { #equal };
+          };
+          case (_, _) { #equal };
+        };
+      }
+    );
+
+    let boundedLimit = Nat.min(limit, 100);
+    let startIndex = Nat.min(offset, sortedPostIds.size());
+    let endIndex = Nat.min(startIndex + boundedLimit, sortedPostIds.size());
+
+    let resultList = List.empty<Post>();
+    var i = startIndex;
+    while (i < endIndex) {
+      switch (posts.get(sortedPostIds[i])) {
+        case (?post) {
+          if (not post.deleted) {
+            resultList.add(post);
+          };
+        };
+        case (null) {};
+      };
+      i += 1;
+    };
+
+    resultList.toArray();
+  };
+
+  // Get a single post by ID - no authentication required
+  public query func getPost(postId : Nat) : async ?Post {
+    switch (posts.get(postId)) {
+      case (?post) {
+        if (post.deleted) { null } else { ?post };
+      };
+      case (null) { null };
+    };
+  };
+
+  // Update a post - only author or admin can update
+  public shared ({ caller }) func updatePost(request : UpdatePostRequest) : async { #ok : Post; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update posts");
+    };
+
+    switch (posts.get(request.postId)) {
+      case (null) { #err("Post not found") };
+      case (?post) {
+        if (post.deleted) {
+          return #err("Cannot update deleted post");
+        };
+
+        if (post.author != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Unauthorized: Only post author or admin can update this post");
+        };
+
+        if (request.content.size() == 0) {
+          return #err("Post content cannot be empty");
+        };
+
+        let updatedPost : Post = {
+          post with
+          content = request.content;
+          updatedAt = ?Time.now();
+        };
+
+        posts.add(request.postId, updatedPost);
+        #ok(updatedPost);
+      };
+    };
+  };
+
+  // Delete a post - only author or admin can delete
+  public shared ({ caller }) func deletePost(postId : Nat) : async { #ok; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete posts");
+    };
+
+    switch (posts.get(postId)) {
+      case (null) { #err("Post not found") };
+      case (?post) {
+        if (post.deleted) {
+          return #err("Post already deleted");
+        };
+
+        if (post.author != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Unauthorized: Only post author or admin can delete this post");
+        };
+
+        let deletedPost : Post = {
+          post with deleted = true;
+        };
+
+        posts.add(postId, deletedPost);
+        #ok;
+      };
+    };
+  };
+
+  // Get all posts by a specific author - no authentication required
+  public query func getPostsByAuthor(author : Principal, limit : Nat, offset : Nat) : async [Post] {
+    let allPosts = posts.values().toArray();
+    let authorPosts = allPosts.filter(func(post : Post) : Bool {
+      post.author == author and not post.deleted
+    });
+
+    let sortedPosts = authorPosts.sort(
+      func(a : Post, b : Post) : { #less; #equal; #greater } {
+        if (a.createdAt > b.createdAt) { #less } else if (a.createdAt < b.createdAt) { #greater } else { #equal };
+      }
+    );
+
+    let boundedLimit = Nat.min(limit, 100);
+    let startIndex = Nat.min(offset, sortedPosts.size());
+    let endIndex = Nat.min(startIndex + boundedLimit, sortedPosts.size());
+
+    sortedPosts.sliceToArray(startIndex, endIndex);
+  };
+
   func contributionActionTypeToText(actionType : ContributionActionType) : Text {
     switch (actionType) {
       case (#issueCreated) { "IssueCreated" };
@@ -630,7 +888,6 @@ actor {
       Runtime.trap("Unauthorized: Only users can log contributions");
     };
 
-    // Validate actionType
     let actionTypeVariant = switch (textToContributionActionType(actionType)) {
       case (?variant) { variant };
       case (null) {
@@ -638,7 +895,6 @@ actor {
       };
     };
 
-    // Validate referenceId is provided when required
     if (requiresReferenceId(actionTypeVariant)) {
       switch (referenceId) {
         case (null) {
@@ -652,13 +908,11 @@ actor {
       };
     };
 
-    // Check for duplicate contribution
     let duplicateKey = buildDuplicateKey(caller, actionType, referenceId);
     if (awardedContributions.containsKey(duplicateKey)) {
       return #err(#duplicateContribution);
     };
 
-    // Resolve reward values from centralized mapping
     let reward = switch (actionTypeVariant) {
       case (#issueCreated) { centralizedRewardValues.issueCreatedReward };
       case (#commentCreated) { centralizedRewardValues.commentCreatedReward };
@@ -667,7 +921,7 @@ actor {
 
     let now = Time.now();
     let logEntry : ContributionLogEntry = {
-      id = nextLogEntryId;
+      id = now.toNat();
       contributor = caller;
       timestamp = now;
       actionType;
@@ -678,10 +932,6 @@ actor {
       invalidated = false;
     };
 
-    let entryId = nextLogEntryId;
-    nextLogEntryId += 1;
-
-    // Write contribution log entry
     let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
       case (null) {
         { persistentEntries = [logEntry] };
@@ -696,11 +946,8 @@ actor {
       };
     };
     contributionLogs.add(caller, newLog);
-
-    // Mark as awarded to prevent duplicates
     awardedContributions.add(duplicateKey, true);
 
-    // Mint WSP tokens for the contribution (idempotent via duplicate check)
     let currentBalance = switch (wspBalances.get(caller)) {
       case (?balance) { balance };
       case (null) { 0 };
@@ -708,7 +955,7 @@ actor {
     wspBalances.add(caller, currentBalance + reward.points);
     wspTotalSupply += reward.points;
 
-    #ok(entryId);
+    #ok(logEntry.id);
   };
 
   public shared ({ caller }) func addContributionPoints(points : Nat, rewardType : Text, actionType : Text) : async () {
@@ -727,7 +974,6 @@ actor {
       case ("voting") { pointsMap.voting := pointsMap.voting + points };
       case ("bounty") { pointsMap.bounty := pointsMap.bounty + points };
       case ("token") { pointsMap.token := pointsMap.token + points };
-      case (_) { pointsMap.city := pointsMap.city + points };
     };
     let pointsUpdate = {
       city = pointsMap.city : Nat;
@@ -736,7 +982,7 @@ actor {
       token = pointsMap.token : Nat;
     };
     let logEntry : ContributionLogEntry = {
-      id = nextLogEntryId;
+      id = now.toNat();
       contributor = caller;
       timestamp = now;
       actionType;
@@ -746,7 +992,6 @@ actor {
       details = null;
       invalidated = false;
     };
-    nextLogEntryId += 1;
     let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
       case (null) {
         { persistentEntries = [logEntry] };
@@ -766,7 +1011,6 @@ actor {
   // ===================== ICRC-1 Token Methods ========================
 
   public query ({ caller }) func icrc1_balance_of(account : Principal) : async Nat {
-    // Anyone can query balances (standard ICRC-1 behavior)
     switch (wspBalances.get(account)) {
       case (?balance) { balance };
       case (null) { 0 };
@@ -774,7 +1018,6 @@ actor {
   };
 
   public query func icrc1_total_supply() : async Nat {
-    // Public query, no authentication needed
     wspTotalSupply;
   };
 
@@ -874,7 +1117,6 @@ actor {
 
         contributionLogs.add(contributor, { persistentEntries = updatedEntries });
 
-        // Burn the corresponding WSP tokens
         let currentBalance = switch (wspBalances.get(contributor)) {
           case (?balance) { balance };
           case (null) { 0 };
@@ -904,8 +1146,7 @@ actor {
       Runtime.trap("Unauthorized: Only users can create governance proposals");
     };
 
-    let proposalId = nextProposalId;
-    nextProposalId += 1;
+    let proposalId = Time.now().toNat();
 
     let proposal : GovernanceProposal = {
       id = proposalId;
@@ -939,7 +1180,6 @@ actor {
           return #err("Proposal is not open for voting");
         };
 
-        // Check if user has already voted
         let hasVoted = proposal.votes.votes.any(func(v) { v.voter == caller });
         if (hasVoted) {
           return #err("User has already voted on this proposal");
@@ -1023,7 +1263,6 @@ actor {
               case ("voting") { totalVotingPoints += entry.pointsAwarded };
               case ("bounty") { totalBountyPoints += entry.pointsAwarded };
               case ("token") { totalTokenPoints += entry.pointsAwarded };
-              case (_) { totalCityPoints += entry.pointsAwarded };
             };
           };
         };
@@ -1348,8 +1587,255 @@ actor {
     };
   };
 
+  // ===================== Structured Civic Tasks (Updated Persistent Version) ========================
+
+  func validateTaskAccess(taskId : Nat, expectedLocationId : Text) : TaskStatus {
+    switch (structuredCivicTasks.get(taskId)) {
+      case (null) { Runtime.trap("Task does not exist") };
+      case (?task) {
+        if (task.locationId != expectedLocationId) {
+          Runtime.trap("Task not associated with provided locationId");
+        };
+        task.status;
+      };
+    };
+  };
+
+  public shared ({ caller }) func createTask(
+    title : Text,
+    description : Text,
+    category : Text,
+    locationId : Text,
+    issueId : ?Text,
+  ) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create tasks");
+    };
+
+    let taskId = nextTaskId;
+    nextTaskId += 1;
+
+    let newTask = {
+      id = taskId;
+      title;
+      description;
+      category;
+      locationId;
+      issueId;
+      status = #open;
+      assignee = null;
+      createdAt = Time.now();
+      updatedAt = Time.now();
+      history = [{
+        timestamp = Time.now();
+        status = #open;
+        description = "Task created";
+      }];
+    };
+
+    structuredCivicTasks.add(taskId, newTask);
+
+    let locationTasks = switch (taskLocationIndex.get(locationId)) {
+      case (null) { List.empty<Nat>() };
+      case (?existingTasks) { existingTasks };
+    };
+    locationTasks.add(taskId);
+    taskLocationIndex.add(locationId, locationTasks);
+
+    // Add to issue index if issueId is present
+    switch (issueId) {
+      case (null) {};
+      case (?id) {
+        let issueTasks = switch (taskIssueIndex.get(id)) {
+          case (null) { List.empty<Nat>() };
+          case (?existingTasks) { existingTasks };
+        };
+        issueTasks.add(taskId);
+        taskIssueIndex.add(id, issueTasks);
+      };
+    };
+
+    let taskContributionEvent : ContributionLogEntry = {
+      id = Time.now().toNat();
+      contributor = caller;
+      timestamp = Time.now();
+      actionType = "TaskCreated";
+      pointsAwarded = 50;
+      rewardType = "bounty";
+      referenceId = ?locationId;
+      details = ?("Task created: " # title);
+      invalidated = false;
+    };
+
+    let persistentEntryList = List.empty<ContributionLogEntry>();
+    persistentEntryList.add(taskContributionEvent);
+    let log = { persistentEntries = persistentEntryList.toArray() };
+    contributionLogs.add(caller, log);
+
+    taskId;
+  };
+
+  public shared ({ caller }) func updateTask(
+    taskId : Nat,
+    title : Text,
+    description : Text,
+    category : Text,
+    locationId : Text,
+    status : TaskStatus,
+  ) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update tasks");
+    };
+
+    switch (structuredCivicTasks.get(taskId)) {
+      case (null) { Runtime.trap("Task does not exist") };
+      case (?task) {
+        if (task.locationId != locationId) {
+          Runtime.trap("Task not associated with provided locationId");
+        };
+
+        let updatedTask = {
+          task with
+          title;
+          description;
+          category;
+          status;
+          updatedAt = Time.now();
+          history = task.history.concat([{
+            timestamp = Time.now();
+            status;
+            description = "Task updated";
+          }]);
+        };
+
+        structuredCivicTasks.add(taskId, updatedTask);
+
+        let updateContributionEvent : ContributionLogEntry = {
+          id = Time.now().toNat();
+          contributor = caller;
+          timestamp = Time.now();
+          actionType = "TaskUpdated";
+          pointsAwarded = 25;
+          rewardType = "bounty";
+          referenceId = ?locationId;
+          details = ?("Task updated: " # title);
+          invalidated = false;
+        };
+
+        let persistentEntryList = List.empty<ContributionLogEntry>();
+        persistentEntryList.add(updateContributionEvent);
+        let log = { persistentEntries = persistentEntryList.toArray() };
+        contributionLogs.add(caller, log);
+
+        true;
+      };
+    };
+  };
+
+  public query ({ caller }) func getTask(
+    taskId : Nat,
+    locationId : Text,
+  ) : async StructuredCivicTask {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view tasks");
+    };
+    ignore validateTaskAccess(taskId, locationId);
+    switch (structuredCivicTasks.get(taskId)) {
+      case (?task) { task };
+      case (null) { Runtime.trap("Task does not exist") };
+    };
+  };
+
+  public query ({ caller }) func listTasksByLocation(locationId : Text) : async [StructuredCivicTask] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view tasks");
+    };
+
+    let taskIds = switch (taskLocationIndex.get(locationId)) {
+      case (null) {
+        let emptyList = List.empty<Nat>();
+        taskLocationIndex.add(locationId, emptyList);
+        [];
+      };
+      case (?existingTasks) { existingTasks.toArray() };
+    };
+
+    let taskList = List.empty<StructuredCivicTask>();
+    for (id in taskIds.values()) {
+      switch (structuredCivicTasks.get(id)) {
+        case (?task) {
+          taskList.add(task);
+        };
+        case (null) {};
+      };
+    };
+    taskList.toArray();
+  };
+
+  // =================== New Functionality for Issue-Linked Tasks ======================
+
+  // List tasks for a specific issue (by issueId)
+  public query ({ caller }) func listTasksByIssueId(issueId : Text) : async [StructuredCivicTask] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view tasks");
+    };
+
+    let taskIds = switch (taskIssueIndex.get(issueId)) {
+      case (null) {
+        let emptyList = List.empty<Nat>();
+        taskIssueIndex.add(issueId, emptyList);
+        [];
+      };
+      case (?existingTasks) { existingTasks.toArray() };
+    };
+
+    let taskList = List.empty<StructuredCivicTask>();
+    for (id in taskIds.values()) {
+      switch (structuredCivicTasks.get(id)) {
+        case (?task) {
+          taskList.add(task);
+        };
+        case (null) {};
+      };
+    };
+    taskList.toArray();
+  };
+
+  // Convert an issue into a structured civic task
+  public shared ({ caller }) func convertIssueToTask(
+    title : Text,
+    description : Text,
+    category : Text,
+    locationId : Text,
+    issueId : Text,
+  ) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can convert issues to tasks");
+    };
+
+    let taskId = await createTask(
+      title,
+      description,
+      category,
+      locationId,
+      ?issueId,
+    );
+
+    // Register in issue index
+    let issueTasks = switch (taskIssueIndex.get(issueId)) {
+      case (null) { List.empty<Nat>() };
+      case (?existingTasks) { existingTasks };
+    };
+    issueTasks.add(taskId);
+    taskIssueIndex.add(issueId, issueTasks);
+
+    taskId;
+  };
+
+  // ====================== End Structured TaskPersistent Model =====================
+
   // ===================== Task Management ========================
-  public shared ({ caller }) func createTask(proposalId : Text, description : Text) : async Nat {
+  public shared ({ caller }) func createTask_legacy(proposalId : Text, description : Text) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create tasks");
     };
@@ -1364,7 +1850,7 @@ actor {
     };
 
     let task = {
-      id = nextTaskId;
+      id = Time.now().toNat();
       description;
       completed = false;
     };
@@ -1372,19 +1858,18 @@ actor {
     switch (allTasks.get(proposalId)) {
       case (null) {
         let newTaskMap = Map.empty<Nat, Task>();
-        newTaskMap.add(nextTaskId, task);
+        newTaskMap.add(task.id, task);
         allTasks.add(proposalId, newTaskMap);
       };
       case (?existingTasks) {
-        existingTasks.add(nextTaskId, task);
+        existingTasks.add(task.id, task);
       };
     };
 
-    nextTaskId += 1;
     task.id;
   };
 
-  public shared ({ caller }) func updateTaskStatus(proposalId : Text, taskId : Nat, completed : Bool) : async Bool {
+  public shared ({ caller }) func updateTaskStatus_legacy(proposalId : Text, taskId : Nat, completed : Bool) : async Bool {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update tasks");
     };
@@ -1413,7 +1898,7 @@ actor {
     };
   };
 
-  public query ({ caller }) func getTasks(proposalId : Text) : async [(Nat, Task)] {
+  public query ({ caller }) func getTasks_legacy(proposalId : Text) : async [(Nat, Task)] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view tasks");
     };
@@ -1490,7 +1975,7 @@ actor {
 
     // Update balances
     wspBalances.add(caller, currentBalance - amount);
-    
+
     let updatedStaking : StakingRecord = {
       totalStaked = currentStaking.totalStaked + amount;
       availableBalance = currentStaking.availableBalance;
@@ -1537,5 +2022,136 @@ actor {
     wspBalances.add(caller, currentBalance + amount);
 
     #ok;
+  };
+
+  // ===================== Post Moderation Functions ========================
+
+  // Flag a post - any authenticated user can flag
+  public shared ({ caller }) func flagPost(postId : Nat, reason : Text) : async { #ok; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can flag posts");
+    };
+
+    switch (posts.get(postId)) {
+      case (null) { return #err("Post not found") };
+      case (?post) {
+        let flaggedPost : Post = {
+          post with
+          isFlagged = true;
+          flaggedBy = ?caller;
+          flaggedReason = ?reason;
+          flaggedAt = ?Time.now();
+        };
+        posts.add(postId, flaggedPost);
+      };
+    };
+    #ok;
+  };
+
+  // Flag a post as moderator - admin only
+  public shared ({ caller }) func flagPostByModerator(postId : Nat, reason : Text) : async { #ok; #err : Text } {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only moderators can flag posts");
+    };
+
+    switch (posts.get(postId)) {
+      case (null) { return #err("Post not found") };
+      case (?post) {
+        let flaggedPost : Post = {
+          post with
+          isFlagged = true;
+          flaggedBy = ?caller;
+          flaggedReason = ?reason;
+          flaggedAt = ?Time.now();
+          flaggedByModerator = true;
+        };
+        posts.add(postId, flaggedPost);
+      };
+    };
+    #ok;
+  };
+
+  // Clear flag from a post - admin only
+  public shared ({ caller }) func clearFlag(postId : Nat) : async { #ok; #err : Text } {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only moderators can clear flags");
+    };
+
+    switch (posts.get(postId)) {
+      case (null) { return #err("Post not found") };
+      case (?post) {
+        let updatedPost : Post = {
+          post with
+          isFlagged = false;
+          flaggedBy = null;
+          flaggedReason = null;
+          flaggedAt = null;
+          flaggedByModerator = false;
+        };
+        posts.add(postId, updatedPost);
+      };
+    };
+    #ok;
+  };
+
+  // Get flagged posts - admin only (moderation tooling)
+  public query ({ caller }) func getFlaggedPosts(limit : Nat, offset : Nat) : async [Post] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view flagged posts");
+    };
+
+    let flaggedPosts = posts.values().toArray().filter(func(post) { post.isFlagged });
+
+    let sortedPosts = flaggedPosts.sort(
+      func(a : Post, b : Post) : { #less; #equal; #greater } {
+        let aFlaggedAt = switch (a.flaggedAt) {
+          case (null) { 0 };
+          case (?time) { time };
+        };
+        let bFlaggedAt = switch (b.flaggedAt) {
+          case (null) { 0 };
+          case (?time) { time };
+        };
+        if (aFlaggedAt > bFlaggedAt) {
+          #less;
+        } else if (aFlaggedAt < bFlaggedAt) {
+          #greater;
+        } else { #equal };
+      }
+    );
+
+    let boundedLimit = Nat.min(limit, 100);
+    let totalPosts = sortedPosts.size();
+    if (offset >= totalPosts) { return [] };
+    let endIndex = Nat.min(offset + boundedLimit, totalPosts);
+    sortedPosts.sliceToArray(offset, endIndex);
+  };
+
+  // Get count of flagged posts - admin only
+  public query ({ caller }) func getFlaggedPostsCount() : async Nat {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view flagged posts count");
+    };
+    posts.values().toArray().filter(func(post) { post.isFlagged }).size();
+  };
+
+  // Get limited flagged posts - admin only
+  public query ({ caller }) func getFlaggedPostLimit(limit : Nat) : async [Post] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view flagged posts");
+    };
+
+    let resultArray = List.empty<Post>();
+    var count = 0;
+    for (post in posts.values()) {
+      if (post.isFlagged) {
+        resultArray.add(post);
+        count += 1;
+      };
+      if (count >= limit) {
+        return resultArray.toArray();
+      };
+    };
+    resultArray.toArray();
   };
 };
