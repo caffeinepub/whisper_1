@@ -1,88 +1,95 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T00:36:53.096Z",
+  "generatedAt": "2026-02-12T01:27:47.864Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 2,
+    "total": 6,
+    "implemented": 6,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Define centralized contribution reward values for the three issue-flow actions: issue creation, comment creation, and evidence upload. Store the mapping in the backend so the server (not the frontend) is the source of truth for points and rewardType per action.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add backend logic to log contribution events for the three issue-flow actions using the existing contribution log structures in backend/main.mo. Implement a single backend entrypoint that the frontend can call with (actionType, referenceId?, details?) and the backend will: validate actionType, resolve reward values from the centralized mapping, write a ContributionLogEntry, and return the created log entry id.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+        ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add guardrails in the backend to prevent duplicate or invalid contribution events. At minimum: reject unknown actionType values, reject events with missing/invalid referenceId when required for that action, and prevent duplicate awards for the same (caller, actionType, referenceId) combination.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
+        ]
       },
       {
         "id": "REQ-4",
-        "summary": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
+        "summary": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/contributionActionTypes.ts",
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/hooks/useCreateInstanceProposal.ts",
-          "frontend/src/hooks/useIssueProjectTasks.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/lib/earnedPointsToast.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/contributionActionTypes.ts",
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/hooks/useCreateInstanceProposal.ts",
-          "frontend/src/hooks/useIssueProjectTasks.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/lib/earnedPointsToast.ts"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
+        "summary": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/hooks/useCallerContributionSummary.ts",
-          "frontend/src/hooks/useCreateInstanceProposal.ts"
+          "frontend/src/lib/earnedPointsToast.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/hooks/useCallerContributionSummary.ts",
-          "frontend/src/hooks/useCreateInstanceProposal.ts"
+          "frontend/src/lib/earnedPointsToast.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/earnedPointsToast.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useCallerContributionSummary.ts",
-    "frontend/src/hooks/useContributionEventLogger.ts",
-    "frontend/src/hooks/useCreateInstanceProposal.ts",
-    "frontend/src/hooks/useIssueProjectTasks.ts",
-    "frontend/src/lib/contributionActionTypes.ts",
+    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
+    "frontend/src/components/issue-project/IssueProjectTasksTab.tsx",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
+    "frontend/src/lib/earnedPointsToast.ts",
     "frontend/src/pages/ProfilePage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

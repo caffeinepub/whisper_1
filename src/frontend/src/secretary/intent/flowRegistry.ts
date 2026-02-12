@@ -43,7 +43,9 @@ const flowRegistry: Record<SecretaryIntent & string, IntentFlowDefinition> = {
 let navigationHandler: NavigationHandler | null = null;
 
 /**
- * Initialize the flow registry with navigation handler
+ * Initialize the flow registry with navigation handler.
+ * This ensures Secretary-triggered navigation uses the same standardized
+ * contribution logging helper as direct UI flows.
  */
 export function initializeFlowRegistry(handler: NavigationHandler): void {
   navigationHandler = handler;

@@ -2,14 +2,70 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-so-each-issue-flow-action-triggers-the-backend-contribution-log-entry-after-a-successful-action-specifically-after-successful-completion-of-a-issue-creation-b-comment-creation-c-evidence-upload-the-frontend-must-call-the-backend-contribution-event-logging-entrypoint-with-the-correct-actiontype-and-a-stable-referenceid-for-deduplication-e-g-proposal-issue-identifier-comment-identifier-evidence-blob-identifier",
-      "featureTitle": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
+      "featureId": "feature-create-a-small-shared-earned-points-toast-helper-component-that-renders-the-message-x-contribution-points-earned-using-the-existing-sonner-toaster-with-an-auto-dismiss-duration-of-2-3-seconds",
+      "featureTitle": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
       "files": [
-        "frontend/src/hooks/useContributionEventLogger.ts",
-        "frontend/src/hooks/useCreateInstanceProposal.ts",
-        "frontend/src/hooks/useIssueProjectTasks.ts",
-        "frontend/src/lib/contributionActionTypes.ts",
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/lib/earnedPointsToast.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-trigger-the-shared-earned-points-toast-immediately-after-any-successful-contribution-log-api-call-i-e-after-usecontributioneventlogger-mutateasync-resolves-with-isduplicate-false-replacing-any-ad-hoc-toast-usage-in-existing-flows",
+      "featureTitle": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "files": [
+        "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-populate-the-toast-s-updated-total-points-if-shown-strictly-from-local-react-state-react-query-cache-without-performing-any-backend-fetch-the-implementation-must-read-the-latest-cached-contribution-summary-to-derive-the-updated-total",
+      "featureTitle": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "files": [
+        "frontend/src/lib/earnedPointsToast.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-show-different-user-facing-toast-messages-depending-on-contribution-action-type-issue-created-comment-created-evidence-added",
+      "featureTitle": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
+      "files": [
+        "frontend/src/lib/earnedPointsToast.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -26,12 +82,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-frontend-state-that-depends-on-contribution-logs-points-can-be-refreshed-after-these-new-events-after-a-successful-contribution-log-call-invalidate-refetch-the-react-query-cache-for-the-caller-s-contribution-summary-so-earned-totals-are-up-to-date-for-any-pages-that-display-them",
-      "featureTitle": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
+      "featureId": "feature-add-secretary-friendly-english-phrasing-variants-for-earned-points-toasts-when-the-contributing-action-originates-inside-secretary-chat-flows-and-ensure-chat-origin-toasts-use-those-variants",
+      "featureTitle": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
       "files": [
-        "frontend/src/hooks/useCallerContributionSummary.ts",
-        "frontend/src/hooks/useContributionEventLogger.ts",
-        "frontend/src/hooks/useCreateInstanceProposal.ts"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/lib/earnedPointsToast.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -44,6 +99,26 @@
       ],
       "testIds": [
         "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-earned-points-toast-never-appears-twice-if-two-actions-fire-quickly-by-implementing-a-simple-client-side-toast-lock-time-based-or-in-flight-boolean-within-the-shared-toast-helper-component",
+      "featureTitle": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
+      "files": [
+        "frontend/src/lib/earnedPointsToast.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

@@ -139,6 +139,12 @@ export const USGeographyDataChunk = IDL.Record({
   'places' : IDL.Vec(USPlace),
   'counties' : IDL.Vec(USCounty),
 });
+export const LogContributionEventError = IDL.Variant({
+  'referenceIdEmpty' : IDL.Null,
+  'referenceIdRequired' : IDL.Null,
+  'duplicateContribution' : IDL.Null,
+  'invalidActionType' : IDL.Null,
+});
 export const SubmitProposalResult = IDL.Variant({
   'error' : IDL.Record({ 'message' : IDL.Text }),
   'success' : IDL.Record({ 'proposal' : Proposal }),
@@ -308,7 +314,7 @@ export const idlService = IDL.Service({
   'isParent' : IDL.Func([IDL.Principal, IDL.Principal], [IDL.Bool], ['query']),
   'logContributionEvent' : IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
-      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Nat, 'err' : LogContributionEventError })],
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
@@ -469,6 +475,12 @@ export const idlFactory = ({ IDL }) => {
     'states' : IDL.Vec(USState),
     'places' : IDL.Vec(USPlace),
     'counties' : IDL.Vec(USCounty),
+  });
+  const LogContributionEventError = IDL.Variant({
+    'referenceIdEmpty' : IDL.Null,
+    'referenceIdRequired' : IDL.Null,
+    'duplicateContribution' : IDL.Null,
+    'invalidActionType' : IDL.Null,
   });
   const SubmitProposalResult = IDL.Variant({
     'error' : IDL.Record({ 'message' : IDL.Text }),
@@ -643,7 +655,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'logContributionEvent' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
-        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Nat, 'err' : LogContributionEventError })],
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),

@@ -1,28 +1,61 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project is moving into Phase 2: implementing contribution rewards/points across issue-flow actions with backend logging, frontend triggers, and guardrails.",
+  "summary": "Implement Step 5: show earned-points feedback (toast) after contribution actions in the React app.",
   "architectural_notes": [
-    "Contribution rewards system should include: configurable reward values per action (issue creation, comments, evidence uploads), backend contribution event logging, frontend action hooks to trigger logging, and guardrails to prevent duplicate/invalid events."
+    "Use a shared toast component for earned-points feedback (+X contribution points).",
+    "Trigger toast immediately after successful contribution-log API call; do not refetch from backend.",
+    "Read updated total points from local React state.",
+    "Prevent duplicate toasts when actions fire quickly (simple lock/debounce)."
   ],
-  "known_issues": [
-    "Build system may reject commands that reference step labels without explicit implementation details (returns generic 'AI couldn't process your request' error)."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-frontend-so-each-issue-flow-action-triggers-the-backend-contribution-log-entry-after-a-successful-action-specifically-after-successful-completion-of-a-issue-creation-b-comment-creation-c-evidence-upload-the-frontend-must-call-the-backend-contribution-event-logging-entrypoint-with-the-correct-actiontype-and-a-stable-referenceid-for-deduplication-e-g-proposal-issue-identifier-comment-identifier-evidence-blob-identifier",
-      "title": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
+      "id": "feature-create-a-small-shared-earned-points-toast-helper-component-that-renders-the-message-x-contribution-points-earned-using-the-existing-sonner-toaster-with-an-auto-dismiss-duration-of-2-3-seconds",
+      "title": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-trigger-the-shared-earned-points-toast-immediately-after-any-successful-contribution-log-api-call-i-e-after-usecontributioneventlogger-mutateasync-resolves-with-isduplicate-false-replacing-any-ad-hoc-toast-usage-in-existing-flows",
+      "title": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-populate-the-toast-s-updated-total-points-if-shown-strictly-from-local-react-state-react-query-cache-without-performing-any-backend-fetch-the-implementation-must-read-the-latest-cached-contribution-summary-to-derive-the-updated-total",
+      "title": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-show-different-user-facing-toast-messages-depending-on-contribution-action-type-issue-created-comment-created-evidence-added",
+      "title": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-frontend-state-that-depends-on-contribution-logs-points-can-be-refreshed-after-these-new-events-after-a-successful-contribution-log-call-invalidate-refetch-the-react-query-cache-for-the-caller-s-contribution-summary-so-earned-totals-are-up-to-date-for-any-pages-that-display-them",
-      "title": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
+      "id": "feature-add-secretary-friendly-english-phrasing-variants-for-earned-points-toasts-when-the-contributing-action-originates-inside-secretary-chat-flows-and-ensure-chat-origin-toasts-use-those-variants",
+      "title": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
       "reqIds": [
         "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-earned-points-toast-never-appears-twice-if-two-actions-fire-quickly-by-implementing-a-simple-client-side-toast-lock-time-based-or-in-flight-boolean-within-the-shared-toast-helper-component",
+      "title": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -30,36 +63,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Connect contribution rewards to issue-flow actions (define reward values; log contribution events in backend; trigger logs from frontend actions; add duplicate/invalid event guardrails)",
+      "summary": "Add shared toast for earned contribution points (+X) triggered after successful contribution-log API call; use local React state for updated total; vary messaging by action type and chat-flow origins; auto-dismiss; prevent duplicate toasts with a simple lock.",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Define centralized contribution reward values for the three issue-flow actions: issue creation, comment creation, and evidence upload. Store the mapping in the backend so the server (not the frontend) is the source of truth for points and rewardType per action.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add backend logic to log contribution events for the three issue-flow actions using the existing contribution log structures in backend/main.mo. Implement a single backend entrypoint that the frontend can call with (actionType, referenceId?, details?) and the backend will: validate actionType, resolve reward values from the centralized mapping, write a ContributionLogEntry, and return the created log entry id.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add guardrails in the backend to prevent duplicate or invalid contribution events. At minimum: reject unknown actionType values, reject events with missing/invalid referenceId when required for that action, and prevent duplicate awards for the same (caller, actionType, referenceId) combination.",
-      "reqIds": [
-        "REQ-3"
-      ],
       "status": "pending"
     }
   ],
-  "projectName": "Connect contribution rewards to issue-flow actions (issue, comment, evidence)",
+  "projectName": "Step 5: Earned contribution-points toast feedback after logging events",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

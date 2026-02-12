@@ -127,6 +127,12 @@ export interface UserProfile {
     tokenBalance: TokenBalance;
     contributionPoints: ContributionPoints;
 }
+export enum LogContributionEventError {
+    referenceIdEmpty = "referenceIdEmpty",
+    referenceIdRequired = "referenceIdRequired",
+    duplicateContribution = "duplicateContribution",
+    invalidActionType = "invalidActionType"
+}
 export enum USHierarchyLevel {
     country = "country",
     state = "state",
@@ -181,7 +187,13 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
-    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<bigint>;
+    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: LogContributionEventError;
+    }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;

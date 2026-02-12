@@ -1,6 +1,9 @@
 /**
  * Intent/slot mini-runner that determines next missing slots, emits prompts,
  * consumes user input to fill slots, and triggers completion when all required slots are filled.
+ * 
+ * Secretary-triggered create actions route through the same UI flows that call
+ * the standardized contribution logging helper, ensuring consistent behavior.
  */
 
 import type { SecretaryIntent, SecretarySlot, SlotBag } from './types';
@@ -61,7 +64,9 @@ export function getSlotPrompt(slot: SecretarySlot, context: SecretaryContext): s
 }
 
 /**
- * Execute completion action for an intent
+ * Execute completion action for an intent.
+ * Routes through the same UI flows that call the standardized contribution
+ * logging helper, ensuring Secretary-triggered actions also log contributions.
  */
 export function executeCompletion(intent: SecretaryIntent, context: SecretaryContext): void {
   const handler = getNavigationHandler();
@@ -69,12 +74,15 @@ export function executeCompletion(intent: SecretaryIntent, context: SecretaryCon
   switch (intent) {
     case 'report_issue':
       // Navigate to proposals with category
+      // The proposals UI will handle issue creation and contribution logging
       if (handler) {
         handler({ destinationId: 'proposals', shouldClose: true });
       }
       break;
       
     case 'create_instance':
+      // Navigate to create-instance form
+      // The form will handle proposal creation and contribution logging
       if (handler) {
         handler({ destinationId: 'create-instance', shouldClose: true });
       }

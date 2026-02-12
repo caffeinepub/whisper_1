@@ -220,6 +220,12 @@ export interface _CaffeineStorageRefillResult {
     success?: boolean;
     topped_up_amount?: bigint;
 }
+export enum LogContributionEventError {
+    referenceIdEmpty = "referenceIdEmpty",
+    referenceIdRequired = "referenceIdRequired",
+    duplicateContribution = "duplicateContribution",
+    invalidActionType = "invalidActionType"
+}
 export enum USHierarchyLevel {
     country = "country",
     state = "state",
@@ -281,14 +287,20 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
-    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<bigint>;
+    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: LogContributionEventError;
+    }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
     updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
 }
-import type { CensusStateCode as _CensusStateCode, ContributionLogEntry as _ContributionLogEntry, ContributionPoints as _ContributionPoints, HierarchicalGeoId as _HierarchicalGeoId, ProfileImage as _ProfileImage, Proposal as _Proposal, SecretaryCategorySuggestion as _SecretaryCategorySuggestion, SubmitProposalResult as _SubmitProposalResult, TokenBalance as _TokenBalance, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { CensusStateCode as _CensusStateCode, ContributionLogEntry as _ContributionLogEntry, ContributionPoints as _ContributionPoints, HierarchicalGeoId as _HierarchicalGeoId, LogContributionEventError as _LogContributionEventError, ProfileImage as _ProfileImage, Proposal as _Proposal, SecretaryCategorySuggestion as _SecretaryCategorySuggestion, SubmitProposalResult as _SubmitProposalResult, TokenBalance as _TokenBalance, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -977,31 +989,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async logContributionEvent(arg0: string, arg1: string | null, arg2: string | null): Promise<bigint> {
+    async logContributionEvent(arg0: string, arg1: string | null, arg2: string | null): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: LogContributionEventError;
+    }> {
         if (this.processError) {
             try {
                 const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
-                return result;
+                return from_candid_variant_n46(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
-            return result;
+            return from_candid_variant_n46(this._uploadFile, this._downloadFile, result);
         }
     }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n46(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n49(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n46(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n49(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -1023,14 +1041,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-                return from_candid_SubmitProposalResult_n48(this._uploadFile, this._downloadFile, result);
+                return from_candid_SubmitProposalResult_n51(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-            return from_candid_SubmitProposalResult_n48(this._uploadFile, this._downloadFile, result);
+            return from_candid_SubmitProposalResult_n51(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateProposalStatus(arg0: string, arg1: string): Promise<boolean> {
@@ -1065,14 +1083,17 @@ export class Backend implements backendInterface {
 function from_candid_ContributionLogEntry_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ContributionLogEntry): ContributionLogEntry {
     return from_candid_record_n15(_uploadFile, _downloadFile, value);
 }
+function from_candid_LogContributionEventError_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LogContributionEventError): LogContributionEventError {
+    return from_candid_variant_n48(_uploadFile, _downloadFile, value);
+}
 function from_candid_Proposal_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Proposal): Proposal {
     return from_candid_record_n27(_uploadFile, _downloadFile, value);
 }
 function from_candid_SecretaryCategorySuggestion_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SecretaryCategorySuggestion): SecretaryCategorySuggestion {
     return from_candid_record_n39(_uploadFile, _downloadFile, value);
 }
-function from_candid_SubmitProposalResult_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubmitProposalResult): SubmitProposalResult {
-    return from_candid_variant_n49(_uploadFile, _downloadFile, value);
+function from_candid_SubmitProposalResult_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubmitProposalResult): SubmitProposalResult {
+    return from_candid_variant_n52(_uploadFile, _downloadFile, value);
 }
 function from_candid_USHierarchyLevel_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USHierarchyLevel): USHierarchyLevel {
     return from_candid_variant_n29(_uploadFile, _downloadFile, value);
@@ -1272,7 +1293,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposal: _Proposal;
 }): {
     proposal: Proposal;
@@ -1313,7 +1334,37 @@ function from_candid_variant_n35(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: bigint;
+} | {
+    err: _LogContributionEventError;
+}): {
+    __kind__: "ok";
+    ok: bigint;
+} | {
+    __kind__: "err";
+    err: LogContributionEventError;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: from_candid_LogContributionEventError_n47(_uploadFile, _downloadFile, value.err)
+    } : value;
+}
+function from_candid_variant_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    referenceIdEmpty: null;
+} | {
+    referenceIdRequired: null;
+} | {
+    duplicateContribution: null;
+} | {
+    invalidActionType: null;
+}): LogContributionEventError {
+    return "referenceIdEmpty" in value ? LogContributionEventError.referenceIdEmpty : "referenceIdRequired" in value ? LogContributionEventError.referenceIdRequired : "duplicateContribution" in value ? LogContributionEventError.duplicateContribution : "invalidActionType" in value ? LogContributionEventError.invalidActionType : value;
+}
+function from_candid_variant_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     error: {
         message: string;
     };
@@ -1337,7 +1388,7 @@ function from_candid_variant_n49(_uploadFile: (file: ExternalBlob) => Promise<Ui
         error: value.error
     } : "success" in value ? {
         __kind__: "success",
-        success: from_candid_record_n50(_uploadFile, _downloadFile, value.success)
+        success: from_candid_record_n53(_uploadFile, _downloadFile, value.success)
     } : value;
 }
 function from_candid_vec_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, Array<_ContributionLogEntry>]>): Array<[Principal, Array<ContributionLogEntry>]> {
@@ -1361,8 +1412,8 @@ function to_candid_USHierarchyLevel_n8(_uploadFile: (file: ExternalBlob) => Prom
 function to_candid_USPlace_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USPlace): _USPlace {
     return to_candid_record_n45(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserProfile_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
-    return to_candid_record_n47(_uploadFile, _downloadFile, value);
+function to_candid_UserProfile_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
+    return to_candid_record_n50(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n18(_uploadFile, _downloadFile, value);
@@ -1442,7 +1493,7 @@ function to_candid_record_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         censusStateCode: value.censusStateCode
     };
 }
-function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     profileImage?: ProfileImage;
     name: string;
     tokenBalance: TokenBalance;

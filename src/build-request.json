@@ -1,123 +1,134 @@
 {
   "kind": "build_request",
-  "title": "Connect contribution rewards to issue-flow actions (issue, comment, evidence)",
+  "title": "Step 5: Earned contribution-points toast feedback after logging events",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Define centralized contribution reward values for the three issue-flow actions: issue creation, comment creation, and evidence upload. Store the mapping in the backend so the server (not the frontend) is the source of truth for points and rewardType per action.",
-      "target": "backend",
+      "text": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Run step 1. Connect contribution rewards to issue‑flow actions 1.1 Define reward values for each action (issue, comment, evidence)"
+          "5.1 Create a small shared toast component for “+X contribution points earned”.",
+          "5.6 Auto‑dismiss the toast after 2–3 seconds."
         ]
       },
       "acceptanceCriteria": [
-        "Backend has a single, centralized mapping from actionType -> {points, rewardType} for: issue creation, comment creation, evidence upload.",
-        "The mapping is used by backend logging logic (i.e., frontend does not send arbitrary points to be trusted).",
-        "Action type strings are documented/consistent across backend + frontend (single canonical set)."
+        "A reusable module exists (component or helper) that can be called from multiple flows to show the earned-points toast.",
+        "The toast displays the earned points in the form “+<number> contribution points earned”.",
+        "Toast dismisses automatically after 2000–3000ms (inclusive)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add backend logic to log contribution events for the three issue-flow actions using the existing contribution log structures in backend/main.mo. Implement a single backend entrypoint that the frontend can call with (actionType, referenceId?, details?) and the backend will: validate actionType, resolve reward values from the centralized mapping, write a ContributionLogEntry, and return the created log entry id.",
-      "target": "backend",
+      "text": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "1.2 Add backend logic to log these new contribution events",
-          "1.3 Update frontend calls so each action triggers the log entry"
+          "5.2 Trigger the toast immediately after a successful contribution‑log API call."
         ]
       },
       "acceptanceCriteria": [
-        "A new or updated backend method exists that allows the frontend to record an event by actionType and optional referenceId/details, and the backend determines pointsAwarded + rewardType from configured criteria.",
-        "On success, the backend returns the created contribution log entry id.",
-        "Unauthorized callers are rejected using existing authorization checks (consistent with current contribution log methods)."
+        "At least the IssueProjectTasksTab flow no longer constructs its own Sonner toast message and instead uses the shared earned-points toast helper/component.",
+        "The toast only fires on success results where isDuplicate is false (duplicate results do not show the toast).",
+        "The toast is shown after the logContributionEvent call succeeds, not before."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add guardrails in the backend to prevent duplicate or invalid contribution events. At minimum: reject unknown actionType values, reject events with missing/invalid referenceId when required for that action, and prevent duplicate awards for the same (caller, actionType, referenceId) combination.",
-      "target": "backend",
+      "text": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "1.4 Add guardrails for duplicates or invalid events"
+          "5.3 Pull the updated total points from the local React state (no backend fetch)."
         ]
       },
       "acceptanceCriteria": [
-        "If actionType is not one of the supported issue-flow action types, the backend rejects the request with a clear error message.",
-        "Duplicate submissions for the same (caller, actionType, referenceId) do not create additional ContributionLogEntry records and do not award additional points.",
-        "Backend enforces basic input constraints (e.g., referenceId length bounds and/or details length bounds) to avoid unbounded storage abuse.",
-        "Guardrails are applied consistently regardless of which frontend screen triggers the event."
+        "The toast logic reads total points from React Query cache (e.g., queryClient.getQueryData for the caller contribution summary) and does not call any actor method to fetch updated totals solely for the toast.",
+        "If the cached total is unavailable, the toast still renders the earned-points message without crashing."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
+      "text": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "1.3 Update frontend calls so each action triggers the log entry"
+          "5.4 Show different messages depending on the action type (issue, comment, evidence)."
         ]
       },
       "acceptanceCriteria": [
-        "Creating an issue results in exactly one new contribution log entry for the caller.",
-        "Creating a comment results in exactly one new contribution log entry for the caller.",
-        "Uploading evidence results in exactly one new contribution log entry for the caller.",
-        "If the same frontend action is retried (e.g., user double-clicks, network retry, refresh), the backend dedupe prevents multiple awards, and the frontend handles the duplicate response without breaking the UI."
+        "For each of the action types ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED, the toast uses distinct English phrasing (not the same generic sentence).",
+        "The action type mapping uses the canonical constants in frontend/src/lib/contributionActionTypes.ts (no new divergent strings)."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
+      "text": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Connect contribution rewards to issue‑flow actions"
+          "5.5 Add Secretary‑friendly phrasing for when actions originate inside chat flows."
         ]
       },
       "acceptanceCriteria": [
-        "After any of the three actions, the caller contribution summary query (useCallerContributionSummary) is invalidated/refetched so subsequent renders show updated totals.",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose existing hooks/components instead)."
+        "The shared toast API supports an explicit origin/context flag (e.g., \"chat\" vs \"standard\").",
+        "When origin is \"chat\", the toast copy is adjusted to be Secretary-friendly English (e.g., acknowledges the action was completed via the assistant) for each relevant action type."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6",
+          "msg-7"
+        ],
+        "quotes": [
+          "5.7 Ensure it never appears twice if two actions fire quickly (use a simple lock)."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Rapid successive triggers (e.g., within a short window) result in at most one earned-points toast being shown.",
+        "The lock is implemented centrally in the shared toast module (not duplicated per call site).",
+        "The lock does not block unrelated toasts elsewhere in the app (scope limited to the earned-points toast)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko architecture (all logic in backend/main.mo).",
-    "Do not modify files under frontend immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "Use English for any user-facing text."
+    "Use English for all user-facing text.",
+    "Do not fetch updated total points from the backend for the toast; use only local React state/React Query cache.",
+    "Do not modify files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT.",
+    "Backend remains single-actor; no backend changes are required for Step 5."
   ],
   "nonGoals": [
-    "Do not add UI to display “earned points” notifications/toasts in this step (that is Phase 2 step 2).",
-    "Do not expand the admin dashboard contribution logs UI (that is Phase 2 step 4).",
-    "Do not change authentication providers (Internet Identity only)."
+    "Adding new backend endpoints or changing backend reward/points logic.",
+    "Implementing real-time updates or WebSocket-style push for point totals.",
+    "Redesigning the global toast system beyond the earned-points toast behavior."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

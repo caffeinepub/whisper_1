@@ -43,6 +43,10 @@ export interface ContributionSummary {
 }
 export type GeoId = string;
 export type HierarchicalGeoId = string;
+export type LogContributionEventError = { 'referenceIdEmpty' : null } |
+  { 'referenceIdRequired' : null } |
+  { 'duplicateContribution' : null } |
+  { 'invalidActionType' : null };
 export type ProfileImage = Uint8Array;
 export interface Proposal {
   'status' : string,
@@ -233,7 +237,8 @@ export interface _SERVICE {
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
   'logContributionEvent' : ActorMethod<
     [string, [] | [string], [] | [string]],
-    bigint
+    { 'ok' : bigint } |
+      { 'err' : LogContributionEventError }
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setContributionCriteria' : ActorMethod<

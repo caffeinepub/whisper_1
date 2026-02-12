@@ -1,95 +1,46 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X, Send, ArrowLeft, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { X, Send, Loader2, ChevronLeft } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSecretaryChat } from '@/hooks/useSecretaryChat';
+import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
 import { FlowEngineBrain } from '@/secretary/brain/FlowEngineBrain';
 import { useActor } from '@/hooks/useActor';
-import { useGetAllStates, useGetCountiesForState, useGetPlacesForState } from '@/hooks/useUSGeography';
-import { useComplaintSuggestions } from '@/hooks/useComplaintSuggestions';
-import { USHierarchyLevel } from '@/backend';
-import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
-import type { NavigationHandler } from '@/secretary/brain/SecretaryBrain';
+import type { SecretaryBrain } from '@/secretary/brain/SecretaryBrain';
 import type { USState, USCounty, USPlace } from '@/backend';
+import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
 
-interface SecretaryWidgetProps {
-  open: boolean;
-  onClose: () => void;
-  navigationHandler?: NavigationHandler;
-  findByKeyword?: (text: string) => { id: string } | null;
+interface NavigationRequest {
+  destinationId: string;
+  shouldClose: boolean;
 }
 
-export function SecretaryWidget({
-  open,
-  onClose,
-  navigationHandler,
-  findByKeyword,
-}: SecretaryWidgetProps) {
-  const { actor } = useActor();
-  const [brain] = useState(() => new FlowEngineBrain(actor));
+interface SecretaryWidgetProps {
+  open?: boolean;
+  onClose: () => void;
+  navigationHandler?: (request: NavigationRequest) => void;
+  findByKeyword?: (keyword: string) => string | null;
+}
+
+export function SecretaryWidget({ onClose, navigationHandler, findByKeyword }: SecretaryWidgetProps) {
+  const { messages, addUserMessage, addAssistantMessage, returnToMenu, resetChat } = useSecretaryChat();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
 
-  // Geography queries for typeahead/discovery
-  const { data: allStates = [], isLoading: statesLoading } = useGetAllStates();
-  
-  // Get current slots to determine which geography queries to enable
-  const context = brain.getContext();
-  const stateSlot = context.slots.state as USState | null;
-  
-  const { data: countiesForState = [], isLoading: countiesLoading } = useGetCountiesForState(
-    stateSlot?.hierarchicalId || null
-  );
-  
-  const { data: placesForState = [], isLoading: placesLoading } = useGetPlacesForState(
-    stateSlot?.hierarchicalId || null
-  );
-
-  // Complaint suggestions
-  const locationLevel = context.slots.place
-    ? USHierarchyLevel.place
-    : context.slots.county
-    ? USHierarchyLevel.county
-    : context.slots.state
-    ? USHierarchyLevel.state
-    : USHierarchyLevel.country;
-
-  const { data: complaintSuggestions = [] } = useComplaintSuggestions(locationLevel, '');
-
-  // Update brain with actor and geography data
-  useEffect(() => {
-    brain.setActor(actor);
-  }, [actor, brain]);
+  const [brain, setBrain] = useState<SecretaryBrain | null>(null);
 
   useEffect(() => {
-    if (navigationHandler) {
-      brain.setNavigationHandler(navigationHandler);
+    if (actor) {
+      const brainInstance = new FlowEngineBrain(actor);
+      setBrain(brainInstance);
     }
-  }, [navigationHandler, brain]);
+  }, [actor]);
 
-  useEffect(() => {
-    if (findByKeyword) {
-      brain.setKeywordFinder(findByKeyword);
-    }
-  }, [findByKeyword, brain]);
-
-  // Update geography data for typeahead
-  useEffect(() => {
-    brain.setGeographyData(allStates, countiesForState, placesForState);
-  }, [allStates, countiesForState, placesForState, brain]);
-
-  useEffect(() => {
-    brain.setComplaintSuggestions(complaintSuggestions);
-  }, [complaintSuggestions, brain]);
-
-  // Get messages and view model
-  const messages = brain.getMessages();
-  const viewModel = brain.getViewModel();
-  const typeaheadOptions = brain.getTypeaheadOptions();
-  const suggestions = brain.getSuggestions();
-
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -97,203 +48,162 @@ export function SecretaryWidget({
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isProcessing) return;
+    if (!inputValue.trim() || isProcessing || !brain) return;
 
-    const text = inputValue.trim();
+    const userMessage = inputValue.trim();
     setInputValue('');
+    addUserMessage(userMessage);
     setIsProcessing(true);
 
     try {
-      await brain.handleUserText(text);
-    } catch (error) {
-      console.error('Error processing message:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+      await brain.handleUserText(userMessage);
+      const viewModel = brain.getViewModel();
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleButtonClick = async (action: any) => {
-    setIsProcessing(true);
-    try {
-      await brain.handleAction(action);
-    } catch (error) {
-      console.error('Error handling button action:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleTypeaheadSelect = async (option: { id: string; label: string; data: any }) => {
-    setIsProcessing(true);
-    try {
-      const data = option.data;
-      // Determine if it's a state, county, or place
-      if (data.longName && data.shortName && data.fipsCode) {
-        // It's a state
-        await brain.handleAction({ type: 'state-selected', payload: data });
-      } else {
-        // It's a county or place
-        await brain.handleAction({ type: 'location-selected', payload: data });
+      // Add all assistant messages from the view model
+      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
+        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
       }
     } catch (error) {
-      console.error('Error selecting typeahead option:', error);
+      console.error('Secretary processing error:', error);
+      addAssistantMessage('I encountered an error processing your request. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleSuggestionSelect = async (suggestion: string) => {
+  const handleTypeaheadSelect = async (item: USState | USCounty | USPlace) => {
+    if (!brain) return;
+
     setIsProcessing(true);
     try {
-      await brain.handleAction({ type: 'suggestion-selected', payload: suggestion });
+      // Use the correct action type for location selection
+      await brain.handleAction({ type: 'location-selected', payload: item });
+      const viewModel = brain.getViewModel();
+
+      // Add all assistant messages from the view model
+      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
+        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
+      }
     } catch (error) {
-      console.error('Error selecting suggestion:', error);
+      console.error('Secretary typeahead error:', error);
+      addAssistantMessage('I encountered an error processing your selection. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleBackToMenu = async () => {
+  const handleReturnToMenu = async () => {
+    if (!brain) return;
+
     setIsProcessing(true);
     try {
-      await brain.handleAction({ type: 'back-to-menu', payload: null });
+      brain.reset();
+      const viewModel = brain.getViewModel();
+
+      // Add all assistant messages from the view model
+      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
+        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
+      }
+      returnToMenu();
     } catch (error) {
-      console.error('Error going back to menu:', error);
+      console.error('Secretary return to menu error:', error);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (!open) return null;
-
-  const showBackButton = !brain.isShowingMenu();
-
-  // Determine if typeahead is loading
-  const isTypeaheadLoading = statesLoading || countiesLoading || placesLoading;
+  const viewModel = brain?.getViewModel();
+  const showTypeahead = viewModel?.showTypeahead && viewModel.typeaheadOptions && viewModel.typeaheadOptions.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
-      <div className="w-full max-w-md h-[600px] bg-background border border-border rounded-lg shadow-lg flex flex-col pointer-events-auto">
-        {/* Header */}
+      <div className="w-full max-w-md h-[600px] bg-card border border-border rounded-lg shadow-2xl flex flex-col pointer-events-auto">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
-            {showBackButton && (
+            {messages.length > 1 && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleBackToMenu}
+                onClick={handleReturnToMenu}
                 disabled={isProcessing}
+                className="h-8 w-8"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
             )}
             <h2 className="text-lg font-semibold">Secretary</h2>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Messages */}
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
-            {messages.map((msg, idx) => (
+            {messages.map((message, index) => (
               <div
-                key={idx}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.role === 'user'
+                    message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-foreground'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
               </div>
             ))}
-
-            {/* Action buttons */}
-            {viewModel.buttons && viewModel.buttons.length > 0 && (
-              <div className="space-y-2">
-                {viewModel.buttons.map((button, idx) => (
-                  <Button
-                    key={idx}
-                    variant={button.variant || 'outline'}
-                    className="w-full justify-start"
-                    onClick={() => handleButtonClick(button.action)}
-                    disabled={isProcessing}
-                  >
-                    {button.label}
-                  </Button>
-                ))}
-              </div>
-            )}
-
-            {/* Typeahead */}
-            {viewModel.showTypeahead && (
-              <SecretaryLocationTypeahead
-                options={typeaheadOptions}
-                onSelect={handleTypeaheadSelect}
-                placeholder={viewModel.typeaheadPlaceholder || 'Search...'}
-                isLoading={isTypeaheadLoading}
-              />
-            )}
-
-            {/* Suggestions */}
-            {viewModel.showSuggestions && suggestions.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Select a category:</p>
-                {suggestions.map((suggestion, idx) => (
-                  <Button
-                    key={idx}
-                    variant="outline"
-                    className="w-full justify-start text-left"
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                    disabled={isProcessing}
-                  >
-                    {suggestion}
-                  </Button>
-                ))}
+            {isProcessing && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-lg px-4 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
               </div>
             )}
           </div>
         </ScrollArea>
 
-        {/* Input */}
-        {viewModel.showTextInput && (
-          <div className="p-4 border-t border-border">
-            <div className="flex gap-2">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={viewModel.textInputPlaceholder || 'Type a message...'}
-                disabled={isProcessing}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isProcessing}
-                size="icon"
-              >
-                {isProcessing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+        {showTypeahead && viewModel?.typeaheadOptions && (
+          <div className="px-4 pb-2">
+            <SecretaryLocationTypeahead
+              options={viewModel.typeaheadOptions}
+              onSelect={(option) => {
+                const item = option.data as USState | USCounty | USPlace;
+                handleTypeaheadSelect(item);
+              }}
+              isLoading={false}
+              placeholder={viewModel.typeaheadPlaceholder || "Search locations..."}
+            />
           </div>
         )}
+
+        <div className="p-4 border-t border-border">
+          <div className="flex gap-2">
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="Type your message..."
+              disabled={isProcessing}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isProcessing}
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

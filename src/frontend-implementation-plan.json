@@ -1,67 +1,103 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Log contribution rewards from issue-flow actions and refresh contribution summary",
+  "title": "Step 5: Shared earned contribution-points toast after contribution logging",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Trigger backend contribution-event logging after successful issue creation, comment creation, and evidence upload with stable referenceIds.",
+      "id": "REQ-1",
+      "summary": "Create a reusable shared earned-points toast helper built on the existing Sonner toaster with 2–3s auto-dismiss.",
       "acceptanceCriteria": [
-        "Creating an issue results in exactly one new contribution log entry for the caller.",
-        "Creating a comment results in exactly one new contribution log entry for the caller.",
-        "Uploading evidence results in exactly one new contribution log entry for the caller.",
-        "If the same frontend action is retried (e.g., user double-clicks, network retry, refresh), the backend dedupe prevents multiple awards, and the frontend handles the duplicate response without breaking the UI."
+        "A reusable module exists (component or helper) that can be called from multiple flows to show the earned-points toast.",
+        "The toast displays the earned points in the form “+<number> contribution points earned”.",
+        "Toast dismisses automatically after 2000–3000ms (inclusive)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/contributionActionTypes.ts",
+          "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "create",
-          "description": "Create a single canonical, exported set of issue-flow contribution actionType string constants for frontend usage (issue creation, comment creation, evidence upload) to stay consistent with backend. Verify the component's usage instructions before implementing."
-        },
+          "description": "Create a shared earned-points toast helper that uses Sonner (toast.*) to render the exact primary message “+X contribution points earned” and sets duration to a value between 2000–3000ms."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Use the shared earned-points toast after successful contribution logging (non-duplicate) and remove ad-hoc toast construction in existing flows.",
+      "acceptanceCriteria": [
+        "At least the IssueProjectTasksTab flow no longer constructs its own Sonner toast message and instead uses the shared earned-points toast helper/component.",
+        "The toast only fires on success results where isDuplicate is false (duplicate results do not show the toast).",
+        "The toast is shown after the logContributionEvent call succeeds, not before."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/hooks/useContributionEventLogger.ts",
-          "operation": "create",
-          "description": "Add a small React hook/wrapper around actor.logContributionEvent that accepts (actionType, referenceId?, details?) and handles: actor availability, idempotent duplicate responses (do not break UI), and shared error normalization. This hook will be used by the three issue-flow actions. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useCreateInstanceProposal.ts",
+          "path": "frontend/src/components/issue-project/IssueProjectTasksTab.tsx",
           "operation": "modify",
-          "description": "After a successful submitProposal (issue creation), call the new contribution event logger with actionType for issue creation and a stable referenceId (the created instanceName), only after the action succeeds. Ensure any duplicate/guardrail error from the logging call is handled gracefully without failing the primary success flow. Verify the component's usage instructions before implementing."
-        },
+          "description": "Replace the ad-hoc Sonner toast.success call with the shared helper from frontend/src/lib/earnedPointsToast.ts, invoked only after useContributionEventLogger().mutateAsync resolves and only when isDuplicate === false."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Derive any displayed “updated total points” from React Query cache only (no backend fetch) with safe fallback if unavailable.",
+      "acceptanceCriteria": [
+        "The toast logic reads total points from React Query cache (e.g., queryClient.getQueryData for the caller contribution summary) and does not call any actor method to fetch updated totals solely for the toast.",
+        "If the cached total is unavailable, the toast still renders the earned-points message without crashing."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/hooks/useIssueProjectTasks.ts",
+          "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "modify",
-          "description": "After successful creation of the user-generated item that represents the app's \"comment creation\" in the current issue-flow UI (currently: createTask returns newTaskId), call the contribution event logger with the comment actionType and a stable referenceId (e.g., the returned newTaskId serialized). Ensure duplicate/guardrail errors do not break the UI flow. Verify the component's usage instructions before implementing."
-        },
+          "description": "Enhance the shared toast helper to optionally include an “updated total points” line sourced strictly from the React Query cache (e.g., queryClient.getQueriesData with queryKey starting ['callerContributionSummary']), and gracefully omit totals when cache is missing/unexpected."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Vary earned-points toast copy by contribution action type using canonical action type constants.",
+      "acceptanceCriteria": [
+        "For each of the action types ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED, the toast uses distinct English phrasing (not the same generic sentence).",
+        "The action type mapping uses the canonical constants in frontend/src/lib/contributionActionTypes.ts (no new divergent strings)."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "modify",
-          "description": "If this screen contains the current app's \"evidence upload\" action (e.g., a blob/image upload that completes successfully), wire the contribution event logger call after the upload/save succeeds using a stable referenceId (e.g., returned blob identifier or other stable upload identifier). Ensure retries/double-clicks do not break the UI if the backend reports a duplicate award. Verify the component's usage instructions before implementing."
+          "description": "Implement action-type-specific English phrasing for ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED by importing and switching on CONTRIBUTION_ACTION_TYPES from frontend/src/lib/contributionActionTypes.ts; keep the primary toast message as “+X contribution points earned” while varying the supporting copy."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Invalidate/refetch the caller contribution summary React Query cache after new contribution events so totals update.",
+      "summary": "Support Secretary-chat-origin earned-points toast phrasing variants and ensure chat flows can request those variants.",
       "acceptanceCriteria": [
-        "After any of the three actions, the caller contribution summary query (useCallerContributionSummary) is invalidated/refetched so subsequent renders show updated totals.",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose existing hooks/components instead)."
+        "The shared toast API supports an explicit origin/context flag (e.g., \"chat\" vs \"standard\").",
+        "When origin is \"chat\", the toast copy is adjusted to be Secretary-friendly English (e.g., acknowledges the action was completed via the assistant) for each relevant action type."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useContributionEventLogger.ts",
+          "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "modify",
-          "description": "On successful logContributionEvent completion (and on tolerated duplicate responses if applicable), invalidate/refetch the React Query cache for useCallerContributionSummary (query key prefix 'callerContributionSummary') so any totals shown across the app update. Verify the component's usage instructions before implementing."
+          "description": "Extend the shared toast helper API to accept an explicit origin/context flag (e.g., 'standard' | 'chat') and provide Secretary-friendly English variants for each supported action type when origin === 'chat'."
         },
         {
-          "path": "frontend/src/hooks/useCallerContributionSummary.ts",
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Ensure the query key remains stable/predictable for invalidation (keep the existing 'callerContributionSummary' key prefix) and document the intended invalidation behavior in code comments to support the new event logging flow. Verify the component's usage instructions before implementing."
-        },
+          "description": "Wire the Secretary chat flow to use the shared earned-points toast helper with origin/context set to 'chat' for any contribution-logging success handling performed in/around the chat UI (ensuring any such toasts use the Secretary-friendly variants)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Prevent the earned-points toast from appearing twice during rapid successive triggers via a centralized lock in the shared helper.",
+      "acceptanceCriteria": [
+        "Rapid successive triggers (e.g., within a short window) result in at most one earned-points toast being shown.",
+        "The lock is implemented centrally in the shared toast module (not duplicated per call site).",
+        "The lock does not block unrelated toasts elsewhere in the app (scope limited to the earned-points toast)."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/hooks/useCreateInstanceProposal.ts",
+          "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "modify",
-          "description": "Ensure the post-success contribution logging flow triggers contribution summary invalidation via the shared logger hook (no direct cache logic duplicated here beyond composing the shared hook). Verify the component's usage instructions before implementing."
+          "description": "Add a simple module-scoped earned-points-only toast lock (time-based window or in-flight boolean) so rapid successive calls only show one earned-points toast while leaving other Sonner toasts unaffected."
         }
       ]
     }

@@ -1,10 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { USHierarchyLevel } from '@/backend';
-import { useLocalStorageState } from './useLocalStorageState';
 import { userFacingError } from '@/utils/userFacingError';
-import { useContributionEventLogger } from './useContributionEventLogger';
-import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 
 /**
  * Hook to check if an instance name is already taken.
@@ -46,20 +43,19 @@ interface SubmitProposalParams {
   population2020: string;
 }
 
-interface SubmissionSuccess {
+export interface SubmissionSuccess {
   instanceName: string;
 }
 
 /**
  * Hook to submit a new instance proposal.
  * Validates all required geography fields before submission.
- * Logs contribution event after successful submission.
+ * Returns instanceName for caller to trigger contribution logging.
  * Invalidates proposals cache on success to ensure fresh data.
  */
 export function useSubmitProposal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
-  const logContribution = useContributionEventLogger();
 
   return useMutation<SubmissionSuccess, Error, SubmitProposalParams>({
     mutationFn: async (params) => {
@@ -108,24 +104,11 @@ export function useSubmitProposal() {
         throw new Error(errorMessage);
       }
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       // Invalidate proposals list to fetch fresh data including the new proposal
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
       // Also invalidate the specific proposal query for the newly created proposal
       queryClient.invalidateQueries({ queryKey: ['proposal', data.instanceName] });
-
-      // Log contribution event after successful issue creation
-      // Use instanceName as stable referenceId
-      try {
-        await logContribution.mutateAsync({
-          actionType: CONTRIBUTION_ACTION_TYPES.ISSUE_CREATED,
-          referenceId: data.instanceName,
-          details: 'Issue proposal created',
-        });
-      } catch (error) {
-        // Don't break the success flow if contribution logging fails
-        console.warn('Failed to log contribution for issue creation:', error);
-      }
     },
   });
 }

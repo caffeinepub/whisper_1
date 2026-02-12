@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, CheckCircle2, Loader2, X, MapPin } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { IconBubble } from '@/components/common/IconBubble';
 import { SelectState } from './SelectState';
 import { SelectCounty } from './SelectCounty';
@@ -16,6 +17,9 @@ import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { generateWhisperInstanceName, isValidWhisperInstanceName } from '@/lib/whisperInstanceNaming';
 import { uiCopy } from '@/lib/uiCopy';
 import { USHierarchyLevel, type USState, type USCounty, type USPlace } from '@/backend';
+import { useContributionEventLogger } from '@/hooks/useContributionEventLogger';
+import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
+import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
 
 interface CreateInstancePlaceholderCardProps {
   onClose: () => void;
@@ -31,7 +35,9 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
   const [countyTouched, setCountyTouched] = useState(false);
   const [placeTouched, setPlaceTouched] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [contributionError, setContributionError] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
   const debouncedInstanceName = useDebouncedValue(instanceName, 500);
 
   const {
@@ -41,6 +47,7 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
   } = useCheckInstanceName(debouncedInstanceName);
 
   const { mutate: submitProposal, isPending: isSubmitting } = useSubmitProposal();
+  const logContribution = useContributionEventLogger();
 
   // Auto-generate instance name when geography changes
   useEffect(() => {
@@ -139,13 +146,13 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
     } else if (selectedCounty) {
       geographyLevel = USHierarchyLevel.county;
       censusBoundaryId = selectedCounty.fipsCode;
-      squareMeters = BigInt(selectedCounty.censusLandAreaSqMeters);
+      squareMeters = BigInt(Number(selectedCounty.censusLandAreaSqMeters));
       population2020 = selectedCounty.population2010;
       countyName = selectedCounty.fullName;
     } else if (selectedState) {
       geographyLevel = USHierarchyLevel.state;
       censusBoundaryId = selectedState.fipsCode;
-      squareMeters = selectedState.censusLandAreaSqMeters;
+      squareMeters = BigInt(Number(selectedState.censusLandAreaSqMeters));
       population2020 = '0';
       countyName = 'N/A';
     } else {
@@ -153,12 +160,15 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
       return;
     }
 
+    // Clear any previous contribution errors
+    setContributionError(null);
+
     submitProposal(
       {
         description,
         instanceName,
         status: 'Pending',
-        state: selectedState?.longName || '',
+        state: selectedState!.longName,
         county: countyName,
         geographyLevel,
         censusBoundaryId,
@@ -166,71 +176,72 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
         population2020,
       },
       {
-        onSuccess: () => {
-          onProposalSubmitted(instanceName);
-          onClose();
+        onSuccess: async (result) => {
+          // Log contribution event after successful proposal creation
+          try {
+            const contributionResult = await logContribution.mutateAsync({
+              actionType: CONTRIBUTION_ACTION_TYPES.ISSUE_CREATED,
+              referenceId: result.instanceName,
+              details: 'Instance proposal created',
+            });
+
+            // Show earned-points toast immediately if not a duplicate
+            if (!contributionResult.isDuplicate) {
+              showEarnedPointsToast({
+                pointsAwarded: contributionResult.pointsAwarded,
+                actionType: contributionResult.actionType,
+                origin: 'standard',
+                queryClient,
+              });
+            }
+          } catch (error: any) {
+            // Don't block the success flow, but show inline message
+            const errorMessage = error?.message || 'Could not record contribution points.';
+            setContributionError(errorMessage);
+            console.warn('Failed to log contribution for proposal creation:', error);
+          }
+
+          onProposalSubmitted(result.instanceName);
         },
         onError: (error: any) => {
-          if (error?.message) {
-            setValidationErrors([error.message]);
-          } else {
-            setValidationErrors(['Failed to submit proposal. Please try again.']);
-          }
+          setValidationErrors([error.message || 'Failed to submit proposal']);
         },
       }
     );
   };
 
-  const isNameAvailable = nameCheckFetched && !isNameTaken && debouncedInstanceName.length > 0 && isValidWhisperInstanceName(debouncedInstanceName);
-  const showNameTaken = nameCheckFetched && isNameTaken;
-  const showInvalidFormat = debouncedInstanceName.length > 0 && !isValidWhisperInstanceName(debouncedInstanceName);
+  const nameAvailable = nameCheckFetched && !isNameTaken && isValidWhisperInstanceName(debouncedInstanceName);
+  const nameTaken = nameCheckFetched && isNameTaken;
 
   return (
-    <Card className="bg-[oklch(0.20_0.05_230)] border-secondary/50 shadow-glow">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <IconBubble size="md" variant="secondary">
-              <MapPin className="h-5 w-5" />
-            </IconBubble>
-            <div>
-              <CardTitle className="text-white">{uiCopy.createInstance.title}</CardTitle>
-              <CardDescription className="text-white/60">{uiCopy.createInstance.description}</CardDescription>
-            </div>
+    <Card className="w-full max-w-2xl mx-auto shadow-lg">
+      <CardHeader className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="absolute right-4 top-4 h-8 w-8"
+          disabled={isSubmitting}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-3">
+          <IconBubble size="md" variant="secondary">
+            <MapPin className="h-5 w-5" />
+          </IconBubble>
+          <div>
+            <CardTitle>{uiCopy.createInstance.title}</CardTitle>
+            <CardDescription>{uiCopy.createInstance.getStartedDescription}</CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-white/60 hover:text-white hover:bg-white/10"
-            aria-label={uiCopy.common.close}
-          >
-            <X className="h-5 w-5" />
-          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {validationErrors.length > 0 && (
-          <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                {validationErrors.map((error, index) => (
-                  <p key={index} className="text-sm text-destructive">
-                    {error}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      <Separator />
 
+      <CardContent className="pt-6 space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="state" className="text-white">
-              {uiCopy.createInstance.stateLabel}
-            </Label>
+            <Label htmlFor="state">{uiCopy.createInstance.stateLabel}</Label>
             <SelectState
               value={selectedState}
               onChange={setSelectedState}
@@ -240,9 +251,7 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
 
           {selectedState && (
             <div className="space-y-2">
-              <Label htmlFor="county" className="text-white">
-                {uiCopy.createInstance.countyLabel}
-              </Label>
+              <Label htmlFor="county">{uiCopy.createInstance.countyLabel}</Label>
               <SelectCounty
                 stateGeoId={selectedState.hierarchicalId}
                 value={selectedCounty}
@@ -255,9 +264,7 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
 
           {selectedCounty && (
             <div className="space-y-2">
-              <Label htmlFor="place" className="text-white">
-                {uiCopy.createInstance.placeLabel}
-              </Label>
+              <Label htmlFor="place">{uiCopy.createInstance.placeLabel}</Label>
               <SelectPlace
                 countyGeoId={selectedCounty.hierarchicalId}
                 value={selectedPlace}
@@ -269,13 +276,11 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
           )}
         </div>
 
-        <Separator className="bg-white/10" />
+        <Separator />
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="instanceName" className="text-white">
-              {uiCopy.createInstance.instanceNameLabel}
-            </Label>
+            <Label htmlFor="instanceName">{uiCopy.createInstance.instanceNameLabel}</Label>
             <div className="relative">
               <Input
                 id="instanceName"
@@ -283,57 +288,63 @@ export function CreateInstancePlaceholderCard({ onClose, onProposalSubmitted }: 
                 onChange={(e) => setInstanceName(e.target.value)}
                 placeholder={uiCopy.createInstance.instanceNamePlaceholder}
                 disabled={isSubmitting}
-                className={`bg-white/5 border-white/10 text-white placeholder:text-white/40 pr-10 ${
-                  showNameTaken || showInvalidFormat ? 'border-destructive' : isNameAvailable ? 'border-success' : ''
-                }`}
+                className={`pr-10 ${nameTaken ? 'border-destructive' : nameAvailable ? 'border-success' : ''}`}
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checkingName && <Loader2 className="h-4 w-4 animate-spin text-white/40" />}
-                {!checkingName && isNameAvailable && <CheckCircle2 className="h-4 w-4 text-success" />}
-                {!checkingName && (showNameTaken || showInvalidFormat) && <AlertCircle className="h-4 w-4 text-destructive" />}
+                {checkingName && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                {nameAvailable && <CheckCircle2 className="h-4 w-4 text-success" />}
+                {nameTaken && <AlertCircle className="h-4 w-4 text-destructive" />}
               </div>
             </div>
-            <p className="text-xs text-white/60">{uiCopy.createInstance.whisperNamingHelper}</p>
-            {checkingName && <p className="text-xs text-white/60">{uiCopy.createInstance.checkingAvailability}</p>}
-            {!checkingName && isNameAvailable && <p className="text-xs text-success">{uiCopy.createInstance.nameAvailable}</p>}
-            {!checkingName && showNameTaken && <p className="text-xs text-destructive">{uiCopy.createInstance.nameTaken}</p>}
-            {!checkingName && showInvalidFormat && <p className="text-xs text-destructive">Name must start with "WHISPER-"</p>}
+            {nameTaken && (
+              <p className="text-sm text-destructive">{uiCopy.createInstance.nameTaken}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-white">
-              {uiCopy.createInstance.descriptionLabel}
-            </Label>
+            <Label htmlFor="description">{uiCopy.createInstance.descriptionLabel}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={uiCopy.createInstance.descriptionPlaceholder}
               disabled={isSubmitting}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+              rows={4}
             />
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            disabled={isSubmitting}
-            className="flex-1 border-white/20 text-white hover:bg-white/10"
-          >
+        {validationErrors.length > 0 && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                {validationErrors.map((error, index) => (
+                  <p key={index} className="text-sm text-destructive">
+                    {error}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {contributionError && (
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+              <p className="text-sm text-warning">{contributionError}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-4">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             {uiCopy.createInstance.cancelButton}
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || checkingName || !selectedState}
-            className="flex-1 bg-secondary hover:bg-secondary/90 text-white"
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting || checkingName}>
             {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {uiCopy.createInstance.submitting}
-              </>
+              <LoadingIndicator label={uiCopy.createInstance.submitting} />
             ) : (
               uiCopy.createInstance.submitButton
             )}

@@ -8,15 +8,15 @@ import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
-import Migration "migration";
 
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
+
 // Use migration on upgrade
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
@@ -91,6 +91,13 @@ actor {
     issueCreatedReward : ContributionReward;
     commentCreatedReward : ContributionReward;
     evidenceAddedReward : ContributionReward;
+  };
+
+  public type LogContributionEventError = {
+    #duplicateContribution;
+    #invalidActionType;
+    #referenceIdRequired;
+    #referenceIdEmpty;
   };
 
   type GeoId = Text;
@@ -520,7 +527,7 @@ actor {
     actionType : Text,
     referenceId : ?Text,
     details : ?Text,
-  ) : async Nat {
+  ) : async { #ok : Nat; #err : LogContributionEventError } {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can log contributions");
     };
@@ -529,7 +536,7 @@ actor {
     let actionTypeVariant = switch (textToContributionActionType(actionType)) {
       case (?variant) { variant };
       case (null) {
-        Runtime.trap("Invalid actionType: " # actionType);
+        return #err(#invalidActionType);
       };
     };
 
@@ -537,11 +544,11 @@ actor {
     if (requiresReferenceId(actionTypeVariant)) {
       switch (referenceId) {
         case (null) {
-          Runtime.trap("referenceId is required for actionType: " # actionType);
+          return #err(#referenceIdRequired);
         };
         case (?id) {
           if (id.size() == 0) {
-            Runtime.trap("referenceId cannot be empty for actionType: " # actionType);
+            return #err(#referenceIdEmpty);
           };
         };
       };
@@ -550,7 +557,7 @@ actor {
     // Check for duplicate contribution
     let duplicateKey = buildDuplicateKey(caller, actionType, referenceId);
     if (awardedContributions.containsKey(duplicateKey)) {
-      Runtime.trap("Duplicate contribution: This action has already been awarded for the given reference");
+      return #err(#duplicateContribution);
     };
 
     // Resolve reward values from centralized mapping
@@ -594,7 +601,7 @@ actor {
     // Mark as awarded to prevent duplicates
     awardedContributions.add(duplicateKey, true);
 
-    entryId;
+    #ok(entryId);
   };
 
   public shared ({ caller }) func addContributionPoints(points : Nat, rewardType : Text, actionType : Text) : async () {

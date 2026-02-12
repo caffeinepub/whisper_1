@@ -1,13 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Connect contribution rewards to issue-flow actions so points/reward types are determined and logged by the backend when users create issues, add comments, or upload evidence.
+**Goal:** Provide consistent, reusable earned contribution-points toast feedback after successful contribution event logging.
 
 **Planned changes:**
-- Add a centralized backend mapping of issue-flow actionType -> {points, rewardType} for issue creation, comment creation, and evidence upload (backend as source of truth).
-- Implement/extend a single backend entrypoint to record contribution events by (actionType, optional referenceId, optional details), validate inputs, resolve rewards from the mapping, write a ContributionLogEntry, and return the created log entry id.
-- Add backend guardrails: reject unknown actionTypes, enforce required/valid referenceId where needed, apply basic input bounds, and dedupe awards for the same (caller, actionType, referenceId).
-- Update the frontend to call the backend contribution-event entrypoint after successful issue creation, comment creation, and evidence upload, passing the correct actionType and a stable referenceId.
-- After logging a contribution event, invalidate/refetch the caller contribution summary React Query cache so totals refresh.
+- Add a shared earned-points toast helper/component using the existing Sonner toaster to display “+<number> contribution points earned” with a 2–3s auto-dismiss.
+- Update contribution logging flows to call the shared toast after `useContributionEventLogger().mutateAsync` resolves successfully with `isDuplicate === false`, replacing any ad-hoc earned-points toasts (at least in IssueProjectTasksTab).
+- Derive any “updated total points” shown in the toast strictly from local React state/React Query cache (no backend fetch), and gracefully handle missing cached totals.
+- Display distinct English toast copy per action type (ISSUE_CREATED, COMMENT_CREATED, EVIDENCE_ADDED) using the canonical frontend action type constants.
+- Support a chat-origin context flag that switches the toast copy to Secretary-friendly English variants for the same action types.
+- Add a simple centralized lock in the shared toast module to prevent duplicate earned-points toasts from appearing twice when triggers fire in quick succession (without affecting other toasts).
 
-**User-visible outcome:** After creating an issue, creating a comment, or uploading evidence, the user’s contribution rewards are recorded once per action (with backend deduplication) and contribution totals refresh on pages that display them.
+**User-visible outcome:** After logging a contribution event successfully, users see a brief points-earned toast (with action-appropriate messaging), shown once per rapid sequence and without any extra loading/fetching.

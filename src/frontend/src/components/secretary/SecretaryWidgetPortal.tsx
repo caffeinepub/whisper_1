@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SecretaryWidget } from './SecretaryWidget';
-import type { NavigationHandler } from '@/secretary/brain/SecretaryBrain';
+
+interface NavigationRequest {
+  destinationId: string;
+  shouldClose: boolean;
+}
 
 interface SecretaryWidgetPortalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  navigationHandler?: NavigationHandler;
+  navigationHandler?: (request: NavigationRequest) => void;
   findByKeyword?: (text: string) => { id: string } | null;
 }
 
@@ -40,6 +44,14 @@ export function SecretaryWidgetPortal({
     }
   };
 
+  // Convert findByKeyword to return string | null instead of object
+  const adaptedFindByKeyword = findByKeyword 
+    ? (keyword: string) => {
+        const result = findByKeyword(keyword);
+        return result ? result.id : null;
+      }
+    : undefined;
+
   // Don't render anything if not open
   if (!open || !mounted || !overlayRoot) {
     return null;
@@ -50,7 +62,7 @@ export function SecretaryWidgetPortal({
       open={open} 
       onClose={handleClose}
       navigationHandler={navigationHandler}
-      findByKeyword={findByKeyword}
+      findByKeyword={adaptedFindByKeyword}
     />,
     overlayRoot
   );

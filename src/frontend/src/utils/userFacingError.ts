@@ -1,7 +1,8 @@
 /**
  * Converts backend errors and exceptions into user-friendly English messages.
  * Extended with patterns for geography lookup failures, Secretary top-issues errors,
- * contribution log authorization/fetch failures, and user-scoped log queries.
+ * contribution log authorization/fetch failures, user-scoped log queries, and
+ * contribution event validation errors (invalid actionType, reference not found).
  */
 export function userFacingError(error: unknown): string {
   if (!error) return 'An unknown error occurred';
@@ -11,6 +12,15 @@ export function userFacingError(error: unknown): string {
   // Authorization errors
   if (errorMessage.includes('Unauthorized') || errorMessage.includes('Only admins')) {
     return 'You do not have permission to perform this action';
+  }
+
+  // Contribution event validation errors
+  if (errorMessage.includes('Invalid actionType')) {
+    return 'This action cannot earn contributions.';
+  }
+
+  if (errorMessage.includes('Reference not found') || errorMessage.includes('reference ID')) {
+    return 'That item no longer exists. Please refresh and try again.';
   }
 
   // Contribution log errors
