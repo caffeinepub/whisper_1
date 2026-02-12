@@ -1,147 +1,78 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Secretary Phase 4: task intents (create_task, find_tasks, update_task)",
+  "title": "Neighborhood-based instances via geography selection and browser location flow",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add new Secretary intents for task creation, listing, and updating to the intent type system.",
+      "summary": "Provide a state → county → place selector using existing US geography hooks and derive a canonical session locationId (hierarchicalId) with dependency clearing.",
       "acceptanceCriteria": [
-        "TypeScript type `SecretaryIntent` (frontend/src/secretary/intent/types.ts) includes 'create_task', 'find_tasks', and 'update_task'.",
-        "All intent-related modules compile without TypeScript errors after adding the new intents."
+        "A user can select State, then County, then optionally Place using existing geography data already fetched from the backend.",
+        "The app derives a single locationId string that equals the selected entity’s hierarchicalId, preferring place over county over state.",
+        "If the user changes State, dependent selections (county/place) are cleared and the derived locationId updates accordingly."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/intent/types.ts",
-          "operation": "modify",
-          "description": "Extend `SecretaryIntent` to include `create_task`, `find_tasks`, and `update_task`, and update associated intent/slot typing to support task flows."
+          "path": "frontend/src/components/location/LocationSelector.tsx",
+          "operation": "create",
+          "description": "Create a composed location selector UI that reuses existing geography query hooks and the existing create-instance dropdown components (SelectState, SelectCounty, SelectPlace) to support state→county→place selection, while deriving a canonical locationId (place > county > state). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useLocationSelection.ts",
+          "operation": "create",
+          "description": "Add a hook to manage selected state/county/place objects, enforce dependency clearing (changing state clears county/place; changing county clears place), and expose derived locationId plus selected display names for downstream instance name generation."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Define and wire task-related intent slots (title, description, category, location identifier, task identifier) with correct empty-bag, fill, and clear behavior.",
+      "summary": "Add a location acquisition flow that supports browser Geolocation API or manual selection with clear English fallback messaging.",
       "acceptanceCriteria": [
-        "`SecretarySlot`, `SlotBag`, and `createEmptySlotBag()` support the new task slots in frontend/src/secretary/intent/types.ts and frontend/src/secretary/intent/slotState.ts.",
-        "`isSlotFilled`, `clearSlot`, and any dependent-slot clearing logic handle the new task slots correctly (no runtime exceptions when clearing/filling)."
+        "The UI offers a “Use my current location” action that requests browser geolocation permission.",
+        "If geolocation is unavailable/denied/errors, the UI clearly falls back to manual location selection without breaking the page.",
+        "User-facing text for this flow is in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/intent/types.ts",
-          "operation": "modify",
-          "description": "Add task-related `SecretarySlot` keys (at minimum: task title, task description, task category, location identifier, task identifier) and extend `SlotBag` accordingly."
+          "path": "frontend/src/hooks/useBrowserGeolocation.ts",
+          "operation": "create",
+          "description": "Implement a small hook wrapping the browser Geolocation API, returning status (idle/loading/success/error), coordinates when available, and a user-facing error reason when unavailable/denied, without relying on any external geocoding services."
         },
         {
-          "path": "frontend/src/secretary/intent/slotState.ts",
-          "operation": "modify",
-          "description": "Update `createEmptySlotBag()`, `clearSlot()`, `clearDependentSlots()`, and `isSlotFilled()` to handle task slots (including cascading clears where appropriate, e.g., clearing location should clear task-specific identifiers when needed)."
+          "path": "frontend/src/components/location/LocationAcquisitionCard.tsx",
+          "operation": "create",
+          "description": "Create a UI card that offers “Use my current location” (invokes Geolocation) and a manual selection fallback (renders LocationSelector). On geolocation denial/unavailability, show clear English guidance and keep manual selection fully functional. Use existing shadcn/ui Card/Button/Alert components by composing them (do not edit components under frontend/src/components/ui). Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/secretary/flow/types.ts",
+          "path": "frontend/src/lib/uiCopy.ts",
           "operation": "modify",
-          "description": "Extend `SecretaryContext` with minimal additional intent-slot runtime state needed for slot filling (e.g., a tracked pending/expected slot) so an empty slot bag can be created and slot fill/clear checks can be orchestrated safely."
-        },
-        {
-          "path": "frontend/src/secretary/state/secretaryContext.ts",
-          "operation": "modify",
-          "description": "Initialize and reset any new intent-slot runtime state added to `SecretaryContext` (including ensuring an empty task-capable slot bag is created via `createEmptySlotBag()` during initial context creation and resets)."
+          "description": "Add/extend English UI copy strings for the location acquisition flow (button labels, permission denied/unavailable messaging, and manual selection guidance) to keep user-facing text centralized."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Teach the rule-based intent classifier to recognize task-related phrasing while preserving existing intent behavior.",
+      "summary": "Deterministically map the chosen locationId to a single WHISPER- instance name, persist/restore the chosen location, and ensure Feed refreshes consistently on changes.",
       "acceptanceCriteria": [
-        "frontend/src/secretary/intent/intentClassifier.ts returns 'create_task' for at least one create-task phrasing, 'find_tasks' for at least one list/find phrasing, and 'update_task' for at least one update/mark-done phrasing.",
-        "Existing classifications (e.g., report_issue, find_instance, create_instance, ask_category, top_issues) still work as before (no dead code or unreachable logic introduced)."
+        "When a locationId is set, the app deterministically generates an instanceName using the existing WHISPER- naming convention utilities (place→county→state) and uses it for PostComposer and FeedList.",
+        "The chosen locationId is persisted locally (e.g., via existing instanceScope localStorage utilities) and restored on refresh so the Feed opens on the same local instance by default.",
+        "The user can change their selected location and the Feed remounts/refreshes to show posts for the new instance."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/intent/intentClassifier.ts",
-          "operation": "modify",
-          "description": "Add task-intent heuristics for common phrasing (e.g., create/add task; show/list/find tasks; update/mark done/complete task), with ordering that avoids collisions with existing intents like `create_instance` (e.g., prefer task intent when 'task' is present)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Register task intents in the intent flow registry with required/optional slots, slot fill order, and completion hooks.",
-      "acceptanceCriteria": [
-        "frontend/src/secretary/intent/flowRegistry.ts contains flow definitions for create_task, find_tasks, and update_task, each with a `slotOrder` and `requiredSlots`.",
-        "Each new intent has an `onComplete` implementation that triggers the corresponding task operation (create/list/update) or navigates to an appropriate task UI route when necessary."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/secretary/intent/flowRegistry.ts",
-          "operation": "modify",
-          "description": "Add flow definitions for `create_task`, `find_tasks`, and `update_task` including `requiredSlots`, `optionalSlots`, and `slotOrder`. Update completion hook typing if needed so task completions can execute async work and/or return a completion action for the runtime to execute."
-        },
-        {
-          "path": "frontend/src/secretary/intent/flowRunner.ts",
-          "operation": "modify",
-          "description": "Update intent slot-flow utilities to support the registry changes for task intents (e.g., async completion hooks or returning a completion action), while preserving existing intent slot selection behavior."
-        },
-        {
-          "path": "frontend/src/secretary/intent/taskIntentActions.ts",
+          "path": "frontend/src/hooks/useInstanceScopeLocation.ts",
           "operation": "create",
-          "description": "Define intent-completion action helpers for task intents (e.g., create/list/update) that the Secretary runtime can execute after slot filling, keeping registry hooks lightweight and runtime-friendly."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Add English slot-filling prompts for task slots so the Secretary can ask for missing task information.",
-      "acceptanceCriteria": [
-        "frontend/src/secretary/copy/secretaryPrompts.ts `buildSlotPrompt(...)` returns appropriate English prompts for each new task slot.",
-        "When a task intent is active and a required slot is missing, the UI shows the corresponding prompt rather than the generic fallback prompt."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
-          "operation": "modify",
-          "description": "Extend `buildSlotPrompt(...)` to return clear English prompts for task slots (title, description, category, location identifier, task identifier, and any additional required update fields such as status), ensuring these are used instead of the generic fallback."
+          "description": "Create a hook that persists/restores the selected canonical locationId using the existing instanceScope utilities (setLastUsedLocationId/getLastUsedLocationId) and also persists enough selection metadata (state/county/place names) to regenerate the instanceName deterministically on reload."
         },
         {
-          "path": "frontend/src/secretary/intent/flowRunner.ts",
+          "path": "frontend/src/pages/FeedPage.tsx",
           "operation": "modify",
-          "description": "Ensure slot-prompt selection for task flows uses the new prompts when required slots are missing (i.e., task slot prompts are surfaced via the intent slot-filling flow)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Execute task intents end-to-end from chat: classify, run slot filling, call existing task backend methods via the actor, and post short English confirmations/results in chat.",
-      "acceptanceCriteria": [
-        "When the user types a create-task message, the Secretary gathers missing required slots (via prompts) and then calls the existing create task backend path (as used by frontend/src/hooks/useTasks.ts `useCreateTask`).",
-        "When the user types a find-tasks message and provides/has a location, the Secretary calls the existing list tasks backend path (as used by frontend/src/hooks/useTasks.ts `useListTasksByLocation`) and prints a readable summary (e.g., first N tasks with titles and statuses) in the chat.",
-        "When the user types an update-task message and provides/has enough identifiers, the Secretary calls the existing update task backend path (as used by frontend/src/hooks/useTasks.ts `useUpdateTaskStatus`, i.e., actor.updateTask(...)) and confirms the update in chat.",
-        "No changes are made to immutable frontend paths (per SYSTEM_CONTEXT), and the app builds successfully."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "operation": "modify",
-          "description": "Integrate the intent system into chat handling: on user text, classify to task intent when appropriate, orchestrate slot-filling using the intent flow runner, and on completion execute task actions through the current actor and append short English confirmation/result messages to the chat history."
+          "description": "Replace the free-text instance selector with the new LocationAcquisitionCard + derived instanceName flow. Generate instanceName via existing whisperInstanceNaming.generateWhisperInstanceName (place→county→state) and pass it consistently to PostComposer and FeedList; ensure FeedList remounts/refreshes when the location changes. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/secretary/intent/taskExecutor.ts",
-          "operation": "create",
-          "description": "Implement task intent execution helpers that call the existing actor task capabilities (createTask, listTasksByLocation, getTask/updateTask) and return concise, user-facing English messages (including readable list summaries and update confirmations)."
-        },
-        {
-          "path": "frontend/src/secretary/intent/taskSlotParsing.ts",
-          "operation": "create",
-          "description": "Add small, deterministic parsing helpers for filling task slots from free text (e.g., extracting a numeric task id, detecting 'done/completed' to map to a TaskStatus) and resolving/deriving a location identifier from user text and/or existing geography slot state."
-        },
-        {
-          "path": "frontend/src/secretary/intent/geographyLookup.ts",
+          "path": "frontend/src/utils/instanceScope.ts",
           "operation": "modify",
-          "description": "Expose or extend geography lookup utilities as needed so the runtime can resolve a user-provided location phrase into the appropriate location identifier used by tasks (without changing immutable auth/actor wiring)."
-        },
-        {
-          "path": "frontend/src/secretary/state/secretaryContext.ts",
-          "operation": "modify",
-          "description": "Ensure task intent execution can add assistant messages and reset/advance intent state cleanly after completion (e.g., clear active intent, pending slot, and any task-specific transient state as appropriate)."
+          "description": "Extend instance scope utilities as needed to support clearing/validating persisted location data (while keeping the existing last-location-id behavior intact) so location restoration is resilient to malformed localStorage."
         }
       ]
     }

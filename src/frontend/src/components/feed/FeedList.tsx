@@ -22,7 +22,7 @@ export function FeedList({ instanceName }: FeedListProps) {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer for infinite scroll - recreate when instanceName changes
   useEffect(() => {
     if (!sentinelRef.current || !hasNextPage || isFetchingNextPage) return;
 
@@ -38,7 +38,7 @@ export function FeedList({ instanceName }: FeedListProps) {
     observer.observe(sentinelRef.current);
 
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, instanceName]);
 
   // Loading state
   if (isLoading) {

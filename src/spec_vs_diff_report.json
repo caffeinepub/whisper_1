@@ -1,43 +1,47 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T17:36:20.013Z",
-  "summary": "Core intent/slot type additions and classifier updates for create_task/find_tasks/update_task are present, along with new task execution helpers and slot prompts. However, the flow registry completion hooks for the new intents are placeholders (no trigger of create/list/update or navigation), and the diff summary does not provide sufficient evidence that the Secretary runtime fully wires slot-filling + completion execution from chat input end-to-end.",
+  "generatedAt": "2026-02-12T20:38:07.042Z",
+  "summary": "Implemented a new location selection UI (state→county→place) with dependency clearing and a derived canonical locationId, plus a browser Geolocation hook and a FeedPage flow that generates/persists location metadata and an instance name. However, restoring the last chosen location to reopen the same local instance by default and consistently scoping the Feed/PostComposer to that instance are not clearly implemented from the provided diff summary. Also, several unrelated additions (Tasks routing/docs/theme changes) appear outside the BuildRequest scope.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Register the new intents in the intent flow registry with required/optional slots and a slot fill order, and define completion behavior hooks for each intent that trigger the corresponding task operation (create/list/update) or navigation.",
-      "reason": "Flows are registered with requiredSlots/slotOrder, but each new intent's onComplete is explicitly a placeholder and does not call task operations or navigate.",
+      "id": "REQ-3",
+      "requirement": "Persist the chosen locationId locally and restore it on refresh so the Feed opens on the same local instance by default; use the derived instanceName consistently for PostComposer and FeedList; allow changing location to remount/refresh feed.",
+      "reason": "The diff persists metadata/locationId, but explicitly notes it does not auto-restore the selection; FeedPage restores only an instanceName string from stored metadata (without restoring locationId/selection) and the diff is truncated before showing PostComposer/FeedList being driven by the restored/derived instanceName. This makes it unclear that a refresh will reopen the same scoped feed instance by default or that both PostComposer and FeedList are consistently scoped/remounted when location changes.",
       "evidence": [
-        "frontend/src/secretary/intent/flowRegistry.ts"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Integrate the task intent system into the Secretary runtime so task intents are executed from chat input: classify, run slot-filling via flow runner, and on completion call existing task backend methods and present confirmation/results in chat.",
-      "reason": "Although task execution helpers (taskExecutor/taskIntentActions) are added and FlowEngineBrain is modified to import them, the provided diff snippet for FlowEngineBrain is truncated before showing the actual chat-input handling, slot-filling loop, and completion invocation that would call createTask/listTasksByLocation/getTask+updateTask and print results.",
-      "evidence": [
-        "frontend/src/secretary/brain/FlowEngineBrain.ts (truncated)",
-        "frontend/src/secretary/intent/taskExecutor.ts",
-        "frontend/src/secretary/intent/taskIntentActions.ts"
+        "frontend/src/hooks/useInstanceScopeLocation.ts (comment: \"Note: We store metadata but don't auto-restore selection\")",
+        "frontend/src/pages/FeedPage.tsx (effect restores instanceName from metadata; comment: \"The user will need to reselect\")",
+        "frontend/src/utils/instanceScope.ts (localStorage metadata helpers)"
       ]
     }
   ],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "Added/modified extensive documentation and styling/theming changes unrelated to the neighborhood-based instance selection feature.",
+      "reason": "Not requested in REQ-1/2/3; appears as broad architecture/phased plan/deployment/style guide and theme/token updates.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/docs/ARCHITECTURE.md, PHASED_PLAN.md, DEPLOYMENT.md, STYLE_GUIDE.md, frontend/src/index.css, frontend/tailwind.config.js)"
+      ]
+    },
+    {
+      "description": "Added new Tasks pages/routes and URL parsing for tasks in the main app shell.",
+      "reason": "Not requested by the BuildRequest; requirements focus only on geography-based location selection and feed instance scoping.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/App.tsx: \"lazy-loaded pages including new Tasks pages (list/detail/create)\")"
+      ]
+    }
+  ],
   "confidence": 0.66,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/intent/flowRegistry.ts",
-    "frontend/src/secretary/intent/geographyLookup.ts",
-    "frontend/src/secretary/intent/index.ts",
-    "frontend/src/secretary/intent/intentClassifier.ts",
-    "frontend/src/secretary/intent/slotState.ts",
-    "frontend/src/secretary/intent/taskExecutor.ts",
-    "frontend/src/secretary/intent/taskIntentActions.ts",
-    "frontend/src/secretary/intent/taskSlotParsing.ts",
-    "frontend/src/secretary/intent/types.ts",
+    "frontend/src/components/location/LocationAcquisitionCard.tsx",
+    "frontend/src/components/location/LocationSelector.tsx",
+    "frontend/src/hooks/useBrowserGeolocation.ts",
+    "frontend/src/hooks/useInstanceScopeLocation.ts",
+    "frontend/src/hooks/useLocationSelection.ts",
+    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/pages/FeedPage.tsx",
+    "frontend/src/utils/instanceScope.ts",
     "project_state.json"
   ]
 }

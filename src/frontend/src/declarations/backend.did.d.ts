@@ -46,6 +46,8 @@ export interface CreatePostRequest {
   'content' : string,
   'instanceName' : string,
 }
+export type CreateTaskResult = { 'error' : { 'message' : string } } |
+  { 'success' : { 'taskId' : bigint, 'message' : string } };
 export type GeoId = string;
 export interface GovernanceProposal {
   'id' : bigint,
@@ -259,7 +261,7 @@ export interface _SERVICE {
   >,
   'createTask' : ActorMethod<
     [string, string, string, string, [] | [string]],
-    bigint
+    CreateTaskResult
   >,
   'createTask_legacy' : ActorMethod<[string, string], bigint>,
   'deletePost' : ActorMethod<[bigint], { 'ok' : null } | { 'err' : string }>,

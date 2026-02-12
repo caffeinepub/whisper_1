@@ -5,7 +5,8 @@
  */
 
 import type { SlotBag } from './types';
-import type { backendInterface, TaskStatus } from '@/backend';
+import type { backendInterface, TaskStatus, CreateTaskResult } from '@/backend';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 /**
  * Execute create_task intent completion
@@ -15,7 +16,7 @@ export async function executeCreateTask(
   actor: backendInterface | null
 ): Promise<string> {
   if (!actor) {
-    return 'I need to be connected to create a task. Please try again.';
+    return 'I need you to sign in before I can create a task. Please log in and try again.';
   }
 
   const { task_title, task_description, task_category, task_location_id } = slots;
@@ -25,17 +26,24 @@ export async function executeCreateTask(
   }
 
   try {
-    const taskId = await actor.createTask(
+    const result: CreateTaskResult = await actor.createTask(
       task_title,
       task_description,
       task_category || 'General',
       task_location_id,
       null
     );
-    return `Task created successfully! Task ID: ${taskId}. You can view it in the Tasks section.`;
+
+    if (result.__kind__ === 'success') {
+      return `Task created successfully! Task ID: ${result.success.taskId}. ${result.success.message}`;
+    } else {
+      const errorMessage = getUserFacingError(result.error.message);
+      return `I couldn't create the task: ${errorMessage}`;
+    }
   } catch (error: any) {
     console.error('Error creating task:', error);
-    return `I encountered an error creating the task: ${error.message || 'Unknown error'}`;
+    const errorMessage = getUserFacingError(error);
+    return `I encountered an error creating the task: ${errorMessage}`;
   }
 }
 
@@ -47,7 +55,7 @@ export async function executeFindTasks(
   actor: backendInterface | null
 ): Promise<string> {
   if (!actor) {
-    return 'I need to be connected to find tasks. Please try again.';
+    return 'I need you to sign in before I can find tasks. Please log in and try again.';
   }
 
   const { task_location_id } = slots;
@@ -75,7 +83,8 @@ export async function executeFindTasks(
     return `Here are the tasks for location ${task_location_id}:\n\n${summary}${moreText}\n\nYou can view all tasks in the Tasks section.`;
   } catch (error: any) {
     console.error('Error finding tasks:', error);
-    return `I encountered an error finding tasks: ${error.message || 'Unknown error'}`;
+    const errorMessage = getUserFacingError(error);
+    return `I encountered an error finding tasks: ${errorMessage}`;
   }
 }
 
@@ -87,7 +96,7 @@ export async function executeUpdateTask(
   actor: backendInterface | null
 ): Promise<string> {
   if (!actor) {
-    return 'I need to be connected to update a task. Please try again.';
+    return 'I need you to sign in before I can update a task. Please log in and try again.';
   }
 
   const { task_id, task_location_id, task_status } = slots;
@@ -114,6 +123,7 @@ export async function executeUpdateTask(
     return `Task ${task_id} updated successfully! Status is now: ${statusLabel}.`;
   } catch (error: any) {
     console.error('Error updating task:', error);
-    return `I encountered an error updating the task: ${error.message || 'Unknown error'}`;
+    const errorMessage = getUserFacingError(error);
+    return `I encountered an error updating the task: ${errorMessage}`;
   }
 }

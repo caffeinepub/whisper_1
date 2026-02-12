@@ -1,9 +1,10 @@
 /**
  * Lightweight repair detection/parsing for user messages.
  * Detects correction cues and provides utilities to clear dependent slots.
+ * Extended with task slot repair support.
  */
 
-import type { SecretarySlot } from './types';
+import type { SecretarySlot, SecretaryIntent } from './types';
 
 /**
  * Check if user message looks like a repair/correction
@@ -51,6 +52,26 @@ export function parseRepairSlot(text: string): SecretarySlot | null {
   }
   
   // Default to most recent slot (would need context to determine)
+  return null;
+}
+
+/**
+ * Parse which task slot the user is trying to repair
+ */
+export function parseRepairSlotForTask(text: string, intent: SecretaryIntent): SecretarySlot | null {
+  const normalized = text.toLowerCase().trim();
+  
+  // Task-specific slot mentions
+  if (normalized.includes('title') || normalized.includes('name')) return 'task_title';
+  if (normalized.includes('description') || normalized.includes('details')) return 'task_description';
+  if (normalized.includes('category') || normalized.includes('type')) return 'task_category';
+  if (normalized.includes('location') || normalized.includes('place') || normalized.includes('city') || normalized.includes('state')) {
+    return 'task_location_id';
+  }
+  if (normalized.includes('task id') || normalized.includes('task #') || normalized.includes('id')) return 'task_id';
+  if (normalized.includes('status')) return 'task_status';
+  
+  // Default: return null to let the system continue
   return null;
 }
 

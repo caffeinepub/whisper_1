@@ -54,6 +54,10 @@ export const Post = IDL.Record({
   'instanceName' : IDL.Text,
   'isFlagged' : IDL.Bool,
 });
+export const CreateTaskResult = IDL.Variant({
+  'error' : IDL.Record({ 'message' : IDL.Text }),
+  'success' : IDL.Record({ 'taskId' : IDL.Nat, 'message' : IDL.Text }),
+});
 export const USHierarchyLevel = IDL.Variant({
   'country' : IDL.Null,
   'state' : IDL.Null,
@@ -291,7 +295,7 @@ export const idlService = IDL.Service({
     ),
   'createTask' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
-      [IDL.Nat],
+      [CreateTaskResult],
       [],
     ),
   'createTask_legacy' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
@@ -524,6 +528,10 @@ export const idlFactory = ({ IDL }) => {
     'flaggedBy' : IDL.Opt(IDL.Principal),
     'instanceName' : IDL.Text,
     'isFlagged' : IDL.Bool,
+  });
+  const CreateTaskResult = IDL.Variant({
+    'error' : IDL.Record({ 'message' : IDL.Text }),
+    'success' : IDL.Record({ 'taskId' : IDL.Nat, 'message' : IDL.Text }),
   });
   const USHierarchyLevel = IDL.Variant({
     'country' : IDL.Null,
@@ -762,7 +770,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'createTask' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
-        [IDL.Nat],
+        [CreateTaskResult],
         [],
       ),
     'createTask_legacy' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),

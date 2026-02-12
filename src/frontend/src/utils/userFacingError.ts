@@ -35,6 +35,9 @@ export function getUserFacingError(error: any): string {
     if (error.includes('Task not associated with provided locationId')) {
       return 'Task does not belong to this location';
     }
+    if (error.includes('Task title cannot be empty')) return 'Task title is required';
+    if (error.includes('Task description cannot be empty')) return 'Task description is required';
+    if (error.includes('Task category cannot be empty')) return 'Task category is required';
 
     // Contribution event errors
     if (error.includes('invalid actionType') || error.includes('invalidActionType')) {

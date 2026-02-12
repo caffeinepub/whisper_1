@@ -141,6 +141,16 @@ export const uiCopy = {
     builtWith: 'Built with',
     using: 'using',
   },
+  location: {
+    selectTitle: 'Select Your Location',
+    selectDescription: 'Choose your neighborhood to see local posts and participate in your community.',
+    useCurrentLocation: 'Use My Current Location',
+    selectManually: 'Select Manually',
+    detectingLocation: 'Detecting location...',
+    geolocationSuccess: 'Location detected! Please select your specific area below.',
+    manualSelectionPrompt: 'Please select your location:',
+    confirmLocation: 'Confirm Location',
+  },
   tasks: {
     listTitle: 'Tasks',
     listDescription: 'Manage civic tasks for location',

@@ -87,6 +87,19 @@ export function clearDependentSlots(slots: SlotBag, changedSlot: SecretarySlot):
     case 'task_location_id':
       // Changing location clears task-specific identifiers
       slots.task_id = '';
+      // Also clear geography slots when location changes
+      slots.state = null;
+      slots.county = null;
+      slots.place = null;
+      break;
+    case 'task_title':
+      // Clearing title doesn't affect other slots
+      break;
+    case 'task_description':
+      // Clearing description doesn't affect other slots
+      break;
+    case 'task_category':
+      // Clearing category doesn't affect other slots
       break;
     // Other slots don't have dependents
   }

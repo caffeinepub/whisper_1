@@ -11,10 +11,11 @@ import type { backendInterface, USState, USCounty, USPlace } from '@/backend';
 import { classifyIntent } from '../intent/intentClassifier';
 import { getFlowDefinition } from '../intent/flowRegistry';
 import { getNextMissingSlot, areAllRequiredSlotsFilled, getSlotPrompt } from '../intent/flowRunner';
-import { setSlot, isSlotFilled } from '../intent/slotState';
+import { setSlot, isSlotFilled, clearDependentSlots } from '../intent/slotState';
 import { executeTaskIntent } from '../intent/taskExecutor';
-import { parseTaskId, parseTaskStatus, deriveLocationId, parseLocationId } from '../intent/taskSlotParsing';
+import { parseTaskTitleFromText, parseTaskDescriptionFromText, parseTaskCategoryFromText, parseTaskId, parseTaskStatus, parseLocationId } from '../intent/taskSlotParsing';
 import { lookupUSGeographyFromText, resolveLocationIdFromSlots } from '../intent/geographyLookup';
+import { looksLikeRepair, parseRepairSlotForTask } from '../intent/repair';
 
 /**
  * Flow engine-based brain implementation
@@ -85,11 +86,40 @@ export class FlowEngineBrain implements SecretaryBrain {
   getViewModel(): NodeViewModel {
     const context = this.runner.getContext();
     const currentNode = context.currentNode;
+    const activeIntent = context.activeIntent;
     
-    // Build typeahead options based on current node
+    // Build typeahead options based on current node or active intent
     let typeaheadOptions: Array<{ id: string; label: string; data: any }> = [];
     
-    if (currentNode === 'discovery-select-state') {
+    // Check if we're in task_location_id slot filling
+    if (activeIntent === 'create_task' || activeIntent === 'find_tasks' || activeIntent === 'update_task') {
+      const nextSlot = getNextMissingSlot(activeIntent, context.slots);
+      if (nextSlot === 'task_location_id') {
+        // Show states initially
+        if (!context.slots.state) {
+          typeaheadOptions = this.allStates.map((state) => ({
+            id: state.hierarchicalId,
+            label: state.longName,
+            data: state,
+          }));
+        } else {
+          // After state is selected, show counties and places for that state
+          const combined = [
+            ...this.countiesForState.map((county) => ({
+              id: county.hierarchicalId,
+              label: `${county.shortName} (County)`,
+              data: county,
+            })),
+            ...this.placesForState.map((place) => ({
+              id: place.hierarchicalId,
+              label: `${place.shortName} (City)`,
+              data: place,
+            })),
+          ];
+          typeaheadOptions = combined;
+        }
+      }
+    } else if (currentNode === 'discovery-select-state') {
       typeaheadOptions = this.allStates.map((state) => ({
         id: state.hierarchicalId,
         label: state.longName,
@@ -202,18 +232,50 @@ export class FlowEngineBrain implements SecretaryBrain {
     const context = this.runner.getContext();
     const slots = context.slots;
 
+    // Check for repair/correction
+    if (looksLikeRepair(text)) {
+      const repairSlot = parseRepairSlotForTask(text, intent);
+      if (repairSlot) {
+        // Clear the slot and its dependents
+        clearDependentSlots(slots, repairSlot);
+        // Try to fill the slot with new value from text
+        await this.fillTaskSlotsFromText(text, intent);
+        
+        // Continue prompting for missing slots
+        const nextSlot = getNextMissingSlot(intent, slots);
+        if (nextSlot) {
+          const prompt = getSlotPrompt(nextSlot, context);
+          addMessage(context, 'assistant', prompt);
+        }
+        return;
+      }
+    }
+
     // Try to fill slots from user text
     await this.fillTaskSlotsFromText(text, intent);
 
     // Check if all required slots are filled
     if (areAllRequiredSlotsFilled(intent, slots)) {
-      // Execute the task intent
-      const resultMessage = await executeTaskIntent(intent, slots, this.actor);
-      addMessage(context, 'assistant', resultMessage);
+      // Check if actor is available
+      if (!this.actor) {
+        addMessage(context, 'assistant', 'I need you to sign in before I can create a task. Please log in and try again.');
+        // Keep intent and slots for retry
+        return;
+      }
 
-      // Reset intent and slots
-      context.activeIntent = null;
-      context.slots = createInitialContext().slots;
+      // Execute the task intent
+      try {
+        const resultMessage = await executeTaskIntent(intent, slots, this.actor);
+        addMessage(context, 'assistant', resultMessage);
+
+        // Reset intent and slots on success
+        context.activeIntent = null;
+        context.slots = createInitialContext().slots;
+      } catch (error: any) {
+        // Keep intent and slots on failure for retry
+        const errorMessage = error.message || 'An error occurred';
+        addMessage(context, 'assistant', `I encountered an error: ${errorMessage}. You can try again or correct the information.`);
+      }
       return;
     }
 
@@ -274,35 +336,25 @@ export class FlowEngineBrain implements SecretaryBrain {
 
     // Fill title if needed (for create_task)
     if (intent === 'create_task' && !isSlotFilled(slots, 'task_title')) {
-      // Use the text as title if it looks like a title (short, no question words)
-      const normalized = text.toLowerCase().trim();
-      if (
-        !normalized.includes('create') &&
-        !normalized.includes('make') &&
-        !normalized.includes('add') &&
-        text.length < 100
-      ) {
-        setSlot(slots, 'task_title', text.trim());
+      const title = parseTaskTitleFromText(text, slots);
+      if (title) {
+        setSlot(slots, 'task_title', title);
       }
     }
 
     // Fill description if needed (for create_task)
     if (intent === 'create_task' && !isSlotFilled(slots, 'task_description')) {
-      // If title is filled and this is a longer text, use as description
-      if (isSlotFilled(slots, 'task_title') && text.length > 20) {
-        setSlot(slots, 'task_description', text.trim());
+      const description = parseTaskDescriptionFromText(text, slots);
+      if (description) {
+        setSlot(slots, 'task_description', description);
       }
     }
 
     // Fill category if needed (for create_task)
     if (intent === 'create_task' && !isSlotFilled(slots, 'task_category')) {
-      // Try to extract category from text (simple heuristic)
-      const categoryKeywords = ['maintenance', 'repair', 'safety', 'infrastructure', 'community', 'environment'];
-      for (const keyword of categoryKeywords) {
-        if (text.toLowerCase().includes(keyword)) {
-          setSlot(slots, 'task_category', keyword.charAt(0).toUpperCase() + keyword.slice(1));
-          break;
-        }
+      const category = parseTaskCategoryFromText(text);
+      if (category) {
+        setSlot(slots, 'task_category', category);
       }
     }
   }
@@ -383,8 +435,35 @@ export class FlowEngineBrain implements SecretaryBrain {
    * Handle geography selection (for compatibility)
    */
   async handleGeographySelection(selection: { id: string; label: string; data: any }): Promise<void> {
-    // Determine which action type based on current node
     const context = this.runner.getContext();
+    const activeIntent = context.activeIntent;
+    
+    // If we're in task intent flow and filling task_location_id
+    if (activeIntent === 'create_task' || activeIntent === 'find_tasks' || activeIntent === 'update_task') {
+      const nextSlot = getNextMissingSlot(activeIntent, context.slots);
+      if (nextSlot === 'task_location_id') {
+        // Store the geography data
+        if (selection.data.fipsCode) {
+          // It's a state
+          setSlot(context.slots, 'state', selection.data);
+        } else if (selection.data.censusFipsStateCode) {
+          // It's a county
+          setSlot(context.slots, 'county', selection.data);
+        } else if (selection.data.censusStateCode) {
+          // It's a place
+          setSlot(context.slots, 'place', selection.data);
+        }
+        
+        // Set the location ID
+        setSlot(context.slots, 'task_location_id', selection.id);
+        
+        // Continue slot filling
+        await this.handleTaskIntentSlotFilling('', activeIntent);
+        return;
+      }
+    }
+    
+    // Determine which action type based on current node
     const currentNode = context.currentNode;
     
     let actionType: 'state-selected' | 'location-selected' | 'guided-location-selected' = 'location-selected';

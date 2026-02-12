@@ -9,13 +9,19 @@ import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function PostComposer() {
-  const [instanceName, setInstanceName] = useState('');
+interface PostComposerProps {
+  instanceName?: string;
+}
+
+export function PostComposer({ instanceName: providedInstanceName }: PostComposerProps) {
+  const [localInstanceName, setLocalInstanceName] = useState('');
   const [content, setContent] = useState('');
   const { identity } = useInternetIdentity();
   const createPost = useCreatePost();
 
   const isAuthenticated = !!identity;
+  const showInstanceInput = !providedInstanceName;
+  const effectiveInstanceName = providedInstanceName || localInstanceName;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +36,7 @@ export function PostComposer() {
       return;
     }
 
-    if (!instanceName.trim()) {
+    if (!effectiveInstanceName.trim()) {
       toast.error('Instance name cannot be empty');
       return;
     }
@@ -38,12 +44,14 @@ export function PostComposer() {
     try {
       await createPost.mutateAsync({
         content: content.trim(),
-        instanceName: instanceName.trim(),
+        instanceName: effectiveInstanceName.trim(),
       });
 
       // Clear form on success
       setContent('');
-      setInstanceName('');
+      if (showInstanceInput) {
+        setLocalInstanceName('');
+      }
     } catch (error) {
       // Error handling is done in the mutation
     }
@@ -56,16 +64,18 @@ export function PostComposer() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="instanceName">Instance Name</Label>
-            <Input
-              id="instanceName"
-              placeholder="e.g., WHISPER-California"
-              value={instanceName}
-              onChange={(e) => setInstanceName(e.target.value)}
-              disabled={createPost.isPending || !isAuthenticated}
-            />
-          </div>
+          {showInstanceInput && (
+            <div className="space-y-2">
+              <Label htmlFor="instanceName">Instance Name</Label>
+              <Input
+                id="instanceName"
+                placeholder="e.g., WHISPER-California"
+                value={localInstanceName}
+                onChange={(e) => setLocalInstanceName(e.target.value)}
+                disabled={createPost.isPending || !isAuthenticated}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="content">Content</Label>

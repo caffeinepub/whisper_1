@@ -24,12 +24,18 @@ export interface StakingRecord {
     lockedBalance: bigint;
     totalStaked: bigint;
 }
-export interface ContributionCriteria {
-    actionType: string;
-    rewardType: string;
-    eligibilityCriteria: string;
-    points: bigint;
-}
+export type CreateTaskResult = {
+    __kind__: "error";
+    error: {
+        message: string;
+    };
+} | {
+    __kind__: "success";
+    success: {
+        taskId: bigint;
+        message: string;
+    };
+};
 export interface Task {
     id: bigint;
     completed: boolean;
@@ -46,13 +52,19 @@ export type SubmitProposalResult = {
         proposal: Proposal;
     };
 };
-export type CensusStateCode = string;
+export interface ContributionCriteria {
+    actionType: string;
+    rewardType: string;
+    eligibilityCriteria: string;
+    points: bigint;
+}
 export interface ContributionPoints {
     token: bigint;
     city: bigint;
     voting: bigint;
     bounty: bigint;
 }
+export type CensusStateCode = string;
 export interface USPlace {
     countyFullName: string;
     hierarchicalId: HierarchicalGeoId;
@@ -255,7 +267,7 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
-    createTask(title: string, description: string, category: string, locationId: string, issueId: string | null): Promise<bigint>;
+    createTask(title: string, description: string, category: string, locationId: string, issueId: string | null): Promise<CreateTaskResult>;
     createTask_legacy(proposalId: string, description: string): Promise<bigint>;
     deletePost(postId: bigint): Promise<{
         __kind__: "ok";

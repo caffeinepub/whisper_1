@@ -36,9 +36,9 @@ export function buildSlotPrompt(slot: SecretarySlot, state: USState | null, coun
     case 'task_description':
       return 'Can you describe the task in a bit more detail?';
     case 'task_category':
-      return 'What category does this task belong to?';
+      return 'What category does this task belong to? (You can also skip this by saying "General")';
     case 'task_location_id':
-      return 'Which location should this task be associated with? (Please provide a location identifier)';
+      return 'Which location should this task be associated with? Please tell me the state, county, or city.';
     case 'task_id':
       return 'Which task would you like to update? (Please provide the task ID)';
     case 'task_status':
