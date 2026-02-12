@@ -5,15 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Award, Upload, AlertCircle } from 'lucide-react';
+import { Loader2, User, Award, Upload, AlertCircle, Coins } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '@/hooks/useCallerUserProfile';
 import { useCallerContributionSummary } from '@/hooks/useCallerContributionSummary';
 import { useContributionEventLogger } from '@/hooks/useContributionEventLogger';
+import { useWspBalance } from '@/hooks/useWspBalance';
 import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
+import { formatTokenAmount } from '@/lib/formatTokenAmount';
 import { IconBubble } from '@/components/common/IconBubble';
+import { StakingSection } from '@/pages/profile/components/StakingSection';
 import { uiCopy } from '@/lib/uiCopy';
 import type { UserProfile } from '@/backend';
 
@@ -22,6 +25,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const { data: contributionSummary, isLoading: summaryLoading } = useCallerContributionSummary();
+  const { data: wspBalance, isLoading: balanceLoading, error: balanceError } = useWspBalance();
   const saveProfile = useSaveCallerUserProfile();
   const logContribution = useContributionEventLogger();
 
@@ -369,6 +373,48 @@ export default function ProfilePage() {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <IconBubble size="md" variant="secondary">
+                  <Coins className="h-5 w-5" />
+                </IconBubble>
+                <div className="flex-1">
+                  <CardTitle>WSP Token Balance</CardTitle>
+                  <CardDescription>Your on-chain WSP token holdings</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {balanceLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : balanceError ? (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive">
+                      Failed to load WSP balance. Please try again later.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-secondary/10 border-2 border-secondary rounded-lg p-6">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Available Balance
+                    </p>
+                    <p className="text-5xl font-bold text-secondary">
+                      {formatTokenAmount(wspBalance || 0n, 0)}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">WSP</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <IconBubble size="md" variant="secondary">
                   <Award className="h-5 w-5" />
                 </IconBubble>
                 <div className="flex-1">
@@ -429,6 +475,8 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          <StakingSection />
         </div>
       </main>
     </div>

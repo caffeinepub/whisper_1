@@ -8,19 +8,22 @@ import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
-
-import AccessControl "authorization/access-control";
+import Migration "migration";
 import MixinAuthorization "authorization/MixinAuthorization";
+import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-
 // Use migration on upgrade
-
+(with migration = Migration.run)
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
+
+  var nextActionRewardId : Nat = 0;
+  var nextLogEntryId : Nat = 0;
+  var nextTaskId : Nat = 0;
 
   public type ProfileImage = Storage.ExternalBlob;
 
@@ -59,6 +62,7 @@ actor {
     rewardType : Text;
     referenceId : ?Text;
     details : ?Text;
+    invalidated : Bool;
   };
 
   public type ContributionLogPersistence = {
@@ -98,6 +102,24 @@ actor {
     #invalidActionType;
     #referenceIdRequired;
     #referenceIdEmpty;
+  };
+
+  // Governance types (stubs for future DAO)
+  public type GovernanceProposal = {
+    id : Nat;
+    proposer : Principal;
+    title : Text;
+    description : Text;
+    status : GovernanceProposalStatus;
+    createdAt : Int;
+  };
+
+  public type GovernanceProposalStatus = {
+    #pending;
+    #active;
+    #approved;
+    #rejected;
+    #executed;
   };
 
   type GeoId = Text;
@@ -249,9 +271,24 @@ actor {
     };
   };
 
-  var nextActionRewardId : Nat = 0;
-  var nextLogEntryId : Nat = 0;
+  // ICRC-1 Token Ledger State
+  let wspBalances = Map.empty<Principal, Nat>();
+  var wspTotalSupply : Nat = 31000000; // Initial supply - fixed
 
+  // Contribution Points and Token Accounting
+  let contributionLogs = Map.empty<Principal, ContributionLogPersistence>();
+  let contributionCriteria = Map.empty<Text, ContributionCriteria>();
+
+  let centralizedRewardValues = {
+    issueCreatedReward = { points = 10; rewardType = "city" };
+    commentCreatedReward = { points = 5; rewardType = "voting" };
+    evidenceAddedReward = { points = 20; rewardType = "bounty" };
+  };
+
+  // Track awarded contributions
+  let awardedContributions = Map.empty<Text, Bool>();
+
+  // Geography/Proposals State
   let userProfiles = Map.empty<Principal, UserProfile>();
   let geoIdToCensusIdMap = Map.empty<GeoId, CensusId>();
   let censusIdToGeoIdMap = Map.empty<CensusId, GeoId>();
@@ -265,9 +302,7 @@ actor {
     geoidMapping : Map.Map<GeoId, CensusId>;
     censusidMapping : Map.Map<CensusId, GeoId>;
   }>();
-
   let proposals = Map.empty<Text, Proposal>();
-  var nextTaskId = 0;
   let allTasks = Map.empty<Text, Map.Map<Nat, Task>>();
   var installations = ([] : [Installation]);
   let moderationQueue = List.empty<Text>();
@@ -434,19 +469,6 @@ actor {
   // New Map to store location-based complaints
   let locationBasedComplaintMap = Map.empty<Text, [Text]>();
 
-  // Contribution Points and Token Accounting
-  let contributionLogs = Map.empty<Principal, ContributionLogPersistence>();
-  let contributionCriteria = Map.empty<Text, ContributionCriteria>();
-
-  let centralizedRewardValues = {
-    issueCreatedReward = { points = 10; rewardType = "city" };
-    commentCreatedReward = { points = 5; rewardType = "voting" };
-    evidenceAddedReward = { points = 20; rewardType = "bounty" };
-  };
-
-  // Track awarded contributions to prevent duplicates
-  let awardedContributions = Map.empty<Text, Bool>();
-
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
     switch (level) {
       case (#country) { "country" };
@@ -577,6 +599,7 @@ actor {
       rewardType = reward.rewardType;
       referenceId;
       details;
+      invalidated = false;
     };
 
     let entryId = nextLogEntryId;
@@ -600,6 +623,14 @@ actor {
 
     // Mark as awarded to prevent duplicates
     awardedContributions.add(duplicateKey, true);
+
+    // Mint WSP tokens for the contribution (idempotent via duplicate check)
+    let currentBalance = switch (wspBalances.get(caller)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+    wspBalances.add(caller, currentBalance + reward.points);
+    wspTotalSupply += reward.points;
 
     #ok(entryId);
   };
@@ -637,6 +668,7 @@ actor {
       rewardType;
       referenceId = null;
       details = null;
+      invalidated = false;
     };
     nextLogEntryId += 1;
     let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
@@ -654,6 +686,179 @@ actor {
     };
     contributionLogs.add(caller, newLog);
   };
+
+  // ===================== ICRC-1 Token Methods ========================
+
+  public query ({ caller }) func icrc1_balance_of(account : Principal) : async Nat {
+    // Anyone can query balances (standard ICRC-1 behavior)
+    switch (wspBalances.get(account)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+  };
+
+  public query func icrc1_total_supply() : async Nat {
+    // Public query, no authentication needed
+    wspTotalSupply;
+  };
+
+  public shared ({ caller }) func icrc1_transfer(to : Principal, amount : Nat) : async { #ok : Nat; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can transfer tokens");
+    };
+
+    let fromBalance = switch (wspBalances.get(caller)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+
+    if (fromBalance < amount) {
+      return #err("Insufficient balance");
+    };
+
+    let toBalance = switch (wspBalances.get(to)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+
+    wspBalances.add(caller, fromBalance - amount);
+    wspBalances.add(to, toBalance + amount);
+
+    #ok(amount);
+  };
+
+  // ===================== Admin Token Operations ========================
+
+  public shared ({ caller }) func adminMintWSP(recipient : Principal, amount : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can mint tokens");
+    };
+
+    let currentBalance = switch (wspBalances.get(recipient)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+
+    wspBalances.add(recipient, currentBalance + amount);
+    wspTotalSupply += amount;
+  };
+
+  public shared ({ caller }) func adminBurnWSP(account : Principal, amount : Nat) : async { #ok; #err : Text } {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can burn tokens");
+    };
+
+    let currentBalance = switch (wspBalances.get(account)) {
+      case (?balance) { balance };
+      case (null) { 0 };
+    };
+
+    if (currentBalance < amount) {
+      return #err("Insufficient balance to burn");
+    };
+
+    wspBalances.add(account, currentBalance - amount);
+    wspTotalSupply -= amount;
+
+    #ok;
+  };
+
+  public shared ({ caller }) func adminInvalidateContribution(
+    contributor : Principal,
+    entryId : Nat,
+  ) : async { #ok; #err : Text } {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can invalidate contributions");
+    };
+
+    switch (contributionLogs.get(contributor)) {
+      case (null) { #err("Contributor not found") };
+      case (?logs) {
+        let entries = logs.persistentEntries;
+        var found = false;
+        var pointsToSlash : Nat = 0;
+
+        let updatedEntries = Array.tabulate(
+          entries.size(),
+          func(i) {
+            let entry = entries[i];
+            if (entry.id == entryId and not entry.invalidated) {
+              found := true;
+              pointsToSlash := entry.pointsAwarded;
+              { entry with invalidated = true };
+            } else {
+              entry;
+            };
+          }
+        );
+
+        if (not found) {
+          return #err("Contribution entry not found or already invalidated");
+        };
+
+        contributionLogs.add(contributor, { persistentEntries = updatedEntries });
+
+        // Burn the corresponding WSP tokens
+        let currentBalance = switch (wspBalances.get(contributor)) {
+          case (?balance) { balance };
+          case (null) { 0 };
+        };
+
+        let newBalance = if (currentBalance >= pointsToSlash) {
+          currentBalance - pointsToSlash;
+        } else {
+          0;
+        };
+
+        wspBalances.add(contributor, newBalance);
+        wspTotalSupply -= Nat.min(pointsToSlash, currentBalance);
+
+        #ok;
+      };
+    };
+  };
+
+  // ===================== Governance Stubs ========================
+
+  public shared ({ caller }) func governanceCreateProposal(
+    title : Text,
+    description : Text,
+  ) : async { #ok : Nat; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create governance proposals");
+    };
+    // Stub: Not implemented yet
+    #err("Governance proposals not implemented yet");
+  };
+
+  public shared ({ caller }) func governanceVote(
+    proposalId : Nat,
+    approve : Bool,
+  ) : async { #ok; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can vote on proposals");
+    };
+    // Stub: Not implemented yet
+    #err("Governance voting not implemented yet");
+  };
+
+  public query ({ caller }) func governanceGetProposal(proposalId : Nat) : async ?GovernanceProposal {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view governance proposals");
+    };
+    // Stub: Not implemented yet
+    null;
+  };
+
+  public query ({ caller }) func governanceListProposals() : async [GovernanceProposal] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can list governance proposals");
+    };
+    // Stub: Not implemented yet
+    [];
+  };
+
+  // ===================== Contribution History ========================
 
   public query ({ caller }) func getCallerContributionHistory(limit : Nat) : async [ContributionLogEntry] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -686,13 +891,15 @@ actor {
       case (null) {};
       case (?logs) {
         for (entry in logs.persistentEntries.values()) {
-          totalPoints += entry.pointsAwarded;
-          switch (entry.rewardType) {
-            case ("city") { totalCityPoints += entry.pointsAwarded };
-            case ("voting") { totalVotingPoints += entry.pointsAwarded };
-            case ("bounty") { totalBountyPoints += entry.pointsAwarded };
-            case ("token") { totalTokenPoints += entry.pointsAwarded };
-            case (_) { totalCityPoints += entry.pointsAwarded };
+          if (not entry.invalidated) {
+            totalPoints += entry.pointsAwarded;
+            switch (entry.rewardType) {
+              case ("city") { totalCityPoints += entry.pointsAwarded };
+              case ("voting") { totalVotingPoints += entry.pointsAwarded };
+              case ("bounty") { totalBountyPoints += entry.pointsAwarded };
+              case ("token") { totalTokenPoints += entry.pointsAwarded };
+              case (_) { totalCityPoints += entry.pointsAwarded };
+            };
           };
         };
       };

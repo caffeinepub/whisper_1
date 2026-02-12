@@ -25,6 +25,7 @@ export interface ContributionLogEntry {
   'rewardType' : string,
   'timestamp' : bigint,
   'details' : [] | [string],
+  'invalidated' : boolean,
   'contributor' : Principal,
 }
 export interface ContributionPoints {
@@ -42,6 +43,19 @@ export interface ContributionSummary {
   'contributor' : Principal,
 }
 export type GeoId = string;
+export interface GovernanceProposal {
+  'id' : bigint,
+  'status' : GovernanceProposalStatus,
+  'title' : string,
+  'createdAt' : bigint,
+  'description' : string,
+  'proposer' : Principal,
+}
+export type GovernanceProposalStatus = { 'active' : null } |
+  { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null } |
+  { 'executed' : null };
 export type HierarchicalGeoId = string;
 export type LogContributionEventError = { 'referenceIdEmpty' : null } |
   { 'referenceIdRequired' : null } |
@@ -165,6 +179,11 @@ export interface _SERVICE {
     [USHierarchyLevel, [] | [string], Array<string>],
     undefined
   >,
+  'adminBurnWSP' : ActorMethod<
+    [Principal, bigint],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'adminGetContributionLogs' : ActorMethod<
     [bigint, bigint],
     Array<[Principal, Array<ContributionLogEntry>]>
@@ -173,6 +192,12 @@ export interface _SERVICE {
     [Principal, bigint],
     Array<ContributionLogEntry>
   >,
+  'adminInvalidateContribution' : ActorMethod<
+    [Principal, bigint],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminMintWSP' : ActorMethod<[Principal, bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'backend_getIssueCategoriesByHierarchyLevel' : ActorMethod<
     [USHierarchyLevel, [] | [string]],
@@ -227,7 +252,26 @@ export interface _SERVICE {
     Array<string>
   >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'governanceCreateProposal' : ActorMethod<
+    [string, string],
+    { 'ok' : bigint } |
+      { 'err' : string }
+  >,
+  'governanceGetProposal' : ActorMethod<[bigint], [] | [GovernanceProposal]>,
+  'governanceListProposals' : ActorMethod<[], Array<GovernanceProposal>>,
+  'governanceVote' : ActorMethod<
+    [bigint, boolean],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'hideProposal' : ActorMethod<[string], boolean>,
+  'icrc1_balance_of' : ActorMethod<[Principal], bigint>,
+  'icrc1_total_supply' : ActorMethod<[], bigint>,
+  'icrc1_transfer' : ActorMethod<
+    [Principal, bigint],
+    { 'ok' : bigint } |
+      { 'err' : string }
+  >,
   'ingestUSGeographyData' : ActorMethod<
     [Array<USGeographyDataChunk>],
     undefined

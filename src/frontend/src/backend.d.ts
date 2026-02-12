@@ -15,6 +15,7 @@ export interface ContributionLogEntry {
     rewardType: string;
     timestamp: bigint;
     details?: string;
+    invalidated: boolean;
     contributor: Principal;
 }
 export interface SecretaryCategorySuggestion {
@@ -92,6 +93,14 @@ export interface ContributionSummary {
     totalPoints: bigint;
     contributor: Principal;
 }
+export interface GovernanceProposal {
+    id: bigint;
+    status: GovernanceProposalStatus;
+    title: string;
+    createdAt: bigint;
+    description: string;
+    proposer: Principal;
+}
 export interface USCounty {
     censusLandAreaSqMeters: string;
     fipsCode: string;
@@ -127,6 +136,13 @@ export interface UserProfile {
     tokenBalance: TokenBalance;
     contributionPoints: ContributionPoints;
 }
+export enum GovernanceProposalStatus {
+    active = "active",
+    pending = "pending",
+    approved = "approved",
+    rejected = "rejected",
+    executed = "executed"
+}
 export enum LogContributionEventError {
     referenceIdEmpty = "referenceIdEmpty",
     referenceIdRequired = "referenceIdRequired",
@@ -147,8 +163,23 @@ export enum UserRole {
 export interface backendInterface {
     addContributionPoints(points: bigint, rewardType: string, actionType: string): Promise<void>;
     addOrUpdateLocationBasedIssues(locationLevel: USHierarchyLevel, locationId: string | null, issues: Array<string>): Promise<void>;
+    adminBurnWSP(account: Principal, amount: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     adminGetContributionLogs(offset: bigint, limit: bigint): Promise<Array<[Principal, Array<ContributionLogEntry>]>>;
     adminGetUserContributionLogs(user: Principal, limit: bigint): Promise<Array<ContributionLogEntry>>;
+    adminInvalidateContribution(contributor: Principal, entryId: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    adminMintWSP(recipient: Principal, amount: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     backend_getIssueCategoriesByHierarchyLevel(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     backend_getUSCountyByHierarchicalId(hierarchicalId: string): Promise<USCounty | null>;
@@ -182,7 +213,32 @@ export interface backendInterface {
     getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
     getTopIssuesForLocation(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    governanceCreateProposal(title: string, description: string): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    governanceGetProposal(proposalId: bigint): Promise<GovernanceProposal | null>;
+    governanceListProposals(): Promise<Array<GovernanceProposal>>;
+    governanceVote(proposalId: bigint, approve: boolean): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     hideProposal(instanceName: string): Promise<boolean>;
+    icrc1_balance_of(account: Principal): Promise<bigint>;
+    icrc1_total_supply(): Promise<bigint>;
+    icrc1_transfer(to: Principal, amount: bigint): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     ingestUSGeographyData(data: Array<USGeographyDataChunk>): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;

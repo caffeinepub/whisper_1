@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Task } from '@/backend';
-import { userFacingError } from '@/utils/userFacingError';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 export interface TaskWithId {
   id: bigint;
@@ -41,7 +41,7 @@ export function useGetTasks(proposalId: string) {
           completed: task.completed,
         }));
       } catch (error) {
-        const errorMessage = userFacingError(error);
+        const errorMessage = getUserFacingError(error);
         console.error('Error fetching tasks:', error);
         throw new Error(errorMessage);
       }
@@ -67,7 +67,7 @@ export function useCreateTask(proposalId: string) {
         const taskId = await actor.createTask(proposalId, description);
         return { taskId };
       } catch (error) {
-        const errorMessage = userFacingError(error);
+        const errorMessage = getUserFacingError(error);
         console.error('Error creating task:', error);
         throw new Error(errorMessage);
       }
@@ -120,7 +120,7 @@ export function useUpdateTaskStatus(proposalId: string) {
         const result = await actor.updateTaskStatus(proposalId, taskId, completed);
         return result;
       } catch (error) {
-        const errorMessage = userFacingError(error);
+        const errorMessage = getUserFacingError(error);
         console.error('Error updating task status:', error);
         throw new Error(errorMessage);
       }
@@ -148,7 +148,7 @@ export function useUpdateTaskStatus(proposalId: string) {
         queryClient.setQueryData(['tasks', proposalId], context.previousTasks);
       }
     },
-    onSettled: () => {
+    onSuccess: () => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['tasks', proposalId] });
     },

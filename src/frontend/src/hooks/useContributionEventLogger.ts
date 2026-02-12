@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import { userFacingError } from '@/utils/userFacingError';
+import { getUserFacingError } from '@/utils/userFacingError';
 import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 
 interface LogContributionEventParams {
@@ -142,7 +142,7 @@ export function useContributionEventLogger() {
           }
           
           // For other errors, normalize and throw
-          const friendlyError = userFacingError(error);
+          const friendlyError = getUserFacingError(error);
           throw new Error(friendlyError);
         } finally {
           // Remove from in-flight registry

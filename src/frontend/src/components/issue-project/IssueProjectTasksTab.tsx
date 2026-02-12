@@ -2,109 +2,134 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Plus, Loader2, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCreateTask, useGetTasks, useUpdateTaskStatus } from '@/hooks/useIssueProjectTasks';
-import { useContributionEventLogger } from '@/hooks/useContributionEventLogger';
+import { useGetTasks, useCreateTask, useUpdateTaskStatus } from '@/hooks/useIssueProjectTasks';
+import { LoadingIndicator } from '@/components/common/LoadingIndicator';
+import { useContributionEventLogger, type ContributionLogResult } from '@/hooks/useContributionEventLogger';
 import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
+import { EarnedPointsInlineBadge } from '@/components/common/EarnedPointsInlineBadge';
 
 interface IssueProjectTasksTabProps {
   proposalId: string;
+  origin?: 'standard' | 'chat';
 }
 
-export function IssueProjectTasksTab({ proposalId }: IssueProjectTasksTabProps) {
+export function IssueProjectTasksTab({ proposalId, origin = 'standard' }: IssueProjectTasksTabProps) {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [contributionError, setContributionError] = useState<string | null>(null);
+  const [contributionResult, setContributionResult] = useState<ContributionLogResult | null>(null);
 
   const queryClient = useQueryClient();
-  const { data: tasks = [], isLoading, error } = useGetTasks(proposalId);
+  const { data: tasks, isLoading, isError, error } = useGetTasks(proposalId);
   const createTask = useCreateTask(proposalId);
   const updateTaskStatus = useUpdateTaskStatus(proposalId);
   const logContribution = useContributionEventLogger();
 
-  const handleAddTask = async () => {
+  const handleCreateTask = () => {
     if (!newTaskDescription.trim()) return;
 
-    // Clear any previous contribution errors
     setContributionError(null);
+    setContributionResult(null);
 
-    try {
-      const result = await createTask.mutateAsync(newTaskDescription);
-      setNewTaskDescription('');
+    createTask.mutate(
+      newTaskDescription,
+      {
+        onSuccess: (data) => {
+          // Log contribution event with stable non-empty referenceId
+          const referenceId = `${proposalId}-task-${data.taskId}`;
 
-      // Log contribution event after successful comment/task creation
-      try {
-        const contributionResult = await logContribution.mutateAsync({
-          actionType: CONTRIBUTION_ACTION_TYPES.COMMENT_CREATED,
-          referenceId: result.taskId.toString(),
-          details: 'Task/comment created',
-        });
+          logContribution.mutate(
+            {
+              actionType: CONTRIBUTION_ACTION_TYPES.COMMENT_CREATED,
+              referenceId,
+              details: newTaskDescription,
+            },
+            {
+              onSuccess: (result) => {
+                setContributionResult(result);
 
-        // Show earned-points toast immediately if not a duplicate
-        if (!contributionResult.isDuplicate) {
-          showEarnedPointsToast({
-            pointsAwarded: contributionResult.pointsAwarded,
-            actionType: contributionResult.actionType,
-            origin: 'standard',
-            queryClient,
-          });
-        }
-      } catch (error: any) {
-        // Don't block the success flow, but show inline message
-        const errorMessage = error?.message || 'Could not record contribution points.';
-        setContributionError(errorMessage);
-        console.warn('Failed to log contribution for task creation:', error);
+                // Show toast only for non-duplicates
+                if (!result.isDuplicate) {
+                  showEarnedPointsToast({
+                    pointsAwarded: result.pointsAwarded,
+                    actionType: result.actionType,
+                    origin,
+                    queryClient,
+                  });
+                }
+
+                // Clear input
+                setNewTaskDescription('');
+              },
+              onError: (error) => {
+                // Non-blocking: show inline error but don't prevent task creation
+                setContributionError(error.message);
+                console.error('Contribution logging failed (non-blocking):', error);
+
+                // Still clear input
+                setNewTaskDescription('');
+              },
+            }
+          );
+        },
       }
-    } catch (error: any) {
-      console.error('Failed to create task:', error);
-    }
+    );
   };
 
   const handleToggleTask = (taskId: bigint, currentStatus: boolean) => {
-    updateTaskStatus.mutate({ taskId, completed: !currentStatus });
+    updateTaskStatus.mutate({
+      taskId,
+      completed: !currentStatus,
+    });
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingIndicator label="Loading tasks..." />
       </div>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex items-center gap-2 text-destructive">
-          <AlertCircle className="h-5 w-5" />
-          <p className="text-sm">{error.message}</p>
-        </div>
+      <div className="flex items-center gap-2 text-sm text-destructive py-4">
+        <AlertCircle className="h-4 w-4" />
+        <span>{error?.message || 'Failed to load tasks'}</span>
       </div>
     );
   }
+
+  const sortedTasks = tasks ? [...tasks].sort((a, b) => Number(a.id) - Number(b.id)) : [];
 
   return (
     <div className="space-y-6">
+      {/* Create Task Section */}
       <div className="space-y-3">
+        <Label htmlFor="new-task-input">Add a new task</Label>
         <div className="flex gap-2">
           <Input
+            id="new-task-input"
             value={newTaskDescription}
             onChange={(e) => setNewTaskDescription(e.target.value)}
-            placeholder="Add a new task..."
+            placeholder="Describe the task..."
             disabled={createTask.isPending}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !createTask.isPending) {
-                handleAddTask();
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCreateTask();
               }
             }}
-            className="flex-1"
           />
           <Button
-            onClick={handleAddTask}
-            disabled={!newTaskDescription.trim() || createTask.isPending}
+            onClick={handleCreateTask}
+            disabled={createTask.isPending || !newTaskDescription.trim()}
             size="icon"
-            className="shrink-0"
           >
             {createTask.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -114,50 +139,62 @@ export function IssueProjectTasksTab({ proposalId }: IssueProjectTasksTabProps) 
           </Button>
         </div>
 
+        {/* Contribution Error (non-blocking) */}
         {contributionError && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-              <p className="text-sm text-warning">{contributionError}</p>
-            </div>
+          <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>Note: {contributionError}</span>
           </div>
         )}
+
+        {/* Earned Points Badge */}
+        <EarnedPointsInlineBadge result={contributionResult} />
       </div>
 
+      <Separator />
+
+      {/* Tasks List */}
       <div className="space-y-2">
-        {tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No tasks yet. Add one to get started!
-          </p>
+        <Label>Tasks ({sortedTasks.length})</Label>
+        {sortedTasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No tasks yet. Add one above to get started.</p>
         ) : (
-          tasks.map((task) => {
-            const isUpdating = updateTaskStatus.isPending;
-            
-            return (
-              <div
-                key={task.id.toString()}
-                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                  task.completed
-                    ? 'bg-muted/50 border-muted'
-                    : 'bg-card border-border hover:bg-accent/5'
-                }`}
-              >
-                <Checkbox
-                  checked={task.completed}
-                  onCheckedChange={() => handleToggleTask(task.id, task.completed)}
-                  disabled={isUpdating}
-                  className="mt-0.5 shrink-0"
-                />
-                <p
-                  className={`text-sm flex-1 ${
-                    task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                  }`}
-                >
-                  {task.description}
-                </p>
-              </div>
-            );
-          })
+          <ScrollArea className="h-[300px] pr-4">
+            <div className="space-y-3">
+              {sortedTasks.map((task) => {
+                const isUpdating = updateTaskStatus.isPending;
+                return (
+                  <div
+                    key={Number(task.id)}
+                    className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <Checkbox
+                      id={`task-${task.id}`}
+                      checked={task.completed}
+                      onCheckedChange={() => handleToggleTask(task.id, task.completed)}
+                      disabled={isUpdating}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <label
+                        htmlFor={`task-${task.id}`}
+                        className={`text-sm cursor-pointer ${
+                          task.completed ? 'line-through text-muted-foreground' : ''
+                        }`}
+                      >
+                        {task.description}
+                      </label>
+                    </div>
+                    {task.completed ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         )}
       </div>
     </div>

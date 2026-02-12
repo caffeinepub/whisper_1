@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,167 +9,125 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Users, FileText, CheckSquare, Tag } from 'lucide-react';
-import { IconBubble } from '@/components/common/IconBubble';
+import { MapPin, FileText, CheckSquare, Upload } from 'lucide-react';
+import { useGetProposal } from '@/hooks/useQueries';
+import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { IssueProjectTasksTab } from './IssueProjectTasksTab';
+import { EvidenceUploadSection } from './EvidenceUploadSection';
+import { formatProposalGeography } from '@/lib/formatProposalGeography';
 import { useGetIssueProjectCategory } from '@/hooks/useSetIssueProjectCategory';
-import type { Proposal } from '@/backend';
-import { formatProposalGeographyString, getGeographyLevelLabel } from '@/lib/formatProposalGeography';
 
 interface IssueProjectDetailDialogProps {
   proposalName: string;
-  proposal: Proposal;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  initialCategory?: string;
 }
 
 export function IssueProjectDetailDialog({
   proposalName,
-  proposal,
-  open,
-  onOpenChange,
+  isOpen,
+  onClose,
+  initialCategory,
 }: IssueProjectDetailDialogProps) {
+  const [activeTab, setActiveTab] = useState('overview');
+  const { data: proposal, isLoading } = useGetProposal(proposalName);
   const category = useGetIssueProjectCategory(proposalName);
 
+  const displayCategory = category || initialCategory;
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab('overview');
+    }
+  }, [isOpen]);
+
+  if (!proposal && !isLoading) {
+    return null;
+  }
+
+  const geography = proposal ? formatProposalGeography(proposal) : null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white max-w-3xl max-h-[85vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <IconBubble size="lg" variant="secondary">
-              <MapPin className="h-6 w-6" />
-            </IconBubble>
-            <DialogTitle className="text-2xl">Issue Project: {proposal.instanceName}</DialogTitle>
-          </div>
-          <DialogDescription className="text-white/70">
-            {formatProposalGeographyString(proposal)}
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-secondary" />
+            {proposal?.instanceName || proposalName}
+          </DialogTitle>
+          <DialogDescription>
+            {geography?.levelLabel || 'Loading...'} • {geography?.state || ''}
+            {geography?.county ? ` • ${geography.county}` : ''}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white/10">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:bg-secondary data-[state=active]:text-white"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="tasks"
-              className="data-[state=active]:bg-secondary data-[state=active]:text-white"
-            >
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Tasks
-            </TabsTrigger>
-          </TabsList>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingIndicator label="Loading proposal details..." />
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4" />
+                Tasks
+              </TabsTrigger>
+              <TabsTrigger value="evidence" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Evidence
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Status and Category */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-white/60 text-sm">Status:</span>
-                <Badge
-                  variant={
-                    proposal.status === 'Approved'
-                      ? 'default'
-                      : proposal.status === 'Rejected'
-                        ? 'destructive'
-                        : 'secondary'
-                  }
-                  className={
-                    proposal.status === 'Pending'
-                      ? 'bg-secondary/20 text-secondary border-secondary/30'
-                      : ''
-                  }
-                >
-                  {proposal.status}
-                </Badge>
-              </div>
-              
-              {category && (
-                <div className="flex items-center gap-2">
-                  <span className="text-white/60 text-sm">Category:</span>
-                  <Badge variant="secondary" className="bg-secondary/20 text-secondary border-secondary/30">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {category}
+            <TabsContent value="overview" className="space-y-4 mt-4">
+              {displayCategory && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Category</h3>
+                  <Badge variant="secondary" className="text-sm">
+                    {displayCategory}
                   </Badge>
                 </div>
               )}
-            </div>
 
-            <Separator className="bg-white/10" />
+              <Separator />
 
-            {/* Description */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <FileText className="h-4 w-4" />
-                </IconBubble>
-                Description
-              </h4>
-              <p className="text-white/80 leading-relaxed">{proposal.description}</p>
-            </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                <p className="text-sm">{proposal?.description}</p>
+              </div>
 
-            <Separator className="bg-white/10" />
+              <Separator />
 
-            {/* Geography Details */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <MapPin className="h-4 w-4" />
-                </IconBubble>
-                Geography Details
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-white/60">Level:</span>
-                  <p className="text-white">{getGeographyLevelLabel(proposal.geographyLevel)}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                  <Badge variant={proposal?.status === 'Approved' ? 'default' : 'secondary'}>
+                    {proposal?.status}
+                  </Badge>
                 </div>
-                <div>
-                  <span className="text-white/60">State:</span>
-                  <p className="text-white">{proposal.state}</p>
-                </div>
-                {proposal.county && proposal.county !== 'N/A' && (
-                  <div>
-                    <span className="text-white/60">County:</span>
-                    <p className="text-white">{proposal.county}</p>
+
+                {geography?.population && (
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-medium text-muted-foreground">Population</h3>
+                    <p className="text-sm">{geography.population}</p>
                   </div>
                 )}
-                <div>
-                  <span className="text-white/60">Census ID:</span>
-                  <p className="text-white font-mono text-xs">{proposal.censusBoundaryId}</p>
-                </div>
               </div>
-            </div>
+            </TabsContent>
 
-            <Separator className="bg-white/10" />
+            <TabsContent value="tasks" className="mt-4">
+              <IssueProjectTasksTab proposalId={proposalName} />
+            </TabsContent>
 
-            {/* Demographics */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">
-                <IconBubble size="sm" variant="secondary">
-                  <Users className="h-4 w-4" />
-                </IconBubble>
-                Demographics
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-white/60">Population (2020):</span>
-                  <p className="text-white">{proposal.population2020}</p>
-                </div>
-                <div>
-                  <span className="text-white/60">Area:</span>
-                  <p className="text-white">{(Number(proposal.squareMeters) / 1_000_000).toFixed(2)} km²</p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tasks" className="mt-6">
-            <IssueProjectTasksTab proposalId={proposalName} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="evidence" className="mt-4">
+              <EvidenceUploadSection proposalId={proposalName} />
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );

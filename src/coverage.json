@@ -1,140 +1,115 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:47:16.952Z",
+  "generatedAt": "2026-02-12T02:25:48.249Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 8,
+    "total": 7,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a dedicated Admin page section labeled \"Contribution Logs\" that is visible within the Admin area and uses English user-facing text.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/lib/uiCopy.ts",
-          "frontend/src/pages/admin/AdminModerationPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/lib/uiCopy.ts",
-          "frontend/src/pages/admin/AdminModerationPage.tsx"
-        ]
+        "summary": "Implement an embedded ICRC-1-style token ledger for WSP inside the existing backend single actor, including persistent balances, total supply, and the core public query/update methods needed to read balances and perform transfers.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Fetch contribution logs using the existing admin-only backend API endpoints and display them without loading all entries at once.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useAdminContributionLogs.ts",
-          "frontend/src/hooks/useAdminUserContributionLogs.ts",
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useAdminContributionLogs.ts",
-          "frontend/src/hooks/useAdminUserContributionLogs.ts",
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-        ]
+        "summary": "Add minting logic that mints WSP for valid contribution events, ensuring minting is idempotent with existing duplicate-prevention for contribution events.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Render contribution log entries in a simple, scannable list format that includes: user (principal), action type, points, and timestamp.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/lib/contributionActionTypes.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/lib/contributionActionTypes.ts"
-        ]
+        "summary": "Add burn logic to support slashing/invalidated contribution events, including a backend pathway to mark events invalidated and burn the corresponding WSP from the contributor when applicable.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-4",
-        "summary": "Add filters to the Contribution Logs section for (a) action type and (b) date (range or from/to), and apply them to the displayed entries.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/hooks/useDebouncedValue.ts",
-          "frontend/src/lib/uiCopy.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/lib/uiCopy.ts"
-        ]
+        "summary": "Add governance stubs in the backend for future DAO proposals, including types and placeholder methods that compile and can be safely called but clearly indicate \"not implemented\" behavior.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-5",
-        "summary": "Add pagination controls for the contribution logs view(s) so admins can navigate through multiple pages of results, and clearly indicate what range/page is currently shown.",
+        "summary": "Update the Profile page UI to show basic WSP token balance sourced from the backend ledger, and display it alongside existing contribution points.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/hooks/useAdminContributionLogs.ts"
+          "frontend/src/hooks/useWspBalance.ts",
+          "frontend/src/lib/formatTokenAmount.ts",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/utils/userFacingError.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/hooks/useAdminContributionLogs.ts"
+          "frontend/src/hooks/useWspBalance.ts",
+          "frontend/src/lib/formatTokenAmount.ts",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/utils/userFacingError.ts"
         ]
       },
       {
         "id": "REQ-6",
-        "summary": "Link each log entry to its related issue/comment/evidence item when a reference identifier is present, and handle unknown/unlinkable references gracefully.",
+        "summary": "Add staking fields to user profiles on the frontend only (no backend persistence required), including inputs and basic client-side validation.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/utils/assetUrl.ts"
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-7",
-        "summary": "Ensure only administrators can access the Contribution Logs section/page by enforcing admin gating in the UI and preventing non-admin users from viewing log data.",
+        "summary": "Add admin-only token operations controls (test mode) to the existing Admin area UI, including the ability to mint and burn WSP for a specified principal, backed by admin-gated backend methods.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/hooks/useAdminWspTokenOperations.ts",
+          "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
           "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/hooks/useAdminContributionLogs.ts",
-          "frontend/src/hooks/useAdminUserContributionLogs.ts"
+          "frontend/src/utils/userFacingError.ts"
         ],
         "matchedFiles": [
+          "frontend/src/hooks/useAdminWspTokenOperations.ts",
+          "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
           "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/hooks/useAdminContributionLogs.ts",
-          "frontend/src/hooks/useAdminUserContributionLogs.ts"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Ensure the Contribution Logs UI is mobile responsive and matches the existing admin styling conventions (cards, spacing, typography, and states for loading/error/empty).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/pages/admin/AdminModerationPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "frontend/src/pages/admin/AdminModerationPage.tsx"
+          "frontend/src/utils/userFacingError.ts"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/hooks/useAdminContributionLogs.ts",
-    "frontend/src/hooks/useAdminUserContributionLogs.ts",
-    "frontend/src/lib/contributionActionTypes.ts",
-    "frontend/src/lib/uiCopy.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useAdminWspTokenOperations.ts",
+    "frontend/src/hooks/useContributionEventLogger.ts",
+    "frontend/src/hooks/useCreateInstanceProposal.ts",
+    "frontend/src/hooks/useIssueProjectTasks.ts",
+    "frontend/src/hooks/useWspBalance.ts",
+    "frontend/src/lib/formatTokenAmount.ts",
+    "frontend/src/pages/ProfilePage.tsx",
     "frontend/src/pages/admin/AdminModerationPage.tsx",
     "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+    "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
+    "frontend/src/pages/profile/components/StakingSection.tsx",
+    "frontend/src/utils/userFacingError.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

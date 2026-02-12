@@ -1,193 +1,89 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin Contribution Logs: filters, pagination, linking, and admin gating",
+  "title": "Phase 3 (Frontend): WSP balance display, staking UI fields, and admin token controls",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Ensure the Admin area contains a clearly labeled \"Contribution Logs\" section with English UI copy.",
-      "acceptanceCriteria": [
-        "Admin area includes a clearly labeled section titled \"Contribution Logs\".",
-        "All user-facing labels/messages in the section are in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Keep the section header labeled using English copy and align structure with the Admin page layout. Use existing shadcn-ui composed components (e.g., Card, CardHeader, CardTitle) to match admin styling conventions. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add/adjust English strings for the Contribution Logs section (filters, date range labels, pagination range/page labels, link/unlinkable reference messaging) under uiCopy.admin to ensure all user-facing text is English."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "operation": "modify",
-          "description": "Wire the Contribution Logs section as an explicit Admin page section (still within the existing Admin page) and pass any necessary admin-gating props so the section renders only for admins."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Fetch admin contribution logs via existing admin-only backend capabilities with paginated/incremental loading (no full dataset load).",
-      "acceptanceCriteria": [
-        "The logs list is populated via the existing admin-only endpoints already used by the app (e.g., paginated global admin logs).",
-        "The UI does not attempt to load all logs at once; it uses pagination/incremental loading."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
-          "operation": "modify",
-          "description": "Add an explicit `enabled`/`isAdmin`-driven guard so the query only runs when the admin UI is allowed to fetch logs. Keep pagination parameters (offset/limit) and continue to rely on the existing backend function. This supports preventing any contribution-log fetches for non-admin users."
-        },
-        {
-          "path": "frontend/src/hooks/useAdminUserContributionLogs.ts",
-          "operation": "modify",
-          "description": "Add an explicit `enabled`/`isAdmin`-driven guard so user-scoped log queries only run when admin access is confirmed and a valid principal is provided, preventing accidental fetches."
-        },
-        {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Update the section to request logs incrementally (page-sized fetches) and avoid any logic that accumulates or requests all entries at once. Use existing shadcn-ui composed components for loading/error UI and controls (Button/Input/Card/ScrollArea). Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Render contribution log entries as a scannable, mobile-friendly list including user principal, action type, points, and timestamp.",
-      "acceptanceCriteria": [
-        "Each log entry row/card shows: user identifier (principal), action type, points, and a human-readable timestamp.",
-        "The list remains readable on mobile widths (no horizontal overflow for key fields; long principals are truncated/wrapped appropriately)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Refactor the display to a simple flat list of entries (not grouped by user) where each row/card includes: contributor principal, action type, points, and a human-readable timestamp. Ensure mobile readability (truncate or wrap long principals, avoid horizontal overflow) using existing Tailwind conventions and existing composed UI components (Card/ScrollArea/etc.). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/contributionActionTypes.ts",
-          "operation": "modify",
-          "description": "If needed for a cleaner UI, export a normalized list of known action types (for filter options and consistent labeling) while keeping compatibility with existing action type constants used elsewhere."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add action type and date range filters for Contribution Logs and apply them consistently to the shown entries.",
-      "acceptanceCriteria": [
-        "An action type filter is available (e.g., dropdown/select) and can narrow the visible entries.",
-        "A date filter is available (e.g., from/to date inputs) and can narrow the visible entries by timestamp.",
-        "Changing filters updates the displayed entries consistently (including empty-state messaging when no entries match)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Add filter controls for (a) action type and (b) date from/to, and apply them to the currently fetched page of results (client-side filtering over the fetched entries). Ensure changing filters updates the list and shows an English empty state when nothing matches. Use existing shadcn-ui composed components (Input/Label/Button/Card) for consistent styling. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useDebouncedValue.ts",
-          "operation": "modify",
-          "description": "If action type filtering uses free-text input, ensure a debounced path is available/appropriate for reducing rapid re-renders; keep the hook generic and reusable (no admin-specific coupling)."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add English UI copy for filter labels/placeholders (e.g., \"Action type\", \"From\", \"To\", \"Clear filters\", \"No entries match your filters\")."
-        }
-      ]
-    },
-    {
       "id": "REQ-5",
-      "summary": "Provide pagination controls for Contribution Logs with clear current page/range indication and correct behavior when filters change.",
+      "summary": "Show the caller’s WSP token balance on the Profile page using backend ledger reads, with friendly loading/error states and consistent formatting.",
       "acceptanceCriteria": [
-        "Pagination controls allow navigating forward/back through pages (or loading more/previous) for global contribution logs.",
-        "The UI indicates the current slice of results (e.g., offset/range or page index).",
-        "Pagination continues to work correctly when filters are applied (e.g., resets offset appropriately or prevents confusing ranges)."
+        "Profile page displays the caller’s WSP balance using a backend call (not derived from cached contribution points).",
+        "UI handles loading and error states gracefully (no crashes, shows a user-friendly error).",
+        "Displayed balances use consistent formatting (e.g., integer if decimals=0, or fixed decimals if decimals>0)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Improve pagination UX for global logs: add Previous/Next (or Load more/Previous) controls and show a clear indicator (page index and/or offset+limit). When filters change, reset pagination state to the first page to avoid confusing ranges. Use existing shadcn-ui composed components (Button/Label/Card) and match existing admin styling. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/hooks/useWspBalance.ts",
+          "operation": "create",
+          "description": "Add a React Query hook that calls the backend capability for icrc1_balance_of for the current caller, including identity-scoped query keys and safe enablement when actor/identity are ready."
         },
         {
-          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
+          "path": "frontend/src/lib/formatTokenAmount.ts",
+          "operation": "create",
+          "description": "Add a small formatting helper for displaying BigInt token amounts with a configurable decimals parameter and sensible defaults for WSP UI display."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Ensure query keys remain correctly parameterized by offset/limit so paginated navigation works reliably and cached pages do not collide."
+          "description": "Use shadcn-ui components (Card/Separator/Label) to add a WSP Balance display alongside existing contribution points, sourcing data from the new useWspBalance hook; include explicit loading and user-friendly error messaging in English. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/userFacingError.ts",
+          "operation": "modify",
+          "description": "Extend user-facing error mapping to cover WSP balance fetch failures (e.g., ledger/balance-of errors) with clear English messages."
         }
       ]
     },
     {
       "id": "REQ-6",
-      "summary": "Link each log entry’s referenceId to the related entity when supported; otherwise show a non-clickable reference.",
+      "summary": "Add a frontend-only Staking section to the Profile page with validated inputs and client-side persistence (no backend changes).",
       "acceptanceCriteria": [
-        "If a log entry includes a referenceId, the UI presents it as a clickable link or action that navigates to the related entity using existing app navigation patterns/routes.",
-        "If an entry cannot be linked (unknown type, missing route, or invalid referenceId), the UI displays the reference as non-clickable text (no broken links)."
+        "Profile page includes a clearly labeled \"Staking\" section with fields such as amount to stake and an optional lock/term selector (front-end only).",
+        "Staking fields do not modify the backend UserProfile type or save payload; they are stored client-side only (e.g., component state or localStorage) and persist across reloads if localStorage is used.",
+        "Client-side validation prevents negative/invalid values and shows English inline validation messages."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Add reference handling per entry: when referenceId is present, attempt to map it to an existing in-app navigation target (using the app’s current pushState + popstate pattern and base-path-safe navigation utilities). If the reference cannot be mapped, render it as plain text (no broken links). Use existing shadcn-ui composed components (Button) for link-actions where applicable. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/profile/components/StakingSection.tsx",
+          "operation": "create",
+          "description": "Create a Profile Staking UI section using shadcn-ui form primitives (Input/Label/Select/Card) that stores values via the existing useLocalStorageState hook and performs client-side validation with inline English messages. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/utils/assetUrl.ts",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "If needed, add a small helper for base-path-safe internal navigation (pushState + popstate dispatch) to avoid duplicating navigation logic across Admin UI link actions."
+          "description": "Wire the new StakingSection into the Profile page layout and ensure its state does not affect the UserProfile save payload sent to the backend."
         }
       ]
     },
     {
       "id": "REQ-7",
-      "summary": "Enforce admin-only access for Contribution Logs with login prompt, access denied state, and no log fetches for non-admins.",
+      "summary": "Add an admin-gated \"Token Operations (Test Mode)\" section in the Admin UI to mint/burn WSP for a specified principal with success/failure feedback and cache refresh.",
       "acceptanceCriteria": [
-        "Unauthenticated users are prompted to log in before seeing any admin content.",
-        "Authenticated non-admin users are shown an access denied state and do not see contribution logs content.",
-        "When not an admin, the app does not execute contribution-log fetch queries (no admin log calls triggered)."
+        "Admin UI shows a \"Token Operations (Test Mode)\" section only when the caller is an admin (consistent with existing admin gating patterns).",
+        "Admin can enter a target principal and an amount, then invoke mint or burn; UI shows success/failure feedback in English.",
+        "Backend exposes admin-only mint/burn methods that update balances and total supply consistently and reject non-admin callers.",
+        "After a successful operation, relevant React Query caches are invalidated/refetched so updated balances are visible (e.g., on Profile or in the admin panel if displayed)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
-          "operation": "modify",
-          "description": "Ensure admin gating is the single source of truth for rendering Contribution Logs UI: only mount the ContributionLogsSection after admin status is confirmed. Pass an explicit prop to the section/hooks to guarantee queries are disabled until admin is true."
+          "path": "frontend/src/hooks/useAdminWspTokenOperations.ts",
+          "operation": "create",
+          "description": "Create React Query mutation hooks for adminMintWSP and adminBurnWSP that validate inputs, surface backend errors, and invalidate/refetch relevant queries (e.g., currentUserProfile, WSP balance, and any admin views that display balances)."
         },
         {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Accept an explicit `isAdmin` (or `enabled`) prop and ensure contribution-log hooks are only invoked with fetching enabled when admin access is confirmed. Use existing shadcn-ui composed components for any additional gated states. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
-          "operation": "modify",
-          "description": "Require an explicit enable flag (derived from confirmed admin state) to prevent any background fetching when the caller is not an admin."
-        },
-        {
-          "path": "frontend/src/hooks/useAdminUserContributionLogs.ts",
-          "operation": "modify",
-          "description": "Require an explicit enable flag (derived from confirmed admin state) to prevent any background fetching when the caller is not an admin."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Make the Contribution Logs UI responsive and consistent with existing Admin styling (cards, spacing, typography, and loading/error/empty states).",
-      "acceptanceCriteria": [
-        "On mobile, the Contribution Logs section remains usable (filters accessible, list readable, pagination reachable) without layout breakage.",
-        "Loading, error, and empty states are visually consistent with the existing Admin page styling."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
-          "operation": "modify",
-          "description": "Adjust layout to be mobile-friendly: stack filter controls on small screens, keep list rows/cards readable, and ensure pagination controls remain reachable. Reuse existing Admin page styling patterns for loading/error/empty states using composed shadcn-ui components (Card, Button, ScrollArea, Input, Label). Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
+          "operation": "create",
+          "description": "Add an admin-only UI section using shadcn-ui components (Card/Input/Label/Button) to enter a target principal and amount, invoke mint/burn mutations, and show English success/failure feedback; parse principals with the same Principal.fromText pattern used in existing admin log hooks. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
           "operation": "modify",
-          "description": "Ensure the Contribution Logs section spacing and card styling remain aligned with the rest of the Admin page (consistent container widths, spacing, and section ordering)."
+          "description": "Wire TokenOperationsSection into the existing admin page (which already uses admin gating) and ensure the section only renders when admin access is confirmed."
+        },
+        {
+          "path": "frontend/src/utils/userFacingError.ts",
+          "operation": "modify",
+          "description": "Extend user-facing error mapping for admin token operations (invalid principal, invalid amount, unauthorized, burn failure) with clear English messages suitable for inline and toast usage."
         }
       ]
     }

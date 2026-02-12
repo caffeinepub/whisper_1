@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { USHierarchyLevel } from '@/backend';
-import { userFacingError } from '@/utils/userFacingError';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 /**
  * Hook to check if an instance name is already taken.
@@ -19,7 +19,7 @@ export function useCheckInstanceName(instanceName: string) {
         const result = await actor.isInstanceNameTaken(instanceName);
         return result;
       } catch (error) {
-        const errorMessage = userFacingError(error);
+        const errorMessage = getUserFacingError(error);
         console.error('Error checking instance name:', error);
         // Throw user-friendly error to prevent submission when we can't verify availability
         throw new Error(errorMessage);
@@ -99,7 +99,7 @@ export function useSubmitProposal() {
 
         return { instanceName: params.instanceName };
       } catch (error) {
-        const errorMessage = userFacingError(error);
+        const errorMessage = getUserFacingError(error);
         console.error('Error submitting proposal:', error);
         throw new Error(errorMessage);
       }

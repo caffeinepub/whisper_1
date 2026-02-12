@@ -33,6 +33,7 @@ export const ContributionLogEntry = IDL.Record({
   'rewardType' : IDL.Text,
   'timestamp' : IDL.Int,
   'details' : IDL.Opt(IDL.Text),
+  'invalidated' : IDL.Bool,
   'contributor' : IDL.Principal,
 });
 export const UserRole = IDL.Variant({
@@ -134,6 +135,21 @@ export const Task = IDL.Record({
   'completed' : IDL.Bool,
   'description' : IDL.Text,
 });
+export const GovernanceProposalStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+  'executed' : IDL.Null,
+});
+export const GovernanceProposal = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : GovernanceProposalStatus,
+  'title' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'description' : IDL.Text,
+  'proposer' : IDL.Principal,
+});
 export const USGeographyDataChunk = IDL.Record({
   'states' : IDL.Vec(USState),
   'places' : IDL.Vec(USPlace),
@@ -184,6 +200,11 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'adminBurnWSP' : IDL.Func(
+      [IDL.Principal, IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'adminGetContributionLogs' : IDL.Func(
       [IDL.Nat, IDL.Nat],
       [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(ContributionLogEntry)))],
@@ -194,6 +215,12 @@ export const idlService = IDL.Service({
       [IDL.Vec(ContributionLogEntry)],
       ['query'],
     ),
+  'adminInvalidateContribution' : IDL.Func(
+      [IDL.Principal, IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminMintWSP' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'backend_getIssueCategoriesByHierarchyLevel' : IDL.Func(
       [USHierarchyLevel, IDL.Opt(IDL.Text)],
@@ -307,7 +334,34 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'governanceCreateProposal' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+      [],
+    ),
+  'governanceGetProposal' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Opt(GovernanceProposal)],
+      ['query'],
+    ),
+  'governanceListProposals' : IDL.Func(
+      [],
+      [IDL.Vec(GovernanceProposal)],
+      ['query'],
+    ),
+  'governanceVote' : IDL.Func(
+      [IDL.Nat, IDL.Bool],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'hideProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'icrc1_balance_of' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
+  'icrc1_total_supply' : IDL.Func([], [IDL.Nat], ['query']),
+  'icrc1_transfer' : IDL.Func(
+      [IDL.Principal, IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+      [],
+    ),
   'ingestUSGeographyData' : IDL.Func([IDL.Vec(USGeographyDataChunk)], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
@@ -370,6 +424,7 @@ export const idlFactory = ({ IDL }) => {
     'rewardType' : IDL.Text,
     'timestamp' : IDL.Int,
     'details' : IDL.Opt(IDL.Text),
+    'invalidated' : IDL.Bool,
     'contributor' : IDL.Principal,
   });
   const UserRole = IDL.Variant({
@@ -471,6 +526,21 @@ export const idlFactory = ({ IDL }) => {
     'completed' : IDL.Bool,
     'description' : IDL.Text,
   });
+  const GovernanceProposalStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+    'executed' : IDL.Null,
+  });
+  const GovernanceProposal = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : GovernanceProposalStatus,
+    'title' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'description' : IDL.Text,
+    'proposer' : IDL.Principal,
+  });
   const USGeographyDataChunk = IDL.Record({
     'states' : IDL.Vec(USState),
     'places' : IDL.Vec(USPlace),
@@ -521,6 +591,11 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'adminBurnWSP' : IDL.Func(
+        [IDL.Principal, IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'adminGetContributionLogs' : IDL.Func(
         [IDL.Nat, IDL.Nat],
         [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(ContributionLogEntry)))],
@@ -531,6 +606,12 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(ContributionLogEntry)],
         ['query'],
       ),
+    'adminInvalidateContribution' : IDL.Func(
+        [IDL.Principal, IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminMintWSP' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'backend_getIssueCategoriesByHierarchyLevel' : IDL.Func(
         [USHierarchyLevel, IDL.Opt(IDL.Text)],
@@ -644,7 +725,34 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'governanceCreateProposal' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+        [],
+      ),
+    'governanceGetProposal' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(GovernanceProposal)],
+        ['query'],
+      ),
+    'governanceListProposals' : IDL.Func(
+        [],
+        [IDL.Vec(GovernanceProposal)],
+        ['query'],
+      ),
+    'governanceVote' : IDL.Func(
+        [IDL.Nat, IDL.Bool],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'hideProposal' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'icrc1_balance_of' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
+    'icrc1_total_supply' : IDL.Func([], [IDL.Nat], ['query']),
+    'icrc1_transfer' : IDL.Func(
+        [IDL.Principal, IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+        [],
+      ),
     'ingestUSGeographyData' : IDL.Func([IDL.Vec(USGeographyDataChunk)], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isInstanceNameTaken' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),

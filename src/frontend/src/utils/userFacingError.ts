@@ -1,75 +1,72 @@
 /**
- * Converts backend errors and exceptions into user-friendly English messages.
- * Extended with patterns for geography lookup failures, Secretary top-issues errors,
- * contribution log authorization/fetch failures, user-scoped log queries, and
- * contribution event validation errors (invalid actionType, reference not found).
+ * Normalizes errors into user-facing English messages.
+ * Handles authorization, geography, proposal, task, contribution, and WSP token operation errors.
  */
-export function userFacingError(error: unknown): string {
-  if (!error) return 'An unknown error occurred';
+export function getUserFacingError(error: any): string {
+  if (!error) return 'An unexpected error occurred';
 
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  // Handle string errors directly
+  if (typeof error === 'string') {
+    // Authorization errors
+    if (error.includes('Unauthorized')) {
+      if (error.includes('Only admins')) return 'Admin access required';
+      if (error.includes('Only users')) return 'You must be logged in';
+      return 'You do not have permission to perform this action';
+    }
 
-  // Authorization errors
-  if (errorMessage.includes('Unauthorized') || errorMessage.includes('Only admins')) {
-    return 'You do not have permission to perform this action';
+    // Geography errors
+    if (error.includes('No counties found')) return 'No counties available for the selected state';
+    if (error.includes('No places found')) return 'No cities available for the selected area';
+
+    // Proposal errors
+    if (error.includes('Instance name already exists')) return 'This instance name is already taken';
+    if (error.includes('Proposal must contain valid')) {
+      if (error.includes('state')) return 'Please select a valid state';
+      if (error.includes('county')) return 'Please select a valid county';
+      if (error.includes('census boundary')) return 'Census boundary information is missing';
+      if (error.includes('population')) return 'Population data is required';
+      if (error.includes('squareMeters')) return 'Area information is required';
+    }
+
+    // Task errors
+    if (error.includes('Proposal does not exist')) return 'The proposal could not be found';
+    if (error.includes('No tasks found')) return 'No tasks found for this proposal';
+    if (error.includes('Task does not exist')) return 'The task could not be found';
+
+    // Contribution event errors
+    if (error.includes('invalid actionType') || error.includes('invalidActionType')) {
+      return 'Invalid contribution action type';
+    }
+    if (error.includes('reference not found') || error.includes('referenceIdRequired')) {
+      return 'Reference ID is required for this action';
+    }
+    if (error.includes('referenceIdEmpty')) {
+      return 'Reference ID cannot be empty';
+    }
+    if (error.includes('duplicateContribution')) {
+      return 'This contribution has already been recorded';
+    }
+
+    // WSP token operation errors
+    if (error.includes('Invalid principal')) return 'Invalid principal format';
+    if (error.includes('Invalid amount')) return 'Amount must be a positive number';
+    if (error.includes('Insufficient balance')) return 'Insufficient token balance';
+    if (error.includes('Only admins can mint')) return 'Only admins can mint tokens';
+    if (error.includes('Only admins can burn')) return 'Only admins can burn tokens';
+
+    // Return the original error if no pattern matches
+    return error;
   }
 
-  // Contribution event validation errors
-  if (errorMessage.includes('Invalid actionType')) {
-    return 'This action cannot earn contributions.';
+  // Handle Error objects
+  if (error instanceof Error) {
+    return getUserFacingError(error.message);
   }
 
-  if (errorMessage.includes('Reference not found') || errorMessage.includes('reference ID')) {
-    return 'That item no longer exists. Please refresh and try again.';
+  // Handle objects with message property
+  if (error.message) {
+    return getUserFacingError(error.message);
   }
 
-  // Contribution log errors
-  if (errorMessage.includes('contribution logs') || errorMessage.includes('contribution history')) {
-    return 'Unable to load contribution logs. Please try again.';
-  }
-
-  // User principal errors
-  if (errorMessage.includes('User principal is required') || errorMessage.includes('Invalid principal')) {
-    return 'Please enter a valid user principal ID';
-  }
-
-  // Geography lookup errors
-  if (errorMessage.includes('No counties found') || errorMessage.includes('No places found')) {
-    return 'No geographic data found for this location';
-  }
-
-  if (errorMessage.includes('No states found')) {
-    return 'Geographic data is not yet available';
-  }
-
-  // Secretary top-issues errors
-  if (errorMessage.includes('top issues') || errorMessage.includes('location issues')) {
-    return 'Unable to load location issues. Please try again.';
-  }
-
-  // Proposal errors
-  if (errorMessage.includes('Proposal does not exist')) {
-    return 'This proposal could not be found';
-  }
-
-  if (errorMessage.includes('Instance name already exists')) {
-    return 'This instance name is already taken';
-  }
-
-  // Task errors
-  if (errorMessage.includes('Task does not exist')) {
-    return 'This task could not be found';
-  }
-
-  if (errorMessage.includes('No tasks found')) {
-    return 'No tasks available for this proposal';
-  }
-
-  // Actor/connection errors
-  if (errorMessage.includes('Actor not available')) {
-    return 'Connection to backend is not available. Please refresh and try again.';
-  }
-
-  // Generic fallback
-  return errorMessage || 'An unexpected error occurred';
+  return 'An unexpected error occurred';
 }

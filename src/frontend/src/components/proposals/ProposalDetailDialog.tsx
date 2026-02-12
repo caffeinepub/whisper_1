@@ -142,9 +142,8 @@ export function ProposalDetailDialog({
       {showIssueProject && (
         <IssueProjectDetailDialog
           proposalName={displayProposal.instanceName}
-          proposal={displayProposal}
-          open={showIssueProject}
-          onOpenChange={handleCloseIssueProject}
+          isOpen={showIssueProject}
+          onClose={handleCloseIssueProject}
         />
       )}
     </>

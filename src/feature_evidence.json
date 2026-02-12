@@ -2,97 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-dedicated-admin-page-section-labeled-contribution-logs-that-is-visible-within-the-admin-area-and-uses-english-user-facing-text",
-      "featureTitle": "Add a dedicated Admin page section labeled \"Contribution Logs\" that is visible within the Admin area and uses English user-facing text.",
+      "featureId": "feature-update-the-profile-page-ui-to-show-basic-wsp-token-balance-sourced-from-the-backend-ledger-and-display-it-alongside-existing-contribution-points",
+      "featureTitle": "Update the Profile page UI to show basic WSP token balance sourced from the backend ledger, and display it alongside existing contribution points.",
       "files": [
-        "frontend/src/lib/uiCopy.ts",
-        "frontend/src/pages/admin/AdminModerationPage.tsx",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-fetch-contribution-logs-using-the-existing-admin-only-backend-api-endpoints-and-display-them-without-loading-all-entries-at-once",
-      "featureTitle": "Fetch contribution logs using the existing admin-only backend API endpoints and display them without loading all entries at once.",
-      "files": [
-        "frontend/src/hooks/useAdminContributionLogs.ts",
-        "frontend/src/hooks/useAdminUserContributionLogs.ts",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-render-contribution-log-entries-in-a-simple-scannable-list-format-that-includes-user-principal-action-type-points-and-timestamp",
-      "featureTitle": "Render contribution log entries in a simple, scannable list format that includes: user (principal), action type, points, and timestamp.",
-      "files": [
-        "frontend/src/lib/contributionActionTypes.ts",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-filters-to-the-contribution-logs-section-for-a-action-type-and-b-date-range-or-from-to-and-apply-them-to-the-displayed-entries",
-      "featureTitle": "Add filters to the Contribution Logs section for (a) action type and (b) date (range or from/to), and apply them to the displayed entries.",
-      "files": [
-        "frontend/src/lib/uiCopy.ts",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-pagination-controls-for-the-contribution-logs-view-s-so-admins-can-navigate-through-multiple-pages-of-results-and-clearly-indicate-what-range-page-is-currently-shown",
-      "featureTitle": "Add pagination controls for the contribution logs view(s) so admins can navigate through multiple pages of results, and clearly indicate what range/page is currently shown.",
-      "files": [
-        "frontend/src/hooks/useAdminContributionLogs.ts",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+        "frontend/src/hooks/useWspBalance.ts",
+        "frontend/src/lib/formatTokenAmount.ts",
+        "frontend/src/pages/ProfilePage.tsx",
+        "frontend/src/utils/userFacingError.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -109,10 +25,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-link-each-log-entry-to-its-related-issue-comment-evidence-item-when-a-reference-identifier-is-present-and-handle-unknown-unlinkable-references-gracefully",
-      "featureTitle": "Link each log entry to its related issue/comment/evidence item when a reference identifier is present, and handle unknown/unlinkable references gracefully.",
+      "featureId": "feature-add-staking-fields-to-user-profiles-on-the-frontend-only-no-backend-persistence-required-including-inputs-and-basic-client-side-validation",
+      "featureTitle": "Add staking fields to user profiles on the frontend only (no backend persistence required), including inputs and basic client-side validation.",
       "files": [
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+        "frontend/src/pages/ProfilePage.tsx",
+        "frontend/src/pages/profile/components/StakingSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -129,13 +46,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-only-administrators-can-access-the-contribution-logs-section-page-by-enforcing-admin-gating-in-the-ui-and-preventing-non-admin-users-from-viewing-log-data",
-      "featureTitle": "Ensure only administrators can access the Contribution Logs section/page by enforcing admin gating in the UI and preventing non-admin users from viewing log data.",
+      "featureId": "feature-add-admin-only-token-operations-controls-test-mode-to-the-existing-admin-area-ui-including-the-ability-to-mint-and-burn-wsp-for-a-specified-principal-backed-by-admin-gated-backend-methods",
+      "featureTitle": "Add admin-only token operations controls (test mode) to the existing Admin area UI, including the ability to mint and burn WSP for a specified principal, backed by admin-gated backend methods.",
       "files": [
-        "frontend/src/hooks/useAdminContributionLogs.ts",
-        "frontend/src/hooks/useAdminUserContributionLogs.ts",
+        "frontend/src/hooks/useAdminWspTokenOperations.ts",
         "frontend/src/pages/admin/AdminModerationPage.tsx",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+        "frontend/src/pages/admin/components/TokenOperationsSection.tsx",
+        "frontend/src/utils/userFacingError.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -148,27 +65,6 @@
       ],
       "testIds": [
         "REQ-7"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-the-contribution-logs-ui-is-mobile-responsive-and-matches-the-existing-admin-styling-conventions-cards-spacing-typography-and-states-for-loading-error-empty",
-      "featureTitle": "Ensure the Contribution Logs UI is mobile responsive and matches the existing admin styling conventions (cards, spacing, typography, and states for loading/error/empty).",
-      "files": [
-        "frontend/src/pages/admin/AdminModerationPage.tsx",
-        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-8"
       ],
       "confidence": "high"
     }

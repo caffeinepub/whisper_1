@@ -20,15 +20,15 @@ export const secretaryCopy = {
   discoveryNoInstance: 'This location doesn\'t have a Whisper instance yet. You could be a founding citizen!',
   discoveryTopIssuesPrompt: 'Would you like to see the top issues for this location?',
 
-  // Report issue flow
+  // Report issue flow (updated to mention contribution points)
   reportIssueLoadingData: 'Let me check the top issues for your location...',
-  reportIssueTopIssuesPrompt: 'Here are the most common issues in your area. Select one or describe something else:',
-  reportIssueNoTopIssues: 'No common issues have been recorded for this location yet. Please describe your issue:',
-  reportIssueDescriptionPrompt: 'Please describe the issue you\'d like to report:',
-  reportIssueSuggestionsPrompt: 'Based on your description, here are some suggested categories:',
+  reportIssueTopIssuesPrompt: 'Here are the most common issues in your area. Select one or describe something else. Submitting an issue earns you 10 contribution points!',
+  reportIssueNoTopIssues: 'No common issues have been recorded for this location yet. Please describe your issue. You\'ll earn 10 contribution points when you submit!',
+  reportIssueDescriptionPrompt: 'Please describe the issue you\'d like to report. You\'ll earn 10 contribution points when you submit!',
+  reportIssueSuggestionsPrompt: 'Based on your description, here are some suggested categories. Submitting earns you 10 contribution points!',
   reportIssueSomethingElse: 'Something else',
   reportIssueCustomCategoryPrompt: 'Please enter a custom category for your issue:',
-  reportIssueCategorySelected: 'Great! I\'ll help you create an Issue Project for that.',
+  reportIssueCategorySelected: 'Great! I\'ll help you create an Issue Project for that. You\'ll earn 10 contribution points!',
   reportIssueNavigating: 'Opening your Issue Project...',
   reportIssueError: 'I\'m having trouble loading issue data. Please try again.',
 
@@ -36,11 +36,11 @@ export const secretaryCopy = {
   intentSlotStatePrompt: 'Which state would you like to explore?',
   intentSlotCountyPrompt: (stateName: string) => `Great! Now, which county in ${stateName} would you like to explore?`,
   intentSlotPlacePrompt: (countyName: string) => `Which city or town in ${countyName}?`,
-  intentSlotDescriptionPrompt: 'Please describe the issue you\'d like to report:',
-  intentSlotCategoryPrompt: 'Based on your description, here are some suggested categories:',
+  intentSlotDescriptionPrompt: 'Please describe the issue you\'d like to report. You\'ll earn 10 contribution points when you submit!',
+  intentSlotCategoryPrompt: 'Based on your description, here are some suggested categories. Submitting earns you 10 contribution points!',
   intentSlotCategoryCustomPrompt: 'Please enter a custom category for your issue:',
   intentSlotRepairConfirm: (slotName: string) => `Got it, I've updated your ${slotName}.`,
-  intentSlotCompleteReportIssue: 'Great! I\'ll help you create an Issue Project for that.',
+  intentSlotCompleteReportIssue: 'Great! I\'ll help you create an Issue Project for that. You\'ll earn 10 contribution points!',
   intentSlotCompleteCreateInstance: 'Taking you to Create Instance...',
   intentSlotCompleteFindInstance: 'Let me show you what\'s happening in your area...',
 

@@ -3,10 +3,15 @@
 export interface SecretaryProjectNavigationPayload {
   proposalName: string;
   category?: string;
+  origin?: 'standard' | 'chat';
 }
 
 export const SECRETARY_PROJECT_NAVIGATION_EVENT = 'secretary:navigate-to-project';
 
+/**
+ * Signal project navigation with optional origin flag to mark Secretary-triggered actions.
+ * The origin flag is used downstream to show 'chat' toast variants when applicable.
+ */
 export function signalProjectNavigation(payload: SecretaryProjectNavigationPayload) {
   const event = new CustomEvent<SecretaryProjectNavigationPayload>(
     SECRETARY_PROJECT_NAVIGATION_EVENT,
