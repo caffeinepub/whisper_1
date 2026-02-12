@@ -7,7 +7,7 @@ import type { SecretaryContext, NodeId, NodeViewModel, Action } from './types';
 import { nodeDefinitions, transitions } from './flows';
 import { secretaryCopy } from '../copy/secretaryCopy';
 import { createEmptySlotBag } from '../intent/slotState';
-import type { backendInterface } from '@/backend';
+import type { backendInterface, USHierarchyLevel } from '@/backend';
 
 export type FlowRunnerListener = (viewModel: NodeViewModel) => void;
 
@@ -122,5 +122,33 @@ export class FlowRunner {
 
   setActor(actor: backendInterface | null): void {
     this.actor = actor;
+  }
+
+  getActor(): backendInterface | null {
+    return this.actor;
+  }
+
+  /**
+   * Compute complaint category suggestions for report-issue flow
+   */
+  async computeComplaintSuggestions(
+    level: USHierarchyLevel,
+    searchTerm: string
+  ): Promise<string[]> {
+    if (!this.actor) {
+      console.warn('Actor not available for complaint suggestions');
+      return [];
+    }
+
+    try {
+      const suggestions = await this.actor.getComplaintCategoriesByGeographyLevel(
+        level,
+        searchTerm || null
+      );
+      return suggestions.slice(0, 5); // Limit to top 5 suggestions
+    } catch (error) {
+      console.error('Failed to fetch complaint suggestions:', error);
+      return [];
+    }
   }
 }

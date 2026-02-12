@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-connect-the-existing-proposals-list-detail-ui-to-real-backend-data-by-implementing-and-wiring-backend-query-update-methods-for-proposals-list-proposals-fetch-a-proposal-by-identifier-and-any-required-proposal-lifecycle-updates-used-by-the-ui-ensure-the-frontend-react-query-hooks-used-by-proposalssection-and-proposaldetaildialog-use-these-backend-methods-no-placeholder-stub-data-and-preserve-current-loading-empty-error-states",
-      "featureTitle": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
+      "featureId": "feature-enable-the-secretary-s-intent-slot-filling-mode-to-automatically-pre-fill-slots-from-a-single-user-message-at-minimum-geography-slots-and-for-the-report-issue-intent-the-initial-issue-description-and-then-ask-only-for-the-remaining-missing-required-slots",
+      "featureTitle": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
       "files": [
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/intent/issueDescriptionNlp.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,11 +23,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-staking-backend-support-and-connect-it-to-the-existing-staking-ui-and-hooks-add-canister-methods-required-by-the-current-frontend-contract-at-minimum-getstakinginfo-stake-amount-and-unstake-amount-update-token-staking-state-consistently-and-replace-the-placeholder-errors-in-usestake-useunstake-so-the-profile-staking-section-can-successfully-stake-and-unstake",
-      "featureTitle": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
+      "featureId": "feature-wire-complaint-category-suggestions-into-slot-filling-when-the-next-missing-slot-is-issue-category-fetch-and-present-category-suggestions-based-on-the-currently-filled-geography-level-and-the-current-issue-description-slot-and-allow-the-user-to-choose-a-suggestion-to-fill-the-category-slot",
+      "featureTitle": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
       "files": [
-        "frontend/src/hooks/useStakingMutations.ts",
-        "frontend/src/pages/profile/components/StakingSection.tsx"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/copy/secretaryPrompts.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -43,16 +45,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-governance-ui-for-governance-proposals-create-list-view-details-and-vote-and-implement-the-corresponding-backend-methods-for-governance-proposals-and-voting-the-governance-ui-should-be-accessible-from-an-appropriate-existing-navigation-entry-point-e-g-profile-page-section-and-or-a-dedicated-route-and-must-use-authenticated-canister-calls-reuse-existing-design-system-components-and-patterns-cards-dialogs-badges-loading-states",
-      "featureTitle": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
+      "featureId": "feature-fix-secretary-location-typeahead-selection-so-it-works-for-any-active-geography-slot-state-county-or-place-and-correctly-advances-slot-filling-after-selection",
+      "featureTitle": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useGovernanceProposals.ts",
-        "frontend/src/lib/uiCopy.ts",
-        "frontend/src/pages/ProfilePage.tsx",
-        "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-        "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-        "frontend/src/pages/profile/components/GovernanceSection.tsx"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -69,13 +66,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-expand-the-secretary-routing-navigation-system-so-the-secretary-can-route-users-to-the-proposals-area-and-also-deep-link-open-a-specific-proposal-when-the-secretary-navigation-payload-includes-a-proposal-identifier-name-ensure-the-registry-keywords-and-deep-link-parsing-support-proposal-destinations-and-that-the-proposals-ui-responds-by-opening-the-correct-proposal-detail-dialog",
-      "featureTitle": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+      "featureId": "feature-ensure-slot-filling-completion-behavior-is-user-visible-and-consistent-after-all-required-slots-for-an-intent-are-filled-the-secretary-executes-the-existing-completion-navigation-for-that-intent-and-then-resets-back-to-the-main-menu-with-an-english-confirmation-message",
+      "featureTitle": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/proposals/ProposalsSection.tsx",
-        "frontend/src/lib/secretaryNavigation.ts",
-        "frontend/src/utils/secretaryProjectNavigation.ts"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",

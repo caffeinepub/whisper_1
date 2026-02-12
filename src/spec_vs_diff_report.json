@@ -1,71 +1,57 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T04:25:54.692Z",
-  "summary": "Frontend wiring for proposals, staking mutations, governance UI/hooks, and Secretary navigation signals/options was added/updated. However, the diff summary does not provide evidence that the required backend canister methods/state for proposals, staking, and governance were implemented in `backend/main.mo` (only types are shown due to truncation), so the core backend portions of REQ-1/2/3 cannot be verified as complete from the provided diff.",
+  "generatedAt": "2026-02-12T06:27:11.261Z",
+  "summary": "The diff adds new NLP helper(s) and wiring in the Secretary widget/brain for slot-filling interactions, but it does not provide clear evidence that category suggestions are actually fetched/rendered during slot-filling, nor that completion resets the conversation with an English confirmation message after navigation.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Implement and wire backend query/update methods for proposals (list, get by identifier, and lifecycle updates used by the UI) so Proposals list/detail uses real canister data (no placeholders).",
-      "reason": "Frontend now calls `actor.getAllProposals()` and `actor.getProposal(instanceName)`, but the diff summary for `backend/main.mo` is truncated and does not show any added/updated proposal query/update methods or persisted proposal state to back these calls.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "Add staking backend support with `getStakingInfo`, `stake(amount)`, and `unstake(amount)`, including consistent token/staking state updates and validation (cannot stake/unstake more than allowed) with English user-friendly errors.",
-      "reason": "Frontend mutations were updated to call `actor.stake`/`actor.unstake` and invalidate queries, but the diff summary does not show backend implementations for staking methods, staking state, or validation/error behavior in `backend/main.mo` (truncated). Also no evidence is shown for a backend `getStakingInfo` method supporting `useStakingInfo`.",
+      "requirement": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on currently filled geography level and issue_description, and allow clicking a suggestion to fill the slot and advance.",
+      "reason": "While prompt-copy helpers and click handlers are introduced, the diff summary does not show any implementation that fetches category suggestions (API/hook call) or that the UI renders a list of suggested categories when issue_category is the next missing slot, nor the fallback behavior when no suggestions are returned.",
       "evidence": [
-        "frontend/src/hooks/useStakingMutations.ts",
-        "frontend/src/pages/profile/components/StakingSection.tsx",
-        "backend/main.mo (truncated)"
+        "frontend/src/components/secretary/SecretaryWidget.tsx (adds handleSuggestionClick but no rendering shown in truncated snippet)",
+        "frontend/src/secretary/copy/secretaryPrompts.ts (adds category suggestion/no-suggestion prompts)",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts (mentions complaint suggestions but truncated; no visible fetching logic)"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "Implement backend governance proposal CRUD and voting (create, list, get details, vote) persisted in canister state, and ensure authenticated calls for create/vote.",
-      "reason": "Frontend governance hooks/UI call `actor.governanceListProposals`, `actor.governanceGetProposal`, `actor.governanceCreateProposal`, and `actor.governanceVote`, but the diff summary does not show these backend methods or persistence being implemented in `backend/main.mo` (only new types appear; file content is truncated).",
+      "id": "REQ-4",
+      "requirement": "After all required slots are filled, execute the existing completion navigation for that intent and then reset back to the main menu with an English confirmation message.",
+      "reason": "Completion navigation is present in the flow registry, but there is no evidence of a post-completion reset to the main menu or an English confirmation message like “Done! Anything else I can help with?” being added to the conversation/state.",
       "evidence": [
-        "frontend/src/hooks/useGovernanceProposals.ts",
-        "backend/main.mo (truncated)"
+        "frontend/src/secretary/intent/flowRegistry.ts (onComplete navigates but no reset/confirmation behavior)",
+        "frontend/src/secretary/intent/flowRunner.ts (executeCompletion only calls onComplete; no reset/confirmation)",
+        "frontend/src/secretary/flow/flows.ts (menu clears messages, but no evidence it is invoked after completion)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a Secretary navigation option/destination for 'Governance' (keywords + confirmation message).",
-      "reason": "REQ-4 only asked to expand Secretary routing to the Proposals area and deep-link/open a specific proposal; it did not request Secretary routing for Governance.",
+      "description": "Speech-to-text microphone functionality in the Secretary widget UI.",
+      "reason": "The BuildRequest is focused on slot-filling, category suggestions, typeahead selection, and completion behavior; it does not request adding speech-to-text input.",
       "evidence": [
-        "frontend/src/lib/secretaryNavigation.ts"
+        "frontend/src/components/secretary/SecretaryWidget.tsx (imports Mic/MicOff and useSpeechToText, manages transcript/listening state)"
       ]
     },
     {
-      "description": "Added/updated multiple comprehensive documentation and styling/config files (architecture/phased plan/deployment/style guide, Tailwind config, global CSS).",
-      "reason": "The BuildRequest focuses on connecting proposals to backend, adding staking/governance UI, and expanding Secretary routing to proposals; large doc/style/config expansions are not requested requirements.",
+      "description": "Portal logic that creates/manages an overlay-root container and instantiates FlowEngineBrain inside the portal.",
+      "reason": "Not requested by the BuildRequest; the change appears to be architectural/UI mounting refactor beyond slot-filling requirements.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/components/secretary/SecretaryWidgetPortal.tsx (creates overlay-root, owns FlowEngineBrain instance, wires geography hooks)"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/proposals/ProposalsSection.tsx",
-    "frontend/src/hooks/useGovernanceProposals.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useStakingMutations.ts",
-    "frontend/src/lib/secretaryNavigation.ts",
-    "frontend/src/lib/uiCopy.ts",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-    "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-    "frontend/src/pages/profile/components/GovernanceSection.tsx",
-    "frontend/src/pages/profile/components/StakingSection.tsx",
-    "frontend/src/utils/secretaryProjectNavigation.ts",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/copy/secretaryPrompts.ts",
+    "frontend/src/secretary/flow/flows.ts",
+    "frontend/src/secretary/intent/flowRegistry.ts",
+    "frontend/src/secretary/intent/flowRunner.ts",
+    "frontend/src/secretary/intent/issueDescriptionNlp.ts",
     "project_state.json"
   ]
 }

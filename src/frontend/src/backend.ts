@@ -89,22 +89,15 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface ContributionLogEntry {
-    id: bigint;
-    pointsAwarded: bigint;
-    actionType: string;
-    referenceId?: string;
-    rewardType: string;
-    timestamp: bigint;
-    details?: string;
-    invalidated: boolean;
-    contributor: Principal;
+export interface _CaffeineStorageRefillResult {
+    success?: boolean;
+    topped_up_amount?: bigint;
 }
-export interface SecretaryCategorySuggestion {
-    statesByGeoId: Array<USState>;
-    searchTerm: string;
-    locationLevel: USHierarchyLevel;
-    proposedCategories: Array<string>;
+export interface StakingRecord {
+    availableBalance: bigint;
+    pendingRewards: bigint;
+    lockedBalance: bigint;
+    totalStaked: bigint;
 }
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
@@ -114,6 +107,11 @@ export interface ContributionCriteria {
     rewardType: string;
     eligibilityCriteria: string;
     points: bigint;
+}
+export interface Task {
+    id: bigint;
+    completed: boolean;
+    description: string;
 }
 export type SubmitProposalResult = {
     __kind__: "error";
@@ -126,11 +124,7 @@ export type SubmitProposalResult = {
         proposal: Proposal;
     };
 };
-export interface Task {
-    id: bigint;
-    completed: boolean;
-    description: string;
-}
+export type CensusStateCode = string;
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
@@ -140,25 +134,6 @@ export interface ContributionPoints {
     city: bigint;
     voting: bigint;
     bounty: bigint;
-}
-export interface Proposal {
-    status: string;
-    geographyLevel: USHierarchyLevel;
-    squareMeters: bigint;
-    description: string;
-    state: string;
-    proposer: Principal;
-    instanceName: string;
-    county: string;
-    censusBoundaryId: string;
-    population2020: string;
-}
-export type CensusStateCode = string;
-export type GeoId = string;
-export interface USGeographyDataChunk {
-    states: Array<USState>;
-    places: Array<USPlace>;
-    counties: Array<USCounty>;
 }
 export interface USPlace {
     countyFullName: string;
@@ -174,18 +149,11 @@ export interface USPlace {
     censusPlaceType: string;
     censusStateCode: CensusStateCode;
 }
-export interface ContributionSummary {
-    totalCityPoints: bigint;
-    totalBountyPoints: bigint;
-    totalVotingPoints: bigint;
-    totalTokenPoints: bigint;
-    totalPoints: bigint;
-    contributor: Principal;
-}
 export interface GovernanceProposal {
     id: bigint;
     status: GovernanceProposalStatus;
     title: string;
+    votes: GovernanceVotes;
     createdAt: bigint;
     description: string;
     proposer: Principal;
@@ -200,6 +168,44 @@ export interface USCounty {
     shortName: string;
     censusWaterAreaSqMeters: string;
     population2010: string;
+}
+export interface GovernanceVotes {
+    tally: {
+        approved: bigint;
+        rejected: bigint;
+    };
+    votes: Array<GovernanceVote>;
+}
+export interface Proposal {
+    status: string;
+    geographyLevel: USHierarchyLevel;
+    squareMeters: bigint;
+    description: string;
+    state: string;
+    proposer: Principal;
+    instanceName: string;
+    county: string;
+    censusBoundaryId: string;
+    population2020: string;
+}
+export type GeoId = string;
+export interface USGeographyDataChunk {
+    states: Array<USState>;
+    places: Array<USPlace>;
+    counties: Array<USCounty>;
+}
+export interface ContributionSummary {
+    totalCityPoints: bigint;
+    totalBountyPoints: bigint;
+    totalVotingPoints: bigint;
+    totalTokenPoints: bigint;
+    totalPoints: bigint;
+    contributor: Principal;
+}
+export interface GovernanceVote {
+    voter: Principal;
+    approve: boolean;
+    timestamp: bigint;
 }
 export interface USState {
     censusLandAreaSqMeters: bigint;
@@ -219,15 +225,22 @@ export interface TokenBalance {
     voting: bigint;
     bounty: bigint;
 }
+export interface ContributionLogEntry {
+    id: bigint;
+    pointsAwarded: bigint;
+    actionType: string;
+    referenceId?: string;
+    rewardType: string;
+    timestamp: bigint;
+    details?: string;
+    invalidated: boolean;
+    contributor: Principal;
+}
 export interface UserProfile {
     profileImage?: ProfileImage;
     name: string;
     tokenBalance: TokenBalance;
     contributionPoints: ContributionPoints;
-}
-export interface _CaffeineStorageRefillResult {
-    success?: boolean;
-    topped_up_amount?: bigint;
 }
 export enum GovernanceProposalStatus {
     active = "active",
@@ -262,7 +275,6 @@ export interface backendInterface {
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addContributionPoints(points: bigint, rewardType: string, actionType: string): Promise<void>;
-    addOrUpdateLocationBasedIssues(locationLevel: USHierarchyLevel, locationId: string | null, issues: Array<string>): Promise<void>;
     adminBurnWSP(account: Principal, amount: bigint): Promise<{
         __kind__: "ok";
         ok: null;
@@ -281,38 +293,26 @@ export interface backendInterface {
     }>;
     adminMintWSP(recipient: Principal, amount: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    backend_getIssueCategoriesByHierarchyLevel(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
-    backend_getUSCountyByHierarchicalId(hierarchicalId: string): Promise<USCounty | null>;
-    backend_getUSPlaceByHierarchicalId(hierarchicalId: string): Promise<USPlace | null>;
-    backend_getUSStateByHierarchicalId(hierarchicalId: string): Promise<USState | null>;
     createTask(proposalId: string, description: string): Promise<bigint>;
     deleteProposal(instanceName: string): Promise<boolean>;
     getAdminModerationQueue(): Promise<Array<[string, Proposal]>>;
-    getAllCityComplaintCategories(): Promise<Array<string>>;
-    getAllCountyComplaintCategories(): Promise<Array<string>>;
     getAllProposals(): Promise<Array<[string, Proposal]>>;
-    getAllStateComplaintCategories(): Promise<Array<string>>;
     getAllStates(): Promise<Array<USState>>;
     getCallerContributionHistory(limit: bigint): Promise<Array<ContributionLogEntry>>;
     getCallerContributionSummary(): Promise<ContributionSummary>;
+    getCallerStakingRecord(): Promise<StakingRecord | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getCityById(cityId: string): Promise<USPlace | null>;
-    getCityComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
+    getComplaintCategoriesByGeographyLevel(level: USHierarchyLevel, searchTerm: string | null): Promise<Array<string>>;
     getContributionCriteria(): Promise<Array<[string, ContributionCriteria]>>;
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
-    getCountyById(countyId: string): Promise<USCounty | null>;
-    getCountyComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;
     getPlacesForState(stateGeoId: GeoId): Promise<Array<USPlace>>;
     getProposal(instanceName: string): Promise<Proposal | null>;
-    getSecretaryCategorySuggestion(searchTerm: string, locationLevel: USHierarchyLevel): Promise<SecretaryCategorySuggestion>;
-    getSecretaryCategorySuggestions(searchTerm: string, locationLevel: USHierarchyLevel): Promise<Array<string>>;
-    getStateById(stateId: string): Promise<USState | null>;
-    getStateComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
+    getStakingInfo(): Promise<StakingRecord | null>;
     getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;
-    getTopIssuesForLocation(locationLevel: USHierarchyLevel, locationId: string | null): Promise<Array<string>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserStakingRecord(user: Principal): Promise<StakingRecord | null>;
     governanceCreateProposal(title: string, description: string): Promise<{
         __kind__: "ok";
         ok: bigint;
@@ -352,11 +352,25 @@ export interface backendInterface {
     }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
+    stake(amount: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
+    unstake(amount: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateProposalStatus(instanceName: string, newStatus: string): Promise<boolean>;
     updateTaskStatus(proposalId: string, taskId: bigint, completed: boolean): Promise<boolean>;
 }
-import type { CensusStateCode as _CensusStateCode, ContributionLogEntry as _ContributionLogEntry, ContributionPoints as _ContributionPoints, GovernanceProposal as _GovernanceProposal, GovernanceProposalStatus as _GovernanceProposalStatus, HierarchicalGeoId as _HierarchicalGeoId, LogContributionEventError as _LogContributionEventError, ProfileImage as _ProfileImage, Proposal as _Proposal, SecretaryCategorySuggestion as _SecretaryCategorySuggestion, SubmitProposalResult as _SubmitProposalResult, TokenBalance as _TokenBalance, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { CensusStateCode as _CensusStateCode, ContributionLogEntry as _ContributionLogEntry, ContributionPoints as _ContributionPoints, GovernanceProposal as _GovernanceProposal, GovernanceProposalStatus as _GovernanceProposalStatus, GovernanceVotes as _GovernanceVotes, HierarchicalGeoId as _HierarchicalGeoId, LogContributionEventError as _LogContributionEventError, ProfileImage as _ProfileImage, Proposal as _Proposal, StakingRecord as _StakingRecord, SubmitProposalResult as _SubmitProposalResult, TokenBalance as _TokenBalance, USCounty as _USCounty, USGeographyDataChunk as _USGeographyDataChunk, USHierarchyLevel as _USHierarchyLevel, USPlace as _USPlace, USState as _USState, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -471,20 +485,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addOrUpdateLocationBasedIssues(arg0: USHierarchyLevel, arg1: string | null, arg2: Array<string>): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.addOrUpdateLocationBasedIssues(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), arg2);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.addOrUpdateLocationBasedIssues(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), arg2);
-            return result;
-        }
-    }
     async adminBurnWSP(arg0: Principal, arg1: bigint): Promise<{
         __kind__: "ok";
         ok: null;
@@ -495,42 +495,42 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.adminBurnWSP(arg0, arg1);
-                return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.adminBurnWSP(arg0, arg1);
-            return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async adminGetContributionLogs(arg0: bigint, arg1: bigint): Promise<Array<[Principal, Array<ContributionLogEntry>]>> {
         if (this.processError) {
             try {
                 const result = await this.actor.adminGetContributionLogs(arg0, arg1);
-                return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.adminGetContributionLogs(arg0, arg1);
-            return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
         }
     }
     async adminGetUserContributionLogs(arg0: Principal, arg1: bigint): Promise<Array<ContributionLogEntry>> {
         if (this.processError) {
             try {
                 const result = await this.actor.adminGetUserContributionLogs(arg0, arg1);
-                return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.adminGetUserContributionLogs(arg0, arg1);
-            return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async adminInvalidateContribution(arg0: Principal, arg1: bigint): Promise<{
@@ -543,14 +543,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.adminInvalidateContribution(arg0, arg1);
-                return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.adminInvalidateContribution(arg0, arg1);
-            return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async adminMintWSP(arg0: Principal, arg1: bigint): Promise<void> {
@@ -570,71 +570,15 @@ export class Backend implements backendInterface {
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n18(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n18(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
             return result;
-        }
-    }
-    async backend_getIssueCategoriesByHierarchyLevel(arg0: USHierarchyLevel, arg1: string | null): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.backend_getIssueCategoriesByHierarchyLevel(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.backend_getIssueCategoriesByHierarchyLevel(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
-    async backend_getUSCountyByHierarchicalId(arg0: string): Promise<USCounty | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.backend_getUSCountyByHierarchicalId(arg0);
-                return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.backend_getUSCountyByHierarchicalId(arg0);
-            return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async backend_getUSPlaceByHierarchicalId(arg0: string): Promise<USPlace | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.backend_getUSPlaceByHierarchicalId(arg0);
-                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.backend_getUSPlaceByHierarchicalId(arg0);
-            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async backend_getUSStateByHierarchicalId(arg0: string): Promise<USState | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.backend_getUSStateByHierarchicalId(arg0);
-                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.backend_getUSStateByHierarchicalId(arg0);
-            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
         }
     }
     async createTask(arg0: string, arg1: string): Promise<bigint> {
@@ -669,70 +613,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getAdminModerationQueue();
-                return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAdminModerationQueue();
-            return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllCityComplaintCategories(): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllCityComplaintCategories();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllCityComplaintCategories();
-            return result;
-        }
-    }
-    async getAllCountyComplaintCategories(): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllCountyComplaintCategories();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllCountyComplaintCategories();
-            return result;
+            return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllProposals(): Promise<Array<[string, Proposal]>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllProposals();
-                return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAllProposals();
-            return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllStateComplaintCategories(): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllStateComplaintCategories();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllStateComplaintCategories();
-            return result;
+            return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllStates(): Promise<Array<USState>> {
@@ -753,14 +655,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerContributionHistory(arg0);
-                return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerContributionHistory(arg0);
-            return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerContributionSummary(): Promise<ContributionSummary> {
@@ -777,59 +679,59 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getCallerStakingRecord(): Promise<StakingRecord | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCallerStakingRecord();
+                return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCallerStakingRecord();
+            return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n35(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n35(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCityById(arg0: string): Promise<USPlace | null> {
+    async getComplaintCategoriesByGeographyLevel(arg0: USHierarchyLevel, arg1: string | null): Promise<Array<string>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getCityById(arg0);
-                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCityById(arg0);
-            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCityComplaintSuggestions(arg0: string): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCityComplaintSuggestions(arg0);
+                const result = await this.actor.getComplaintCategoriesByGeographyLevel(to_candid_USHierarchyLevel_n30(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n32(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCityComplaintSuggestions(arg0);
+            const result = await this.actor.getComplaintCategoriesByGeographyLevel(to_candid_USHierarchyLevel_n30(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n32(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -861,130 +763,60 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getCountyById(arg0: string): Promise<USCounty | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCountyById(arg0);
-                return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCountyById(arg0);
-            return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCountyComplaintSuggestions(arg0: string): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCountyComplaintSuggestions(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCountyComplaintSuggestions(arg0);
-            return result;
-        }
-    }
     async getPlacesForCounty(arg0: GeoId): Promise<Array<USPlace>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPlacesForCounty(arg0);
-                return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPlacesForCounty(arg0);
-            return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPlacesForState(arg0: GeoId): Promise<Array<USPlace>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPlacesForState(arg0);
-                return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPlacesForState(arg0);
-            return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
         }
     }
     async getProposal(arg0: string): Promise<Proposal | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getProposal(arg0);
-                return from_candid_opt_n38(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n36(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getProposal(arg0);
-            return from_candid_opt_n38(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n36(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getSecretaryCategorySuggestion(arg0: string, arg1: USHierarchyLevel): Promise<SecretaryCategorySuggestion> {
+    async getStakingInfo(): Promise<StakingRecord | null> {
         if (this.processError) {
             try {
-                const result = await this.actor.getSecretaryCategorySuggestion(arg0, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg1));
-                return from_candid_SecretaryCategorySuggestion_n39(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.getStakingInfo();
+                return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getSecretaryCategorySuggestion(arg0, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg1));
-            return from_candid_SecretaryCategorySuggestion_n39(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getSecretaryCategorySuggestions(arg0: string, arg1: USHierarchyLevel): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getSecretaryCategorySuggestions(arg0, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getSecretaryCategorySuggestions(arg0, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
-    async getStateById(arg0: string): Promise<USState | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getStateById(arg0);
-                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getStateById(arg0);
-            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getStateComplaintSuggestions(arg0: string): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getStateComplaintSuggestions(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getStateComplaintSuggestions(arg0);
-            return result;
+            const result = await this.actor.getStakingInfo();
+            return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTasks(arg0: string): Promise<Array<[bigint, Task]>> {
@@ -1001,32 +833,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getTopIssuesForLocation(arg0: USHierarchyLevel, arg1: string | null): Promise<Array<string>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getTopIssuesForLocation(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getTopIssuesForLocation(to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getUserStakingRecord(arg0: Principal): Promise<StakingRecord | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserStakingRecord(arg0);
+                return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserStakingRecord(arg0);
+            return from_candid_opt_n23(this._uploadFile, this._downloadFile, result);
         }
     }
     async governanceCreateProposal(arg0: string, arg1: string): Promise<{
@@ -1039,42 +871,42 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.governanceCreateProposal(arg0, arg1);
-                return from_candid_variant_n41(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n37(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.governanceCreateProposal(arg0, arg1);
-            return from_candid_variant_n41(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n37(this._uploadFile, this._downloadFile, result);
         }
     }
     async governanceGetProposal(arg0: bigint): Promise<GovernanceProposal | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.governanceGetProposal(arg0);
-                return from_candid_opt_n42(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n38(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.governanceGetProposal(arg0);
-            return from_candid_opt_n42(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n38(this._uploadFile, this._downloadFile, result);
         }
     }
     async governanceListProposals(): Promise<Array<GovernanceProposal>> {
         if (this.processError) {
             try {
                 const result = await this.actor.governanceListProposals();
-                return from_candid_vec_n47(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n43(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.governanceListProposals();
-            return from_candid_vec_n47(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n43(this._uploadFile, this._downloadFile, result);
         }
     }
     async governanceVote(arg0: bigint, arg1: boolean): Promise<{
@@ -1087,14 +919,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.governanceVote(arg0, arg1);
-                return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.governanceVote(arg0, arg1);
-            return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async hideProposal(arg0: string): Promise<boolean> {
@@ -1149,27 +981,27 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.icrc1_transfer(arg0, arg1);
-                return from_candid_variant_n41(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n37(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.icrc1_transfer(arg0, arg1);
-            return from_candid_variant_n41(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n37(this._uploadFile, this._downloadFile, result);
         }
     }
     async ingestUSGeographyData(arg0: Array<USGeographyDataChunk>): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.ingestUSGeographyData(to_candid_vec_n48(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.ingestUSGeographyData(to_candid_vec_n44(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.ingestUSGeographyData(to_candid_vec_n48(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.ingestUSGeographyData(to_candid_vec_n44(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -1224,28 +1056,28 @@ export class Backend implements backendInterface {
     }> {
         if (this.processError) {
             try {
-                const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
-                return from_candid_variant_n54(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n32(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n32(this._uploadFile, this._downloadFile, arg2));
+                return from_candid_variant_n50(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
-            return from_candid_variant_n54(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n32(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n32(this._uploadFile, this._downloadFile, arg2));
+            return from_candid_variant_n50(this._uploadFile, this._downloadFile, result);
         }
     }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n57(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n53(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n57(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n53(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -1263,18 +1095,58 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async submitProposal(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: USHierarchyLevel, arg6: string, arg7: bigint, arg8: string): Promise<SubmitProposalResult> {
+    async stake(arg0: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
         if (this.processError) {
             try {
-                const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-                return from_candid_SubmitProposalResult_n59(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.stake(arg0);
+                return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n8(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
-            return from_candid_SubmitProposalResult_n59(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.stake(arg0);
+            return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async submitProposal(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: USHierarchyLevel, arg6: string, arg7: bigint, arg8: string): Promise<SubmitProposalResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n30(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
+                return from_candid_SubmitProposalResult_n55(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitProposal(arg0, arg1, arg2, arg3, arg4, to_candid_USHierarchyLevel_n30(this._uploadFile, this._downloadFile, arg5), arg6, arg7, arg8);
+            return from_candid_SubmitProposalResult_n55(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async unstake(arg0: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.unstake(arg0);
+                return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.unstake(arg0);
+            return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateProposalStatus(arg0: string, arg1: string): Promise<boolean> {
@@ -1306,65 +1178,56 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_ContributionLogEntry_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ContributionLogEntry): ContributionLogEntry {
-    return from_candid_record_n16(_uploadFile, _downloadFile, value);
+function from_candid_ContributionLogEntry_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ContributionLogEntry): ContributionLogEntry {
+    return from_candid_record_n13(_uploadFile, _downloadFile, value);
 }
-function from_candid_GovernanceProposalStatus_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GovernanceProposalStatus): GovernanceProposalStatus {
-    return from_candid_variant_n46(_uploadFile, _downloadFile, value);
+function from_candid_GovernanceProposalStatus_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GovernanceProposalStatus): GovernanceProposalStatus {
+    return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
-function from_candid_GovernanceProposal_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GovernanceProposal): GovernanceProposal {
-    return from_candid_record_n44(_uploadFile, _downloadFile, value);
-}
-function from_candid_LogContributionEventError_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LogContributionEventError): LogContributionEventError {
-    return from_candid_variant_n56(_uploadFile, _downloadFile, value);
-}
-function from_candid_Proposal_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Proposal): Proposal {
-    return from_candid_record_n28(_uploadFile, _downloadFile, value);
-}
-function from_candid_SecretaryCategorySuggestion_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SecretaryCategorySuggestion): SecretaryCategorySuggestion {
+function from_candid_GovernanceProposal_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GovernanceProposal): GovernanceProposal {
     return from_candid_record_n40(_uploadFile, _downloadFile, value);
 }
-function from_candid_SubmitProposalResult_n59(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubmitProposalResult): SubmitProposalResult {
-    return from_candid_variant_n60(_uploadFile, _downloadFile, value);
+function from_candid_LogContributionEventError_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LogContributionEventError): LogContributionEventError {
+    return from_candid_variant_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_USHierarchyLevel_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USHierarchyLevel): USHierarchyLevel {
-    return from_candid_variant_n30(_uploadFile, _downloadFile, value);
+function from_candid_Proposal_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Proposal): Proposal {
+    return from_candid_record_n20(_uploadFile, _downloadFile, value);
 }
-function from_candid_USPlace_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USPlace): USPlace {
-    return from_candid_record_n23(_uploadFile, _downloadFile, value);
+function from_candid_SubmitProposalResult_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubmitProposalResult): SubmitProposalResult {
+    return from_candid_variant_n56(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserProfile_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserProfile): UserProfile {
-    return from_candid_record_n33(_uploadFile, _downloadFile, value);
+function from_candid_USHierarchyLevel_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USHierarchyLevel): USHierarchyLevel {
+    return from_candid_variant_n22(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n36(_uploadFile, _downloadFile, value);
+function from_candid_USPlace_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _USPlace): USPlace {
+    return from_candid_record_n35(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserProfile_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserProfile): UserProfile {
+    return from_candid_record_n26(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n29(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_USCounty]): USCounty | null {
+function from_candid_opt_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_StakingRecord]): StakingRecord | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_USPlace]): USPlace | null {
-    return value.length === 0 ? null : from_candid_USPlace_n22(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+    return value.length === 0 ? null : from_candid_UserProfile_n25(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_USState]): USState | null {
+function from_candid_opt_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ProfileImage]): ProfileImage | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
-    return value.length === 0 ? null : from_candid_UserProfile_n32(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Proposal]): Proposal | null {
+    return value.length === 0 ? null : from_candid_Proposal_n19(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ProfileImage]): ProfileImage | null {
-    return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Proposal]): Proposal | null {
-    return value.length === 0 ? null : from_candid_Proposal_n27(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_GovernanceProposal]): GovernanceProposal | null {
-    return value.length === 0 ? null : from_candid_GovernanceProposal_n43(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_GovernanceProposal]): GovernanceProposal | null {
+    return value.length === 0 ? null : from_candid_GovernanceProposal_n39(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
     return value.length === 0 ? null : value[0];
@@ -1372,7 +1235,7 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     pointsAwarded: bigint;
     actionType: string;
@@ -1397,15 +1260,69 @@ function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uin
         id: value.id,
         pointsAwarded: value.pointsAwarded,
         actionType: value.actionType,
-        referenceId: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.referenceId)),
+        referenceId: record_opt_to_undefined(from_candid_opt_n14(_uploadFile, _downloadFile, value.referenceId)),
         rewardType: value.rewardType,
         timestamp: value.timestamp,
-        details: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.details)),
+        details: record_opt_to_undefined(from_candid_opt_n14(_uploadFile, _downloadFile, value.details)),
         invalidated: value.invalidated,
         contributor: value.contributor
     };
 }
-function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status: string;
+    geographyLevel: _USHierarchyLevel;
+    squareMeters: bigint;
+    description: string;
+    state: string;
+    proposer: Principal;
+    instanceName: string;
+    county: string;
+    censusBoundaryId: string;
+    population2020: string;
+}): {
+    status: string;
+    geographyLevel: USHierarchyLevel;
+    squareMeters: bigint;
+    description: string;
+    state: string;
+    proposer: Principal;
+    instanceName: string;
+    county: string;
+    censusBoundaryId: string;
+    population2020: string;
+} {
+    return {
+        status: value.status,
+        geographyLevel: from_candid_USHierarchyLevel_n21(_uploadFile, _downloadFile, value.geographyLevel),
+        squareMeters: value.squareMeters,
+        description: value.description,
+        state: value.state,
+        proposer: value.proposer,
+        instanceName: value.instanceName,
+        county: value.county,
+        censusBoundaryId: value.censusBoundaryId,
+        population2020: value.population2020
+    };
+}
+function from_candid_record_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    profileImage: [] | [_ProfileImage];
+    name: string;
+    tokenBalance: _TokenBalance;
+    contributionPoints: _ContributionPoints;
+}): {
+    profileImage?: ProfileImage;
+    name: string;
+    tokenBalance: TokenBalance;
+    contributionPoints: ContributionPoints;
+} {
+    return {
+        profileImage: record_opt_to_undefined(from_candid_opt_n27(_uploadFile, _downloadFile, value.profileImage)),
+        name: value.name,
+        tokenBalance: value.tokenBalance,
+        contributionPoints: value.contributionPoints
+    };
+}
+function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     countyFullName: string;
     hierarchicalId: _HierarchicalGeoId;
     fullName: string;
@@ -1447,82 +1364,11 @@ function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uin
         censusStateCode: value.censusStateCode
     };
 }
-function from_candid_record_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    status: string;
-    geographyLevel: _USHierarchyLevel;
-    squareMeters: bigint;
-    description: string;
-    state: string;
-    proposer: Principal;
-    instanceName: string;
-    county: string;
-    censusBoundaryId: string;
-    population2020: string;
-}): {
-    status: string;
-    geographyLevel: USHierarchyLevel;
-    squareMeters: bigint;
-    description: string;
-    state: string;
-    proposer: Principal;
-    instanceName: string;
-    county: string;
-    censusBoundaryId: string;
-    population2020: string;
-} {
-    return {
-        status: value.status,
-        geographyLevel: from_candid_USHierarchyLevel_n29(_uploadFile, _downloadFile, value.geographyLevel),
-        squareMeters: value.squareMeters,
-        description: value.description,
-        state: value.state,
-        proposer: value.proposer,
-        instanceName: value.instanceName,
-        county: value.county,
-        censusBoundaryId: value.censusBoundaryId,
-        population2020: value.population2020
-    };
-}
-function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    profileImage: [] | [_ProfileImage];
-    name: string;
-    tokenBalance: _TokenBalance;
-    contributionPoints: _ContributionPoints;
-}): {
-    profileImage?: ProfileImage;
-    name: string;
-    tokenBalance: TokenBalance;
-    contributionPoints: ContributionPoints;
-} {
-    return {
-        profileImage: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.profileImage)),
-        name: value.name,
-        tokenBalance: value.tokenBalance,
-        contributionPoints: value.contributionPoints
-    };
-}
 function from_candid_record_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    statesByGeoId: Array<_USState>;
-    searchTerm: string;
-    locationLevel: _USHierarchyLevel;
-    proposedCategories: Array<string>;
-}): {
-    statesByGeoId: Array<USState>;
-    searchTerm: string;
-    locationLevel: USHierarchyLevel;
-    proposedCategories: Array<string>;
-} {
-    return {
-        statesByGeoId: value.statesByGeoId,
-        searchTerm: value.searchTerm,
-        locationLevel: from_candid_USHierarchyLevel_n29(_uploadFile, _downloadFile, value.locationLevel),
-        proposedCategories: value.proposedCategories
-    };
-}
-function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     status: _GovernanceProposalStatus;
     title: string;
+    votes: _GovernanceVotes;
     createdAt: bigint;
     description: string;
     proposer: Principal;
@@ -1530,14 +1376,16 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
     id: bigint;
     status: GovernanceProposalStatus;
     title: string;
+    votes: GovernanceVotes;
     createdAt: bigint;
     description: string;
     proposer: Principal;
 } {
     return {
         id: value.id,
-        status: from_candid_GovernanceProposalStatus_n45(_uploadFile, _downloadFile, value.status),
+        status: from_candid_GovernanceProposalStatus_n41(_uploadFile, _downloadFile, value.status),
         title: value.title,
+        votes: value.votes,
         createdAt: value.createdAt,
         description: value.description,
         proposer: value.proposer
@@ -1555,47 +1403,28 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_record_n61(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n57(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposal: _Proposal;
 }): {
     proposal: Proposal;
 } {
     return {
-        proposal: from_candid_Proposal_n27(_uploadFile, _downloadFile, value.proposal)
+        proposal: from_candid_Proposal_n19(_uploadFile, _downloadFile, value.proposal)
     };
 }
-function from_candid_tuple_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, Array<_ContributionLogEntry>]): [Principal, Array<ContributionLogEntry>] {
+function from_candid_tuple_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, Array<_ContributionLogEntry>]): [Principal, Array<ContributionLogEntry>] {
     return [
         value[0],
-        from_candid_vec_n14(_uploadFile, _downloadFile, value[1])
+        from_candid_vec_n11(_uploadFile, _downloadFile, value[1])
     ];
 }
-function from_candid_tuple_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _Proposal]): [string, Proposal] {
+function from_candid_tuple_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _Proposal]): [string, Proposal] {
     return [
         value[0],
-        from_candid_Proposal_n27(_uploadFile, _downloadFile, value[1])
+        from_candid_Proposal_n19(_uploadFile, _downloadFile, value[1])
     ];
 }
-function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    ok: null;
-} | {
-    err: string;
-}): {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-} {
-    return "ok" in value ? {
-        __kind__: "ok",
-        ok: value.ok
-    } : "err" in value ? {
-        __kind__: "err",
-        err: value.err
-    } : value;
-}
-function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     country: null;
 } | {
     state: null;
@@ -1606,7 +1435,7 @@ function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): USHierarchyLevel {
     return "country" in value ? USHierarchyLevel.country : "state" in value ? USHierarchyLevel.state : "place" in value ? USHierarchyLevel.place : "county" in value ? USHierarchyLevel.county : value;
 }
-function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -1615,7 +1444,7 @@ function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     ok: bigint;
 } | {
     err: string;
@@ -1634,7 +1463,7 @@ function from_candid_variant_n41(_uploadFile: (file: ExternalBlob) => Promise<Ui
         err: value.err
     } : value;
 }
-function from_candid_variant_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     active: null;
 } | {
     pending: null;
@@ -1647,7 +1476,7 @@ function from_candid_variant_n46(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): GovernanceProposalStatus {
     return "active" in value ? GovernanceProposalStatus.active : "pending" in value ? GovernanceProposalStatus.pending : "approved" in value ? GovernanceProposalStatus.approved : "rejected" in value ? GovernanceProposalStatus.rejected : "executed" in value ? GovernanceProposalStatus.executed : value;
 }
-function from_candid_variant_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     ok: bigint;
 } | {
     err: _LogContributionEventError;
@@ -1663,10 +1492,10 @@ function from_candid_variant_n54(_uploadFile: (file: ExternalBlob) => Promise<Ui
         ok: value.ok
     } : "err" in value ? {
         __kind__: "err",
-        err: from_candid_LogContributionEventError_n55(_uploadFile, _downloadFile, value.err)
+        err: from_candid_LogContributionEventError_n51(_uploadFile, _downloadFile, value.err)
     } : value;
 }
-function from_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     referenceIdEmpty: null;
 } | {
     referenceIdRequired: null;
@@ -1677,7 +1506,7 @@ function from_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): LogContributionEventError {
     return "referenceIdEmpty" in value ? LogContributionEventError.referenceIdEmpty : "referenceIdRequired" in value ? LogContributionEventError.referenceIdRequired : "duplicateContribution" in value ? LogContributionEventError.duplicateContribution : "invalidActionType" in value ? LogContributionEventError.invalidActionType : value;
 }
-function from_candid_variant_n60(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     error: {
         message: string;
     };
@@ -1701,38 +1530,57 @@ function from_candid_variant_n60(_uploadFile: (file: ExternalBlob) => Promise<Ui
         error: value.error
     } : "success" in value ? {
         __kind__: "success",
-        success: from_candid_record_n61(_uploadFile, _downloadFile, value.success)
+        success: from_candid_record_n57(_uploadFile, _downloadFile, value.success)
     } : value;
 }
-function from_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, Array<_ContributionLogEntry>]>): Array<[Principal, Array<ContributionLogEntry>]> {
-    return value.map((x)=>from_candid_tuple_n13(_uploadFile, _downloadFile, x));
+function from_candid_variant_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: null;
+} | {
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
 }
-function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ContributionLogEntry>): Array<ContributionLogEntry> {
-    return value.map((x)=>from_candid_ContributionLogEntry_n15(_uploadFile, _downloadFile, x));
+function from_candid_vec_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ContributionLogEntry>): Array<ContributionLogEntry> {
+    return value.map((x)=>from_candid_ContributionLogEntry_n12(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _Proposal]>): Array<[string, Proposal]> {
-    return value.map((x)=>from_candid_tuple_n26(_uploadFile, _downloadFile, x));
+function from_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _Proposal]>): Array<[string, Proposal]> {
+    return value.map((x)=>from_candid_tuple_n18(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_USPlace>): Array<USPlace> {
-    return value.map((x)=>from_candid_USPlace_n22(_uploadFile, _downloadFile, x));
+function from_candid_vec_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_USPlace>): Array<USPlace> {
+    return value.map((x)=>from_candid_USPlace_n34(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_GovernanceProposal>): Array<GovernanceProposal> {
-    return value.map((x)=>from_candid_GovernanceProposal_n43(_uploadFile, _downloadFile, x));
+function from_candid_vec_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_GovernanceProposal>): Array<GovernanceProposal> {
+    return value.map((x)=>from_candid_GovernanceProposal_n39(_uploadFile, _downloadFile, x));
 }
-function to_candid_USGeographyDataChunk_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USGeographyDataChunk): _USGeographyDataChunk {
-    return to_candid_record_n50(_uploadFile, _downloadFile, value);
+function from_candid_vec_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, Array<_ContributionLogEntry>]>): Array<[Principal, Array<ContributionLogEntry>]> {
+    return value.map((x)=>from_candid_tuple_n10(_uploadFile, _downloadFile, x));
 }
-function to_candid_USHierarchyLevel_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USHierarchyLevel): _USHierarchyLevel {
-    return to_candid_variant_n9(_uploadFile, _downloadFile, value);
+function to_candid_USGeographyDataChunk_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USGeographyDataChunk): _USGeographyDataChunk {
+    return to_candid_record_n46(_uploadFile, _downloadFile, value);
 }
-function to_candid_USPlace_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USPlace): _USPlace {
-    return to_candid_record_n53(_uploadFile, _downloadFile, value);
+function to_candid_USHierarchyLevel_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USHierarchyLevel): _USHierarchyLevel {
+    return to_candid_variant_n31(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserProfile_n57(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
-    return to_candid_record_n58(_uploadFile, _downloadFile, value);
+function to_candid_USPlace_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USPlace): _USPlace {
+    return to_candid_record_n49(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserRole_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n19(_uploadFile, _downloadFile, value);
+function to_candid_UserProfile_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
+    return to_candid_record_n54(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n16(_uploadFile, _downloadFile, value);
 }
 function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation): __CaffeineStorageRefillInformation {
     return to_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -1740,7 +1588,7 @@ function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: Exte
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation | null): [] | [__CaffeineStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__CaffeineStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
+function to_candid_opt_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
     return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -1752,7 +1600,7 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-function to_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     states: Array<USState>;
     places: Array<USPlace>;
     counties: Array<USCounty>;
@@ -1763,11 +1611,11 @@ function to_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8
 } {
     return {
         states: value.states,
-        places: to_candid_vec_n51(_uploadFile, _downloadFile, value.places),
+        places: to_candid_vec_n47(_uploadFile, _downloadFile, value.places),
         counties: value.counties
     };
 }
-function to_candid_record_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     countyFullName: string;
     hierarchicalId: HierarchicalGeoId;
     fullName: string;
@@ -1809,7 +1657,7 @@ function to_candid_record_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         censusStateCode: value.censusStateCode
     };
 }
-function to_candid_record_n58(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     profileImage?: ProfileImage;
     name: string;
     tokenBalance: TokenBalance;
@@ -1827,7 +1675,7 @@ function to_candid_record_n58(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         contributionPoints: value.contributionPoints
     };
 }
-function to_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function to_candid_variant_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
     user: null;
@@ -1842,7 +1690,7 @@ function to_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint
         guest: null
     } : value;
 }
-function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USHierarchyLevel): {
+function to_candid_variant_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: USHierarchyLevel): {
     country: null;
 } | {
     state: null;
@@ -1861,11 +1709,11 @@ function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         county: null
     } : value;
 }
-function to_candid_vec_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<USGeographyDataChunk>): Array<_USGeographyDataChunk> {
-    return value.map((x)=>to_candid_USGeographyDataChunk_n49(_uploadFile, _downloadFile, x));
+function to_candid_vec_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<USGeographyDataChunk>): Array<_USGeographyDataChunk> {
+    return value.map((x)=>to_candid_USGeographyDataChunk_n45(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<USPlace>): Array<_USPlace> {
-    return value.map((x)=>to_candid_USPlace_n52(_uploadFile, _downloadFile, x));
+function to_candid_vec_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<USPlace>): Array<_USPlace> {
+    return value.map((x)=>to_candid_USPlace_n48(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

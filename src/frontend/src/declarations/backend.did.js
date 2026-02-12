@@ -253,6 +253,11 @@ export const idlService = IDL.Service({
   'getCallerStakingRecord' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getComplaintCategoriesByGeographyLevel' : IDL.Func(
+      [USHierarchyLevel, IDL.Opt(IDL.Text)],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
   'getContributionCriteria' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, ContributionCriteria))],
@@ -602,6 +607,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getComplaintCategoriesByGeographyLevel' : IDL.Func(
+        [USHierarchyLevel, IDL.Opt(IDL.Text)],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getContributionCriteria' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, ContributionCriteria))],

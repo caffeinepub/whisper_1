@@ -29,7 +29,7 @@ export const secretaryOptions: SecretaryOption[] = [
   {
     id: 'proposals',
     label: 'View Proposals',
-    keywords: ['proposals', 'view', 'list', 'browse', 'see', 'show'],
+    keywords: ['proposals', 'view', 'list', 'browse', 'see', 'show', 'instances'],
     confirmationMessage: "I'll show you all proposals.",
   },
   {
@@ -56,6 +56,12 @@ export const secretaryOptions: SecretaryOption[] = [
     keywords: ['support', 'help', 'contact', 'assistance', 'question'],
     confirmationMessage: "I'll connect you with support.",
   },
+  {
+    id: 'governance',
+    label: 'Governance',
+    keywords: ['governance', 'vote', 'voting', 'govern', 'policy', 'policies'],
+    confirmationMessage: "I'll take you to governance proposals.",
+  },
 ];
 
 /**
@@ -77,20 +83,26 @@ export function findOptionByKeyword(input: string): SecretaryOption | null {
 }
 
 /**
- * Deep link format: #secretary:destination-id
+ * Deep link format: #secretary:destination-id or #secretary:destination-id:identifier
  */
-export function createDeepLink(destinationId: string): string {
+export function createDeepLink(destinationId: string, identifier?: string): string {
+  if (identifier) {
+    return `#secretary:${destinationId}:${identifier}`;
+  }
   return `#secretary:${destinationId}`;
 }
 
 /**
- * Parses a deep link hash and returns the destination info.
+ * Parses a deep link hash and returns the destination info with optional identifier.
  */
-export function parseDeepLink(hash: string): { type: 'section'; id: string } | null {
+export function parseDeepLink(hash: string): { type: 'section'; id: string; identifier?: string } | null {
   if (!hash || !hash.startsWith('#secretary:')) {
     return null;
   }
   
-  const id = hash.slice('#secretary:'.length);
-  return { type: 'section', id };
+  const parts = hash.slice('#secretary:'.length).split(':');
+  const id = parts[0];
+  const identifier = parts[1];
+  
+  return { type: 'section', id, identifier };
 }

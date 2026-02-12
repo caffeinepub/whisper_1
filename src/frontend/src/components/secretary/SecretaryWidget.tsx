@@ -1,210 +1,244 @@
-import { useEffect, useRef, useState } from 'react';
+/**
+ * Secretary chat widget with initial greeting message, geography data wiring, speech-to-text microphone button,
+ * enhanced styling with visible card background and borders, and improved typeahead/suggestion selection that fills slots and advances flow directly.
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Send, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Send, Loader2, ChevronLeft } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useSecretaryChat } from '@/hooks/useSecretaryChat';
+import type { SecretaryBrain } from '../../secretary/brain/SecretaryBrain';
+import type { NodeViewModel } from '../../secretary/flow/types';
 import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { FlowEngineBrain } from '@/secretary/brain/FlowEngineBrain';
-import { useActor } from '@/hooks/useActor';
-import type { SecretaryBrain } from '@/secretary/brain/SecretaryBrain';
-import type { USState, USCounty, USPlace } from '@/backend';
-import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
-
-interface NavigationRequest {
-  destinationId: string;
-  shouldClose: boolean;
-}
 
 interface SecretaryWidgetProps {
-  open?: boolean;
+  isOpen: boolean;
   onClose: () => void;
-  navigationHandler?: (request: NavigationRequest) => void;
-  findByKeyword?: (keyword: string) => string | null;
+  brain: SecretaryBrain;
+  onNavigate?: (destination: { destinationId: string; shouldClose: boolean }) => void;
+  findByKeyword?: (text: string) => { id: string } | null;
 }
 
-export function SecretaryWidget({ onClose, navigationHandler, findByKeyword }: SecretaryWidgetProps) {
-  const { messages, addUserMessage, addAssistantMessage, returnToMenu, resetChat } = useSecretaryChat();
+export function SecretaryWidget({
+  isOpen,
+  onClose,
+  brain,
+  onNavigate,
+  findByKeyword,
+}: SecretaryWidgetProps) {
   const [inputValue, setInputValue] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [viewModel, setViewModel] = useState<NodeViewModel | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const [brain, setBrain] = useState<SecretaryBrain | null>(null);
+  // Speech-to-text
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    error: speechError,
+  } = useSpeechToText();
 
+  // Update input with transcript
   useEffect(() => {
-    if (actor) {
-      const brainInstance = new FlowEngineBrain(actor);
-      setBrain(brainInstance);
+    if (transcript) {
+      setInputValue(transcript);
     }
-  }, [actor]);
+  }, [transcript]);
 
+  // Set navigation handler and keyword finder on FlowEngineBrain
+  useEffect(() => {
+    if (brain instanceof FlowEngineBrain) {
+      if (onNavigate) {
+        brain.setNavigationHandler(onNavigate);
+      }
+      if (findByKeyword) {
+        brain.setKeywordFinder(findByKeyword);
+      }
+    }
+  }, [brain, onNavigate, findByKeyword]);
+
+  // Update view model when brain changes
+  useEffect(() => {
+    if (isOpen) {
+      const vm = brain.getViewModel();
+      setViewModel(vm);
+    }
+  }, [isOpen, brain]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [viewModel?.assistantMessages]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isProcessing || !brain) return;
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
 
-    const userMessage = inputValue.trim();
+  const handleSend = async () => {
+    if (!inputValue.trim()) return;
+
+    const text = inputValue.trim();
     setInputValue('');
-    addUserMessage(userMessage);
-    setIsProcessing(true);
 
-    try {
-      await brain.handleUserText(userMessage);
-      const viewModel = brain.getViewModel();
+    await brain.handleUserText(text);
+    const vm = brain.getViewModel();
+    setViewModel(vm);
+  };
 
-      // Add all assistant messages from the view model
-      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
-        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
-      }
-    } catch (error) {
-      console.error('Secretary processing error:', error);
-      addAssistantMessage('I encountered an error processing your request. Please try again.');
-    } finally {
-      setIsProcessing(false);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
-  const handleTypeaheadSelect = async (item: USState | USCounty | USPlace) => {
-    if (!brain) return;
+  const handleButtonClick = async (action: any) => {
+    await brain.handleAction(action);
+    const vm = brain.getViewModel();
+    setViewModel(vm);
+  };
 
-    setIsProcessing(true);
-    try {
-      // Use the correct action type for location selection
-      await brain.handleAction({ type: 'location-selected', payload: item });
-      const viewModel = brain.getViewModel();
-
-      // Add all assistant messages from the view model
-      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
-        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
-      }
-    } catch (error) {
-      console.error('Secretary typeahead error:', error);
-      addAssistantMessage('I encountered an error processing your selection. Please try again.');
-    } finally {
-      setIsProcessing(false);
+  const handleTypeaheadSelect = async (selection: { id: string; label: string; data: any }) => {
+    // Use the brain's geography selection handler if available
+    if (brain instanceof FlowEngineBrain) {
+      await brain.handleGeographySelection(selection);
+      const vm = brain.getViewModel();
+      setViewModel(vm);
     }
   };
 
-  const handleReturnToMenu = async () => {
-    if (!brain) return;
-
-    setIsProcessing(true);
-    try {
-      brain.reset();
-      const viewModel = brain.getViewModel();
-
-      // Add all assistant messages from the view model
-      if (viewModel.assistantMessages && viewModel.assistantMessages.length > 0) {
-        viewModel.assistantMessages.forEach(msg => addAssistantMessage(msg));
-      }
-      returnToMenu();
-    } catch (error) {
-      console.error('Secretary return to menu error:', error);
-    } finally {
-      setIsProcessing(false);
+  const handleSuggestionClick = async (suggestion: string) => {
+    // Use the brain's category suggestion handler if available
+    if (brain instanceof FlowEngineBrain) {
+      await brain.handleCategorySuggestionSelection(suggestion);
+      const vm = brain.getViewModel();
+      setViewModel(vm);
     }
   };
 
-  const viewModel = brain?.getViewModel();
-  const showTypeahead = viewModel?.showTypeahead && viewModel.typeaheadOptions && viewModel.typeaheadOptions.length > 0;
+  const toggleMicrophone = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const messages = brain.getMessages();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
-      <div className="w-full max-w-md h-[600px] bg-card border border-border rounded-lg shadow-2xl flex flex-col pointer-events-auto">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            {messages.length > 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleReturnToMenu}
-                disabled={isProcessing}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
-            <h2 className="text-lg font-semibold">Secretary</h2>
-          </div>
+    <div className="fixed bottom-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)]">
+      <Card className="shadow-2xl border-2 border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b">
+          <CardTitle className="text-lg font-semibold">Secretary</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
-        </div>
-
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-96 p-4" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((msg, idx) => (
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {isProcessing && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-4 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+              ))}
+
+              {viewModel?.buttons && viewModel.buttons.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {viewModel.buttons.map((btn, idx) => (
+                    <Button
+                      key={idx}
+                      variant={btn.variant || 'outline'}
+                      size="sm"
+                      onClick={() => handleButtonClick(btn.action)}
+                    >
+                      {btn.label}
+                    </Button>
+                  ))}
                 </div>
+              )}
+
+              {viewModel?.showSuggestions && viewModel.suggestions && viewModel.suggestions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Suggested categories:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {viewModel.suggestions.map((suggestion, idx) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="p-4 border-t space-y-2">
+            {viewModel?.showTypeahead && viewModel.typeaheadOptions && viewModel.typeaheadOptions.length > 0 && (
+              <SecretaryLocationTypeahead
+                options={viewModel.typeaheadOptions}
+                onSelect={handleTypeaheadSelect}
+                placeholder={viewModel.typeaheadPlaceholder || 'Type to search...'}
+              />
+            )}
+
+            {viewModel?.showTextInput && (
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={viewModel.textInputPlaceholder || 'Type your message...'}
+                  className="flex-1"
+                />
+                <Button
+                  variant={isListening ? 'destructive' : 'outline'}
+                  size="icon"
+                  onClick={toggleMicrophone}
+                  disabled={!!speechError}
+                  title={speechError || (isListening ? 'Stop recording' : 'Start recording')}
+                >
+                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                <Button onClick={handleSend} size="icon">
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
-        </ScrollArea>
-
-        {showTypeahead && viewModel?.typeaheadOptions && (
-          <div className="px-4 pb-2">
-            <SecretaryLocationTypeahead
-              options={viewModel.typeaheadOptions}
-              onSelect={(option) => {
-                const item = option.data as USState | USCounty | USPlace;
-                handleTypeaheadSelect(item);
-              }}
-              isLoading={false}
-              placeholder={viewModel.typeaheadPlaceholder || "Search locations..."}
-            />
-          </div>
-        )}
-
-        <div className="p-4 border-t border-border">
-          <div className="flex gap-2">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Type your message..."
-              disabled={isProcessing}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isProcessing}
-              size="icon"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

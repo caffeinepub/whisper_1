@@ -19,6 +19,7 @@ export function createInitialContext(): SecretaryContext {
     reportIssueTopIssues: [],
     reportIssueGeographyLevel: null,
     reportIssueGeographyId: null,
+    reportIssueSuggestions: [],
     activeIntent: null,
     slots: createEmptySlotBag(),
     messages: [],
@@ -38,6 +39,7 @@ export function resetContext(context: SecretaryContext): void {
   context.reportIssueTopIssues = [];
   context.reportIssueGeographyLevel = null;
   context.reportIssueGeographyId = null;
+  context.reportIssueSuggestions = [];
   context.activeIntent = null;
   context.slots = createEmptySlotBag();
   context.messages = [];
@@ -83,6 +85,7 @@ export function resetReportIssueState(context: SecretaryContext): void {
   context.reportIssueTopIssues = [];
   context.reportIssueGeographyLevel = null;
   context.reportIssueGeographyId = null;
+  context.reportIssueSuggestions = [];
 }
 
 /**

@@ -2,6 +2,7 @@
  * Default in-frontend SecretaryBrain implementation using the flow engine.
  * Includes hook points for observing flow events and injecting future actions/destinations.
  * Now integrates intent/slot mini-flow engine with geography NLP, top-issues support, and tracing.
+ * Extended with auto-prefill for issue_description, category suggestions, and robust geography typeahead selection.
  */
 
 import type { SecretaryBrain, NavigationHandler } from './SecretaryBrain';
@@ -26,8 +27,10 @@ import {
   lookupUSGeographyFromText,
 } from '../intent';
 import { extractGeographyFromText } from '../intent/geographyNlp';
+import { extractIssueDescription } from '../intent/issueDescriptionNlp';
 import { createSecretaryTopIssuesMessaging } from '@/lib/secretaryTopIssuesMessaging';
 import { trace } from '../observability/secretaryTrace';
+import { clearDependentSlots, isSlotFilled } from '../intent/slotState';
 
 /**
  * Flow engine-based brain implementation
@@ -45,6 +48,9 @@ export class FlowEngineBrain implements SecretaryBrain {
   constructor(actor: backendInterface | null) {
     const context = createInitialContext();
     this.runner = new FlowRunner(actor, context);
+    
+    // Add initial menu greeting to message history
+    addMessage(context, 'assistant', 'Hello! I\'m your Secretary. How can I help you today?');
   }
 
   /**
@@ -184,12 +190,34 @@ export class FlowEngineBrain implements SecretaryBrain {
    * Get current view model for rendering
    */
   getViewModel(): NodeViewModel {
-    return this.runner.getViewModel();
+    const baseViewModel = this.runner.getViewModel();
+    const context = this.runner.getContext();
+    
+    // Enhance view model with typeahead options when in intent-slot filling mode
+    if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
+      const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
+      
+      if (nextSlot === 'state' || nextSlot === 'county' || nextSlot === 'place') {
+        const options = this.getTypeaheadOptions();
+        return {
+          ...baseViewModel,
+          showTypeahead: options.length > 0,
+          typeaheadOptions: options,
+          typeaheadPlaceholder: nextSlot === 'state' 
+            ? 'Type to search states...' 
+            : 'Type to search counties or cities...',
+        };
+      }
+    }
+    
+    return baseViewModel;
   }
 
   reset(): void {
     const context = this.runner.getContext();
     resetContext(context);
+    // Re-add initial greeting
+    addMessage(context, 'assistant', 'Hello! I\'m your Secretary. How can I help you today?');
   }
 
   async handleUserText(text: string): Promise<void> {
@@ -218,6 +246,11 @@ export class FlowEngineBrain implements SecretaryBrain {
           // Try to prefill geography from text using actor-backed lookup
           await this.prefillGeographyFromText(text);
           
+          // For report_issue intent, also prefill issue_description
+          if (intent === 'report_issue') {
+            await this.prefillIssueDescription(text);
+          }
+          
           await this.continueIntentSlotFilling();
           return;
         }
@@ -239,11 +272,27 @@ export class FlowEngineBrain implements SecretaryBrain {
         }
 
         // Unknown input - use English recovery message
-        await this.runner.handleAction({ type: 'free-text-input', payload: text });
+        addMessage(context, 'assistant', 'I didn\'t quite understand that. Could you try rephrasing, or use one of the menu options?');
         break;
 
       case 'report-collect-description':
         context.reportIssueDescription = text;
+        
+        // Compute suggestions based on description and geography level
+        if (context.reportIssueGeographyLevel) {
+          const suggestions = await this.runner.computeComplaintSuggestions(
+            context.reportIssueGeographyLevel,
+            text
+          );
+          context.reportIssueSuggestions = suggestions;
+          
+          // If no suggestions, go directly to custom category
+          if (suggestions.length === 0) {
+            await this.runner.handleAction({ type: 'something-else' });
+            return;
+          }
+        }
+        
         await this.runner.handleAction({ type: 'description-submitted', payload: text });
         break;
 
@@ -282,7 +331,7 @@ export class FlowEngineBrain implements SecretaryBrain {
    */
   private async prefillGeographyFromText(text: string): Promise<void> {
     const context = this.runner.getContext();
-    const actor = this.runner['actor'];
+    const actor = this.runner.getActor();
     
     try {
       // Try actor-backed lookup first
@@ -319,14 +368,9 @@ export class FlowEngineBrain implements SecretaryBrain {
       trace('flow-action', { action: 'geography-lookup-error', error: String(error) });
     }
     
-    // Fallback: Use in-memory extraction with React Query-populated data
-    trace('flow-action', { action: 'geography-lookup-start', text, source: 'in-memory-fallback' });
-    const extracted = extractGeographyFromText(
-      text,
-      this.allStates,
-      this.countiesForState,
-      this.placesForState
-    );
+    // Fallback: Use in-memory extraction
+    trace('flow-action', { action: 'geography-lookup-start', text, source: 'in-memory' });
+    const extracted = extractGeographyFromText(text, this.allStates, this.countiesForState, this.placesForState);
     
     if (extracted.state) {
       fillSlot(context.slots, 'state', extracted.state);
@@ -345,45 +389,56 @@ export class FlowEngineBrain implements SecretaryBrain {
   }
 
   /**
-   * Handle input during intent/slot filling
+   * Prefill issue_description from user text by removing geography references
+   */
+  private async prefillIssueDescription(text: string): Promise<void> {
+    const context = this.runner.getContext();
+    
+    const state = context.slots.state || null;
+    const county = context.slots.county || null;
+    const place = context.slots.place || null;
+    
+    const description = extractIssueDescription(text, state, county, place);
+    
+    if (description && description.length >= 3) {
+      fillSlot(context.slots, 'issue_description', description);
+      trace('slot-filled', { slot: 'issue_description', value: description, source: 'auto-extract' });
+    }
+  }
+
+  /**
+   * Handle input during intent/slot filling mode
    */
   private async handleIntentSlotInput(text: string): Promise<void> {
     const context = this.runner.getContext();
-
+    
     // Check for repair cues
     if (looksLikeRepair(text)) {
-      const slotToRepair = parseRepairSlot(text);
-      if (slotToRepair) {
-        // Clear the slot and dependents
-        resetSlotWithDependents(context, slotToRepair);
-        trace('slot-repaired', { slot: slotToRepair, dependentsCleared: true });
-        addMessage(context, 'assistant', `Okay, let's update your ${slotToRepair}.`);
+      const repairSlot = parseRepairSlot(text);
+      if (repairSlot) {
+        trace('slot-repaired', { slot: repairSlot, text });
+        applyRepair(context.slots, repairSlot, (slot) => clearDependentSlots(context.slots, slot));
+        addMessage(context, 'assistant', `Okay, let's update your ${repairSlot}.`);
         await this.continueIntentSlotFilling();
         return;
       }
-      
-      // Generic repair without specific slot
-      addMessage(context, 'assistant', 'What would you like to change? You can say "change state", "change county", etc.');
-      return;
     }
-
-    // Get the next missing slot
-    const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
     
-    if (nextSlot === 'issue_description') {
-      // Fill description slot
-      fillSlot(context.slots, 'issue_description', text);
-      trace('slot-filled', { slot: 'issue_description', value: text.substring(0, 50) });
-      await this.continueIntentSlotFilling();
-    } else if (nextSlot === 'issue_category') {
-      // Fill category slot
-      fillSlot(context.slots, 'issue_category', text);
-      trace('slot-filled', { slot: 'issue_category', value: text });
-      await this.continueIntentSlotFilling();
-    } else {
-      // For geography slots, we expect typeahead selection, not free text
-      addMessage(context, 'assistant', 'Please select an option from the list.');
+    // Try to fill the next missing slot
+    const nextSlot = getNextMissingSlot(context.activeIntent!, context.slots);
+    
+    if (nextSlot) {
+      // For geography slots, try actor-backed lookup
+      if (nextSlot === 'state' || nextSlot === 'county' || nextSlot === 'place') {
+        await this.prefillGeographyFromText(text);
+      } else {
+        // For other slots, fill directly from text
+        fillSlot(context.slots, nextSlot, text);
+        trace('slot-filled', { slot: nextSlot, value: text });
+      }
     }
+    
+    await this.continueIntentSlotFilling();
   }
 
   /**
@@ -391,160 +446,159 @@ export class FlowEngineBrain implements SecretaryBrain {
    */
   private async continueIntentSlotFilling(): Promise<void> {
     const context = this.runner.getContext();
-
+    
+    if (!context.activeIntent) return;
+    
     // Check if all required slots are filled
     if (areAllRequiredSlotsFilled(context.activeIntent, context.slots)) {
-      // Execute completion
-      await this.completeIntentFlow();
+      trace('intent-completed', { intent: context.activeIntent });
+      
+      // Execute completion action
+      if (this.navigationHandler) {
+        executeCompletion(context.activeIntent, context.slots, this.navigationHandler);
+      }
+      
+      // Reset and return to menu
+      resetContext(context);
+      addMessage(context, 'assistant', 'Done! Anything else I can help with?');
       return;
     }
-
-    // Get next missing slot and prompt
+    
+    // Get next missing slot
     const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
+    
     if (nextSlot) {
-      const prompt = getSlotPrompt(nextSlot, context);
-      addMessage(context, 'assistant', prompt);
-    }
-  }
-
-  /**
-   * Complete the intent flow
-   */
-  private async completeIntentFlow(): Promise<void> {
-    const context = this.runner.getContext();
-    const actor = this.runner['actor'];
-
-    trace('intent-completed', { intent: context.activeIntent });
-
-    switch (context.activeIntent) {
-      case 'report_issue':
-        addMessage(context, 'assistant', 'Great! I\'ll help you create an Issue Project for that.');
-        // Signal navigation after delay
-        setTimeout(() => {
-          if (this.navigationHandler) {
-            executeCompletion(context.activeIntent, context);
-          }
-        }, 1000);
-        break;
-
-      case 'create_instance':
-        addMessage(context, 'assistant', 'Taking you to Create Instance...');
-        setTimeout(() => {
-          executeCompletion(context.activeIntent, context);
-        }, 500);
-        break;
-
-      case 'find_instance':
-        addMessage(context, 'assistant', 'Let me show you what\'s happening in your area...');
-        // Transition to discovery result
-        context.selectedState = context.slots.state;
-        context.selectedCounty = context.slots.county;
-        context.selectedPlace = context.slots.place;
-        context.currentNode = 'discovery-result';
-        break;
-
-      case 'ask_category':
-        // Show categories for the selected geography
-        addMessage(context, 'assistant', 'Here are the common issue categories for your area:');
-        break;
-
-      case 'top_issues':
-        // Fetch and display top issues
-        if (!actor) {
-          addMessage(context, 'assistant', 'I\'m having trouble connecting to the backend. Please try again.');
-          return;
-        }
-        
-        await this.fetchAndDisplayTopIssues(actor);
-        break;
-    }
-  }
-
-  /**
-   * Fetch and display top issues for the selected geography
-   */
-  private async fetchAndDisplayTopIssues(actor: backendInterface): Promise<void> {
-    const context = this.runner.getContext();
-    const messaging = createSecretaryTopIssuesMessaging(actor);
-    
-    addMessage(context, 'assistant', 'Let me check the top issues for that location...');
-    
-    try {
-      let result;
-      
-      // Use most specific geography available
-      if (context.slots.place) {
-        result = await messaging.getTopIssuesForCity(context.slots.place.hierarchicalId);
-      } else if (context.slots.county) {
-        result = await messaging.getTopIssuesForCounty(context.slots.county.hierarchicalId);
-      } else if (context.slots.state) {
-        result = await messaging.getTopIssuesForState(context.slots.state.hierarchicalId);
-      } else {
-        addMessage(context, 'assistant', 'I need a location to show you the top issues. Please select a state first.');
+      // Special handling for issue_category: fetch and show suggestions
+      if (nextSlot === 'issue_category' && context.activeIntent === 'report_issue') {
+        await this.handleCategorySuggestions();
         return;
       }
       
-      // Display result
-      addMessage(context, 'assistant', result.message);
+      // For other slots, show prompt
+      const prompt = getSlotPrompt(nextSlot, context);
+      addMessage(context, 'assistant', prompt);
       
-      if (result.issues.length > 0) {
-        const issuesList = result.issues.map((issue, idx) => `${idx + 1}. ${issue}`).join('\n');
-        addMessage(context, 'assistant', issuesList);
-        
-        // Store issues for display
-        context.reportIssueTopIssues = result.issues.slice(0, 50);
-      } else {
-        addMessage(context, 'assistant', 'Would you like to report an issue instead?');
+      // If it's a geography slot and we have options, show typeahead
+      if (nextSlot === 'state' || nextSlot === 'county' || nextSlot === 'place') {
+        const options = this.getTypeaheadOptions();
+        if (options.length === 0) {
+          addMessage(context, 'assistant', 'Please select an option from the list.');
+        }
       }
-    } catch (error) {
-      console.error('Error fetching top issues:', error);
-      addMessage(context, 'assistant', 'I\'m having trouble retrieving issues right now. Please try again later.');
     }
+  }
+
+  /**
+   * Handle category suggestions for report_issue flow
+   */
+  private async handleCategorySuggestions(): Promise<void> {
+    const context = this.runner.getContext();
+    const actor = this.runner.getActor();
+    
+    // Determine geography level from filled slots
+    let geographyLevel: USHierarchyLevel | null = null;
+    if (context.slots.place) {
+      geographyLevel = USHierarchyLevel.place;
+    } else if (context.slots.county) {
+      geographyLevel = USHierarchyLevel.county;
+    } else if (context.slots.state) {
+      geographyLevel = USHierarchyLevel.state;
+    }
+    
+    // Fetch suggestions if we have geography and description
+    if (geographyLevel && context.slots.issue_description && actor) {
+      try {
+        const suggestions = await this.runner.computeComplaintSuggestions(
+          geographyLevel,
+          context.slots.issue_description
+        );
+        
+        if (suggestions.length > 0) {
+          this.complaintSuggestions = suggestions;
+          addMessage(context, 'assistant', 'Here are some suggested categories for your issue. Click one to select it, or type your own:');
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to fetch category suggestions:', error);
+      }
+    }
+    
+    // No suggestions available - ask user to type
+    addMessage(context, 'assistant', 'Please type a category for your issue:');
+  }
+
+  /**
+   * Handle category selection (from suggestion click or typed text)
+   */
+  private async handleCategorySelection(category: string): Promise<void> {
+    const context = this.runner.getContext();
+    
+    // Store the selected category
+    context.reportIssueDescription = `${context.reportIssueDescription} [Category: ${category}]`;
+    
+    await this.runner.handleAction({ type: 'custom-category-submitted', payload: category });
+  }
+
+  /**
+   * Handle geography typeahead selection
+   */
+  async handleGeographySelection(selection: { id: string; label: string; data: any }): Promise<void> {
+    const context = this.runner.getContext();
+    
+    if (!context.activeIntent) return;
+    
+    const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
+    
+    if (!nextSlot) return;
+    
+    // Determine which geography slot to fill based on data type
+    if (nextSlot === 'state' && 'fipsCode' in selection.data && 'longName' in selection.data) {
+      fillSlot(context.slots, 'state', selection.data as USState);
+      trace('slot-filled', { slot: 'state', value: selection.label, source: 'typeahead' });
+      
+      // Clear dependent slots
+      clearDependentSlots(context.slots, 'state');
+    } else if ((nextSlot === 'county' || nextSlot === 'place') && 'censusFipsStateCode' in selection.data) {
+      // It's a county
+      fillSlot(context.slots, 'county', selection.data as USCounty);
+      trace('slot-filled', { slot: 'county', value: selection.label, source: 'typeahead' });
+      
+      // Clear dependent slots
+      clearDependentSlots(context.slots, 'county');
+    } else if ((nextSlot === 'county' || nextSlot === 'place') && 'censusStateCode' in selection.data) {
+      // It's a place
+      fillSlot(context.slots, 'place', selection.data as USPlace);
+      trace('slot-filled', { slot: 'place', value: selection.label, source: 'typeahead' });
+      
+      // Clear dependent slots
+      clearDependentSlots(context.slots, 'place');
+    }
+    
+    // Continue to next slot
+    await this.continueIntentSlotFilling();
+  }
+
+  /**
+   * Handle category suggestion selection
+   */
+  async handleCategorySuggestionSelection(category: string): Promise<void> {
+    const context = this.runner.getContext();
+    
+    if (!context.activeIntent || context.activeIntent !== 'report_issue') return;
+    
+    const nextSlot = getNextMissingSlot(context.activeIntent, context.slots);
+    
+    if (nextSlot !== 'issue_category') return;
+    
+    // Fill the category slot
+    fillSlot(context.slots, 'issue_category', category);
+    trace('slot-filled', { slot: 'issue_category', value: category, source: 'suggestion-click' });
+    
+    // Continue to next slot or complete
+    await this.continueIntentSlotFilling();
   }
 
   async handleAction(action: Action): Promise<void> {
-    const context = this.runner.getContext();
-
-    trace('flow-action', { type: action.type, payload: typeof action.payload });
-
-    // Handle intent/slot filling actions
-    if (context.activeIntent && context.currentNode === 'intent-slot-filling') {
-      if (action.type === 'state-selected') {
-        fillSlot(context.slots, 'state', action.payload);
-        trace('slot-filled', { slot: 'state', value: action.payload.longName, source: 'typeahead' });
-        addMessage(context, 'user', action.payload.longName);
-        await this.continueIntentSlotFilling();
-        return;
-      } else if (action.type === 'location-selected') {
-        if (action.payload.censusFipsStateCode) {
-          // County
-          fillSlot(context.slots, 'county', action.payload);
-          trace('slot-filled', { slot: 'county', value: action.payload.fullName, source: 'typeahead' });
-          addMessage(context, 'user', action.payload.fullName);
-        } else {
-          // Place
-          fillSlot(context.slots, 'place', action.payload);
-          trace('slot-filled', { slot: 'place', value: action.payload.fullName, source: 'typeahead' });
-          addMessage(context, 'user', action.payload.fullName);
-        }
-        await this.continueIntentSlotFilling();
-        return;
-      } else if (action.type === 'suggestion-selected') {
-        fillSlot(context.slots, 'issue_category', action.payload);
-        trace('slot-filled', { slot: 'issue_category', value: action.payload, source: 'suggestion' });
-        addMessage(context, 'user', action.payload);
-        await this.continueIntentSlotFilling();
-        return;
-      }
-    }
-
-    // Handle regular flow actions
     await this.runner.handleAction(action);
-  }
-
-  private async handleCategorySelection(category: string): Promise<void> {
-    const context = this.runner.getContext();
-    context.reportIssueDescription = category;
-    await this.runner.handleAction({ type: 'custom-category-submitted', payload: category });
   }
 }

@@ -1,106 +1,95 @@
 /**
- * Composable prompt builders/templates for Secretary nodes.
- * Functions return formatted strings to avoid one-off strings in handlers.
+ * Composable prompt builders/templates for Secretary nodes with formatted strings
+ * for top issues, discovery results, issue lists, unknown input, slot-filling prompts,
+ * and repair confirmations. Extended with category suggestion prompts.
  */
 
 import type { USState, USCounty, USPlace } from '@/backend';
 
 /**
- * Format a location name for display
+ * Build a prompt for top issues in a location
  */
-function formatLocationName(
+export function buildTopIssuesPrompt(locationName: string, issues: string[]): string {
+  if (issues.length === 0) {
+    return `I couldn't find any top issues for ${locationName} yet. Would you like to report the first one?`;
+  }
+
+  const issueList = issues.map((issue, idx) => `${idx + 1}. ${issue}`).join('\n');
+  return `Here are the top issues in ${locationName}:\n\n${issueList}\n\nWould you like to report a new issue or view details on one of these?`;
+}
+
+/**
+ * Build a prompt for discovery results
+ */
+export function buildDiscoveryResultPrompt(
   state: USState | null,
   county: USCounty | null,
   place: USPlace | null
 ): string {
-  if (place) return place.fullName;
-  if (county) return county.fullName;
-  if (state) return state.longName;
-  return 'this location';
-}
-
-/**
- * Build a prompt for top issues with location context
- */
-export function buildTopIssuesPrompt(
-  locationName: string,
-  issuesCount: number
-): string {
-  if (issuesCount === 0) {
-    return `No common issues have been recorded for ${locationName} yet. You can still describe your issue and we'll help you get started.`;
+  if (place) {
+    return `Great! I found ${place.fullName}. What would you like to do?`;
+  } else if (county) {
+    return `Great! I found ${county.fullName}. What would you like to do?`;
+  } else if (state) {
+    return `Great! I found ${state.longName}. What would you like to do?`;
   }
-  return `Here are the most common issues in ${locationName}:`;
+  return 'I couldn\'t find that location. Could you try again?';
 }
 
 /**
- * Build a discovery result message
+ * Build a prompt for unknown input recovery
  */
-export function buildDiscoveryResultMessage(
-  state: USState | null,
-  county: USCounty | null,
-  place: USPlace | null,
-  hasInstance: boolean
-): string {
-  const locationName = formatLocationName(state, county, place);
-  
-  if (hasInstance) {
-    return `Good news! ${locationName} already has an active Whisper instance.`;
-  }
-  
-  return `${locationName} doesn't have a Whisper instance yet. You could be a founding citizen!`;
+export function buildUnknownInputPrompt(): string {
+  return 'I didn\'t quite understand that. Could you try rephrasing, or use one of the menu options?';
 }
 
 /**
- * Build a list of issues as numbered items
- */
-export function buildIssuesList(issues: string[]): string {
-  if (issues.length === 0) return '';
-  return issues.map((issue, index) => `${index + 1}. ${issue}`).join('\n');
-}
-
-/**
- * Build a clarification prompt for unknown input
- */
-export function buildUnknownInputPrompt(userInput: string): string {
-  return `I'm not sure I understood "${userInput}". Could you rephrase, or would you like to return to the main menu?`;
-}
-
-/**
- * Build a slot-filling prompt with context
+ * Build a slot-filling prompt for a specific slot
  */
 export function buildSlotPrompt(
-  slotName: string,
-  state: USState | null,
-  county: USCounty | null
+  slot: string,
+  currentState: USState | null,
+  currentCounty: USCounty | null
 ): string {
-  switch (slotName) {
+  switch (slot) {
     case 'state':
-      return 'Which state are you asking about?';
+      return 'Which state is this issue in?';
     case 'county':
-      if (state) {
-        return `Which county in ${state.longName}?`;
-      }
-      return 'Which county?';
+      return currentState
+        ? `Which county in ${currentState.longName}?`
+        : 'Which county is this issue in?';
     case 'place':
-      if (county) {
-        return `Which city or town in ${county.fullName}?`;
-      }
-      if (state) {
-        return `Which city or town in ${state.longName}?`;
-      }
-      return 'Which city or town?';
+      return currentCounty
+        ? `Which city or town in ${currentCounty.fullName}?`
+        : 'Which city or town is this issue in?';
     case 'issue_description':
       return 'Please describe the issue you\'d like to report:';
     case 'issue_category':
-      return 'Based on your description, here are some suggested categories:';
+      return 'What category does this issue fall under?';
+    case 'instance_name':
+      return 'What would you like to name this instance?';
     default:
-      return 'Please provide more information:';
+      return `Please provide: ${slot}`;
   }
 }
 
 /**
- * Build a repair confirmation message
+ * Build a repair confirmation prompt
  */
-export function buildRepairConfirmation(slotName: string, newValue: string): string {
-  return `Got it, I've updated your ${slotName} to "${newValue}".`;
+export function buildRepairConfirmationPrompt(slot: string): string {
+  return `Okay, let's update your ${slot}.`;
+}
+
+/**
+ * Build a category suggestion prompt (with suggestions available)
+ */
+export function buildCategorySuggestionPrompt(): string {
+  return 'Here are some suggested categories for your issue. Click one to select it, or type your own:';
+}
+
+/**
+ * Build a category prompt (no suggestions available)
+ */
+export function buildCategoryNoSuggestionsPrompt(): string {
+  return 'Please type a category for your issue:';
 }

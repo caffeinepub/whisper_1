@@ -86,6 +86,7 @@ export interface SecretaryContext {
   reportIssueTopIssues: string[];
   reportIssueGeographyLevel: USHierarchyLevel | null;
   reportIssueGeographyId: string | null;
+  reportIssueSuggestions: string[];
 
   // Intent/slot flow state
   activeIntent: SecretaryIntent;

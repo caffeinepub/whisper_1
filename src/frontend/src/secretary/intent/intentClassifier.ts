@@ -9,7 +9,7 @@ import type { SecretaryIntent } from './types';
  * Classify user input text to an intent
  * Returns null if no match found
  */
-export function classifyIntent(text: string): SecretaryIntent {
+export function classifyIntent(text: string): SecretaryIntent | null {
   const normalized = text.toLowerCase().trim();
 
   // Top issues patterns (new - check first for specificity)
@@ -28,12 +28,15 @@ export function classifyIntent(text: string): SecretaryIntent {
     return 'top_issues';
   }
 
-  // Report issue patterns
+  // Report issue patterns - expanded
   if (
     normalized.includes('report') ||
     normalized.includes('complaint') ||
+    normalized.includes('complain') ||
     normalized.includes('broken') ||
-    normalized.includes('fix')
+    normalized.includes('fix') ||
+    normalized.includes('problem') ||
+    (normalized.includes('issue') && !normalized.includes('top'))
   ) {
     return 'report_issue';
   }
@@ -44,16 +47,17 @@ export function classifyIntent(text: string): SecretaryIntent {
     normalized.includes('search') ||
     normalized.includes('discover') ||
     normalized.includes('explore') ||
-    normalized.includes('what') && normalized.includes('happening')
+    (normalized.includes('what') && normalized.includes('happening'))
   ) {
     return 'find_instance';
   }
 
-  // Create instance patterns
+  // Create instance patterns - expanded
   if (
     normalized.includes('create') ||
-    normalized.includes('new') && normalized.includes('instance') ||
-    normalized.includes('start') && normalized.includes('whisper')
+    (normalized.includes('new') && normalized.includes('instance')) ||
+    (normalized.includes('start') && normalized.includes('whisper')) ||
+    (normalized.includes('propose') && normalized.includes('instance'))
   ) {
     return 'create_instance';
   }
@@ -61,7 +65,7 @@ export function classifyIntent(text: string): SecretaryIntent {
   // Ask category patterns
   if (
     normalized.includes('categor') ||
-    normalized.includes('type') && normalized.includes('issue')
+    (normalized.includes('type') && normalized.includes('issue'))
   ) {
     return 'ask_category';
   }

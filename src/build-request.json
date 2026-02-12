@@ -1,97 +1,89 @@
 {
   "kind": "build_request",
-  "title": "Connect proposals to backend, add staking & governance UI, and expand Secretary routing to proposals",
+  "title": "Add automatic slot-filling to the Secretary so it gathers missing details",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
-      "target": "both",
+      "text": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Run Connect proposals to backend"
+          "Run Add slot-filling so the Secretary can gather missing details automatically"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes query methods that allow the frontend to retrieve the proposals shown in the Proposals UI without relying on hardcoded/placeholder data.",
-        "Frontend proposals queries resolve to real canister calls and the existing Proposals list renders with data returned from the backend.",
-        "Proposal detail dialog opens and displays details for a selected proposal using backend-provided data.",
-        "All user-facing errors remain in English and use existing error handling patterns (e.g., userFacingError mapping)."
+        "When the user types a single message like “Potholes in Omaha, Nebraska near 72nd street”, the Secretary enters slot-filling mode, pre-fills the state (and place when possible), sets a reasonable initial issue_description, and only prompts for missing required slots (e.g., category) instead of restarting at the menu.",
+        "When geography cannot be reliably extracted, the Secretary prompts for the missing geography slot using the existing slot prompt copy.",
+        "All prompts and recovery messages shown during slot-filling are in English."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
-      "target": "both",
+      "text": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Add staking and governance UI"
+          "Run Add slot-filling so the Secretary can gather missing details automatically"
         ]
       },
       "acceptanceCriteria": [
-        "Calling `getStakingInfo()` from the frontend returns a real `StakingRecord` (or `null` if not initialized) for the authenticated caller.",
-        "`useStake` and `useUnstake` mutations perform real canister calls and no longer throw 'not yet implemented in backend' errors.",
-        "After a successful stake/unstake, the staking info and WSP balance queries invalidate and the UI refreshes to the updated values.",
-        "Staking operations enforce basic validation (e.g., cannot stake more than available, cannot unstake more than staked) and surface user-friendly English error messages on failure."
+        "During report_issue slot-filling, once issue_description is filled and issue_category is the next missing slot, the UI shows suggested categories.",
+        "Clicking a suggested category fills the issue_category slot and advances the slot-filling flow.",
+        "If no suggestions are returned, the Secretary asks the user to type a category (English prompt) and uses the next user message to fill issue_category."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
-      "target": "both",
+      "text": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Add staking and governance UI"
+          "Run Add slot-filling so the Secretary can gather missing details automatically"
         ]
       },
       "acceptanceCriteria": [
-        "Backend supports governance proposal CRUD needed by UI: create proposal, list proposals, get proposal details, and cast a vote; results are persisted in canister state.",
-        "Frontend provides a governance proposals list with loading/empty/error states and a detail view for a selected governance proposal.",
-        "Frontend provides a create-governance-proposal flow with title/description inputs and clear success/failure feedback in English.",
-        "Frontend provides voting controls (approve/reject) and reflects updated tallies/status after voting via query invalidation/refetch.",
-        "Non-authenticated users are prompted to log in (or see an appropriate auth-required state) before creating/voting."
+        "When the next slot is state, selecting a state from the typeahead fills the state slot and triggers the next prompt.",
+        "When the next slot is county or place, selecting an option from the typeahead fills the correct slot and triggers the next prompt.",
+        "Typeahead selection does not rely on undefined/non-existent brain methods; slot determination and filling works reliably."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+      "text": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Expand Secretary routing to proposals"
+          "Run Add slot-filling so the Secretary can gather missing details automatically"
         ]
       },
       "acceptanceCriteria": [
-        "Secretary navigation includes a destination for proposals and can trigger navigation to the proposals view using the existing navigation registry/keyword matching approach.",
-        "When the Secretary emits a navigation event targeting a specific proposal, the Proposals UI opens the proposal detail dialog for that proposal (when it exists in the loaded dataset).",
-        "If the requested proposal is not found, the UI fails gracefully (no crash) and remains on the proposals page with an English error/toast/message consistent with existing patterns.",
-        "No changes are made to immutable frontend paths; Secretary routing changes are implemented in editable modules that compose existing hooks/components."
+        "For report_issue, once required slots are filled, the Secretary navigates via the existing navigation handler to the proposals/reporting destination and closes the widget when requested by the completion handler.",
+        "After completion, the Secretary conversation resets and shows an English prompt like “Done! Anything else I can help with?” on the next visible state."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
-    "Only create/modify `backend/migration.mo` if a state migration is required by new stable variables/state layout changes (conditional migration policy).",
-    "Do not edit frontend files under the immutable paths listed in SYSTEM_CONTEXT (compose them instead).",
-    "Use English for all user-facing text."
+    "Do not edit files under frontend/src/components/ui (read-only shadcn components).",
+    "Do not modify any files listed in frontend.immutablePaths in SYSTEM_CONTEXT.",
+    "Backend must remain a single Motoko actor (no additional backend canisters/services for this change)."
   ],
   "nonGoals": [
-    "Implementing third-party authentication (only Internet Identity is allowed).",
-    "Adding real-time features (WebSockets/live subscriptions).",
-    "Introducing external databases or non-IC backend services.",
-    "Adding payments or wallet integrations."
+    "Implementing the WSP token canister or token operations.",
+    "Implementing new backend geography datasets or changing geography storage schemas.",
+    "Adding new intents beyond the existing intent set; focus on making slot-filling work reliably for current intents."
   ],
   "imageRequirements": {
     "required": [],

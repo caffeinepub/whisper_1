@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T04:25:54.695Z",
+  "generatedAt": "2026-02-12T06:27:11.265Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,94 +12,73 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Connect the existing Proposals list/detail UI to real backend data by implementing and wiring backend query/update methods for proposals (list proposals, fetch a proposal by identifier, and any required proposal lifecycle updates used by the UI). Ensure the frontend React Query hooks used by `ProposalsSection` and `ProposalDetailDialog` use these backend methods (no placeholder/stub data) and preserve current loading/empty/error states.",
+        "summary": "Enable the Secretary’s intent/slot-filling mode to automatically pre-fill slots from a single user message (at minimum: geography slots and, for the report-issue intent, the initial issue description) and then ask only for the remaining missing required slots.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/proposals/ProposalDetailDialog.tsx"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/secretary/intent/issueDescriptionNlp.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/secretary/intent/issueDescriptionNlp.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Implement staking backend support and connect it to the existing staking UI and hooks. Add canister methods required by the current frontend contract (at minimum: `getStakingInfo`, `stake(amount)`, and `unstake(amount)`), update token/staking state consistently, and replace the placeholder errors in `useStake`/`useUnstake` so the Profile staking section can successfully stake and unstake.",
+        "summary": "Wire complaint category suggestions into slot-filling: when the next missing slot is issue_category, fetch and present category suggestions based on the currently filled geography level and the current issue_description slot, and allow the user to choose a suggestion to fill the category slot.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useStakingMutations.ts",
-          "frontend/src/pages/profile/components/StakingSection.tsx"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/copy/secretaryPrompts.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useStakingMutations.ts",
-          "frontend/src/pages/profile/components/StakingSection.tsx"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/copy/secretaryPrompts.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add a governance UI for Governance Proposals (create, list, view details, and vote) and implement the corresponding backend methods for governance proposals and voting. The governance UI should be accessible from an appropriate existing navigation entry point (e.g., Profile page section and/or a dedicated route) and must use authenticated canister calls. Reuse existing design system components and patterns (cards, dialogs, badges, loading states).",
+        "summary": "Fix Secretary location typeahead selection so it works for any active geography slot (state, county, or place) and correctly advances slot-filling after selection.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useGovernanceProposals.ts",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-          "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/lib/uiCopy.ts"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useGovernanceProposals.ts",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-          "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/lib/uiCopy.ts"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Expand the Secretary routing/navigation system so the Secretary can route users to the Proposals area and also deep-link/open a specific proposal when the Secretary navigation payload includes a proposal identifier/name. Ensure the registry keywords and deep-link parsing support proposal destinations and that the Proposals UI responds by opening the correct proposal detail dialog.",
+        "summary": "Ensure slot-filling completion behavior is user-visible and consistent: after all required slots for an intent are filled, the Secretary executes the existing completion navigation for that intent and then resets back to the main menu with an English confirmation message.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/secretaryNavigation.ts",
-          "frontend/src/utils/secretaryProjectNavigation.ts",
-          "frontend/src/components/proposals/ProposalsSection.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/secretaryNavigation.ts",
-          "frontend/src/utils/secretaryProjectNavigation.ts",
-          "frontend/src/components/proposals/ProposalsSection.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/proposals/ProposalsSection.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useGovernanceProposals.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useStakingMutations.ts",
-    "frontend/src/lib/secretaryNavigation.ts",
-    "frontend/src/lib/uiCopy.ts",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-    "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-    "frontend/src/pages/profile/components/GovernanceSection.tsx",
-    "frontend/src/pages/profile/components/StakingSection.tsx",
-    "frontend/src/utils/secretaryProjectNavigation.ts",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/copy/secretaryPrompts.ts",
+    "frontend/src/secretary/flow/flows.ts",
+    "frontend/src/secretary/intent/flowRegistry.ts",
+    "frontend/src/secretary/intent/flowRunner.ts",
+    "frontend/src/secretary/intent/issueDescriptionNlp.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

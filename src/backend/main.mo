@@ -14,7 +14,6 @@ import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-
 // Use migration on upgrade
 
 actor {
@@ -499,6 +498,52 @@ actor {
   };
 
   let stakingRecords = Map.empty<Principal, StakingRecord>();
+
+  func getCaseInsensitiveSearchFunction(term : Text) : (Text) -> Bool {
+    func catMeetsTerm(category : Text) : Bool {
+      let lcaseCat = category.toLower();
+      let lcaseTerm = term.toLower();
+      lcaseCat.contains(#text(lcaseTerm));
+    };
+    catMeetsTerm;
+  };
+
+  func getLevelCategoriesWithoutSearch(level : USHierarchyLevel) : [Text] {
+    switch (level) {
+      case (#city) { complaintCategoriesCity };
+      case (#county) { complaintCategoriesCounty };
+      case (#state) { complaintCategoriesState };
+      case (_) { [] };
+    };
+  };
+
+  func getLevelCategoriesWithSearch(level : USHierarchyLevel, searchTerm : Text) : [Text] {
+    switch (level) {
+      case (#city) { complaintCategoriesCity.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
+      case (#county) { complaintCategoriesCounty.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
+      case (#state) { complaintCategoriesState.filter(getCaseInsensitiveSearchFunction(searchTerm)) };
+      case (_) { [] };
+    };
+  };
+
+  // Core backend query for complaint categories by geography level and optional search
+  public query ({ caller }) func getComplaintCategoriesByGeographyLevel(
+    level : USHierarchyLevel,
+    searchTerm : ?Text,
+  ) : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access complaint categories");
+    };
+
+    switch (searchTerm) {
+      case (null) { getLevelCategoriesWithoutSearch(level) };
+      case (?term) {
+        if (term.isEmpty() or term.size() < 2) { getLevelCategoriesWithoutSearch(level) } else {
+          getLevelCategoriesWithSearch(level, term);
+        };
+      };
+    };
+  };
 
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
     switch (level) {

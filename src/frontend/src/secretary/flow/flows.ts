@@ -5,7 +5,7 @@
 
 import type { NodeDefinition, Transition, SecretaryContext, NodeViewModel } from './types';
 import { secretaryCopy } from '../copy/secretaryCopy';
-import { buildTopIssuesPrompt, buildDiscoveryResultMessage, buildIssuesList } from '../copy/secretaryPrompts';
+import { buildTopIssuesPrompt, buildDiscoveryResultPrompt } from '../copy/secretaryPrompts';
 import { addMessage } from '../state/secretaryContext';
 
 /**
@@ -110,12 +110,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
         {
           label: 'View Top Issues',
           action: { type: 'view-top-issues' },
-          variant: 'outline',
-        },
-        {
-          label: 'Report an Issue',
-          action: { type: 'report-issue' },
-          variant: 'outline',
+          variant: 'default',
         },
         {
           label: secretaryCopy.backToMenu,
@@ -136,28 +131,21 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       showTypeahead: false,
       buttons: [
         {
-          label: 'Report an Issue',
-          action: { type: 'report-issue' },
-          variant: 'outline',
-        },
-        {
           label: secretaryCopy.backToMenu,
           action: { type: 'back-to-menu' },
           variant: 'ghost',
         },
       ],
-      showTopIssues: false,
+      showTopIssues: true,
+      topIssues: context.reportIssueTopIssues,
       showSuggestions: false,
     }),
   },
 
   'report-loading': {
     id: 'report-loading',
-    onEnter: (context) => {
-      addMessage(context, 'assistant', secretaryCopy.reportIssueLoadingData);
-    },
     getViewModel: (context) => ({
-      assistantMessages: [],
+      assistantMessages: [secretaryCopy.reportIssueLoadingData],
       showTextInput: false,
       showTypeahead: false,
       buttons: [],
@@ -169,15 +157,10 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
   'report-top-issues': {
     id: 'report-top-issues',
     getViewModel: (context) => ({
-      assistantMessages: [secretaryCopy.reportIssueTopIssuesPrompt],
+      assistantMessages: [],
       showTextInput: false,
       showTypeahead: false,
       buttons: [
-        {
-          label: secretaryCopy.reportIssueSomethingElse,
-          action: { type: 'something-else' },
-          variant: 'outline',
-        },
         {
           label: secretaryCopy.backToMenu,
           action: { type: 'back-to-menu' },
@@ -198,7 +181,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: true,
-      textInputPlaceholder: 'Describe your issue...',
+      textInputPlaceholder: 'Describe the issue...',
       showTypeahead: false,
       buttons: [
         {
@@ -214,28 +197,40 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 
   'report-show-suggestions': {
     id: 'report-show-suggestions',
-    onEnter: (context) => {
-      addMessage(context, 'assistant', secretaryCopy.reportIssueSuggestionsPrompt);
+    getViewModel: (context) => {
+      const hasSuggestions = context.reportIssueSuggestions && context.reportIssueSuggestions.length > 0;
+      
+      return {
+        assistantMessages: hasSuggestions 
+          ? ['Here are some suggested categories based on your description:']
+          : [],
+        showTextInput: false,
+        showTypeahead: false,
+        buttons: hasSuggestions
+          ? [
+              {
+                label: 'Something else',
+                action: { type: 'something-else' },
+                variant: 'outline',
+              },
+              {
+                label: secretaryCopy.backToMenu,
+                action: { type: 'back-to-menu' },
+                variant: 'ghost',
+              },
+            ]
+          : [
+              {
+                label: secretaryCopy.backToMenu,
+                action: { type: 'back-to-menu' },
+                variant: 'ghost',
+              },
+            ],
+        showTopIssues: false,
+        showSuggestions: hasSuggestions,
+        suggestions: context.reportIssueSuggestions || [],
+      };
     },
-    getViewModel: (context) => ({
-      assistantMessages: [],
-      showTextInput: false,
-      showTypeahead: false,
-      buttons: [
-        {
-          label: secretaryCopy.reportIssueSomethingElse,
-          action: { type: 'something-else' },
-          variant: 'outline',
-        },
-        {
-          label: secretaryCopy.backToMenu,
-          action: { type: 'back-to-menu' },
-          variant: 'ghost',
-        },
-      ],
-      showTopIssues: false,
-      showSuggestions: true,
-    }),
   },
 
   'report-custom-category': {
@@ -246,7 +241,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: true,
-      textInputPlaceholder: 'Enter custom category...',
+      textInputPlaceholder: 'Enter a custom category...',
       showTypeahead: false,
       buttons: [
         {
@@ -262,15 +257,17 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 
   'report-complete': {
     id: 'report-complete',
-    onEnter: (context) => {
-      addMessage(context, 'assistant', secretaryCopy.reportIssueCategorySelected);
-      addMessage(context, 'assistant', secretaryCopy.reportIssueNavigating);
-    },
     getViewModel: (context) => ({
-      assistantMessages: [],
+      assistantMessages: [secretaryCopy.reportIssueCategorySelected],
       showTextInput: false,
       showTypeahead: false,
-      buttons: [],
+      buttons: [
+        {
+          label: secretaryCopy.backToMenu,
+          action: { type: 'back-to-menu' },
+          variant: 'default',
+        },
+      ],
       showTopIssues: false,
       showSuggestions: false,
     }),
@@ -278,19 +275,35 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 
   'unknown-input-recovery': {
     id: 'unknown-input-recovery',
-    onEnter: (context) => {
-      addMessage(context, 'assistant', secretaryCopy.unknownInputRecovery);
-    },
     getViewModel: (context) => ({
-      assistantMessages: [],
+      assistantMessages: [secretaryCopy.unknownInputRecovery],
       showTextInput: true,
-      textInputPlaceholder: 'Try rephrasing...',
+      textInputPlaceholder: 'Try again...',
       showTypeahead: false,
       buttons: [
         {
           label: secretaryCopy.backToMenu,
           action: { type: 'back-to-menu' },
-          variant: 'outline',
+          variant: 'default',
+        },
+      ],
+      showTopIssues: false,
+      showSuggestions: false,
+    }),
+  },
+
+  'intent-slot-filling': {
+    id: 'intent-slot-filling',
+    getViewModel: (context) => ({
+      assistantMessages: [],
+      showTextInput: true,
+      textInputPlaceholder: 'Type your response...',
+      showTypeahead: false,
+      buttons: [
+        {
+          label: secretaryCopy.backToMenu,
+          action: { type: 'back-to-menu' },
+          variant: 'ghost',
         },
       ],
       showTopIssues: false,
@@ -300,7 +313,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 };
 
 /**
- * Transition definitions for flow navigation
+ * Transition definitions
  */
 export const transitions: Transition[] = [
   // Menu transitions
@@ -315,11 +328,16 @@ export const transitions: Transition[] = [
           return 'report-loading';
         case 3:
         case 4:
-          return 'menu'; // External navigation handled separately
+          return 'menu'; // External navigation handled by brain
         default:
           return 'menu';
       }
     },
+  },
+  {
+    from: 'menu',
+    action: 'free-text-input',
+    to: 'unknown-input-recovery',
   },
 
   // Discovery flow transitions
@@ -338,27 +356,12 @@ export const transitions: Transition[] = [
     action: 'view-top-issues',
     to: 'discovery-top-issues',
   },
-  {
-    from: 'discovery-result',
-    action: 'report-issue',
-    to: 'report-loading',
-  },
-  {
-    from: 'discovery-top-issues',
-    action: 'report-issue',
-    to: 'report-loading',
-  },
 
   // Report issue flow transitions
   {
     from: 'report-loading',
-    action: 'top-issue-selected',
+    action: 'report-issue',
     to: 'report-top-issues',
-  },
-  {
-    from: 'report-loading',
-    action: 'description-submitted',
-    to: 'report-collect-description',
   },
   {
     from: 'report-top-issues',
@@ -367,8 +370,8 @@ export const transitions: Transition[] = [
   },
   {
     from: 'report-top-issues',
-    action: 'something-else',
-    to: 'report-custom-category',
+    action: 'report-issue',
+    to: 'report-collect-description',
   },
   {
     from: 'report-collect-description',
@@ -391,7 +394,7 @@ export const transitions: Transition[] = [
     to: 'report-complete',
   },
 
-  // Back to menu from any node
+  // Back to menu transitions
   {
     from: 'discovery-select-state',
     action: 'back-to-menu',
@@ -409,6 +412,11 @@ export const transitions: Transition[] = [
   },
   {
     from: 'discovery-top-issues',
+    action: 'back-to-menu',
+    to: 'menu',
+  },
+  {
+    from: 'report-loading',
     action: 'back-to-menu',
     to: 'menu',
   },
@@ -433,20 +441,18 @@ export const transitions: Transition[] = [
     to: 'menu',
   },
   {
+    from: 'report-complete',
+    action: 'back-to-menu',
+    to: 'menu',
+  },
+  {
     from: 'unknown-input-recovery',
     action: 'back-to-menu',
     to: 'menu',
   },
-
-  // Unknown input recovery
   {
-    from: 'menu',
-    action: 'free-text-input',
-    to: 'unknown-input-recovery',
-  },
-  {
-    from: 'unknown-input-recovery',
-    action: 'free-text-input',
-    to: 'unknown-input-recovery',
+    from: 'intent-slot-filling',
+    action: 'back-to-menu',
+    to: 'menu',
   },
 ];

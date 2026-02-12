@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Connect the existing proposals UI to real backend data, add working staking and governance proposal functionality end-to-end, and expand Secretary navigation to route to proposals and deep-link into a specific proposal.
+**Goal:** Add automatic intent slot-filling to the Secretary so it can extract details from a single user message, prompt only for missing required info, and complete flows consistently.
 
 **Planned changes:**
-- Implement backend query/update methods for proposals and wire existing React Query hooks in `ProposalsSection` and `ProposalDetailDialog` to use real canister calls (preserving current loading/empty/error states).
-- Add backend staking methods (`getStakingInfo`, `stake(amount)`, `unstake(amount)`) and connect them to the existing staking UI/hooks, replacing placeholder “not implemented” errors and ensuring state refresh after successful actions.
-- Build governance proposals UI (create, list, detail, vote) and implement corresponding authenticated backend methods with persisted canister state; reuse existing UI component patterns and provide English success/error feedback.
-- Expand Secretary routing/keyword registry to support navigating to the proposals view and opening a specific proposal detail dialog when a proposal identifier/name is provided, with graceful not-found handling.
+- Enable slot-filling mode to pre-fill slots from a single user message (at minimum: geography slots and an initial issue description for the report-issue intent), then prompt only for missing required slots using existing English prompt copy.
+- Add complaint category suggestions during report-issue slot-filling when issue_category is the next missing slot; allow selecting a suggestion to fill the slot, and fall back to typed input if no suggestions are available.
+- Fix location typeahead selection so it correctly fills whichever geography slot is currently active (state/county/place) and advances slot-filling reliably.
+- Ensure consistent, user-visible completion behavior: after all required slots are filled, run the existing intent completion navigation, then reset back to the main menu with an English confirmation message.
 
-**User-visible outcome:** Users see proposals populated from live backend data and can open proposal details; authenticated users can stake/unstake successfully and see balances update; users can create and vote on governance proposals; the Secretary can navigate to proposals and open a specific proposal when requested.
+**User-visible outcome:** Users can describe an issue in one message (e.g., “Potholes in Omaha, Nebraska near 72nd street”), see the Secretary auto-fill what it can, answer only the remaining questions (including choosing from suggested categories when applicable), and then be taken to the existing completion destination and returned to the main menu with a clear English confirmation.

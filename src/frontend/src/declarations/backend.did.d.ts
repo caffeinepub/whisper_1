@@ -218,6 +218,10 @@ export interface _SERVICE {
   'getCallerStakingRecord' : ActorMethod<[], [] | [StakingRecord]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getComplaintCategoriesByGeographyLevel' : ActorMethod<
+    [USHierarchyLevel, [] | [string]],
+    Array<string>
+  >,
   'getContributionCriteria' : ActorMethod<
     [],
     Array<[string, ContributionCriteria]>

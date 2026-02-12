@@ -203,6 +203,7 @@ export interface backendInterface {
     getCallerStakingRecord(): Promise<StakingRecord | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getComplaintCategoriesByGeographyLevel(level: USHierarchyLevel, searchTerm: string | null): Promise<Array<string>>;
     getContributionCriteria(): Promise<Array<[string, ContributionCriteria]>>;
     getCountiesForState(stateGeoId: GeoId): Promise<Array<USCounty>>;
     getPlacesForCounty(countyGeoId: GeoId): Promise<Array<USPlace>>;

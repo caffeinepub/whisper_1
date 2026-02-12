@@ -140,6 +140,7 @@ export function useGetPlacesForState(stateGeoId: GeoId | null) {
 
 /**
  * Hook to fetch a specific state by ID.
+ * Backend method not yet implemented - returns null.
  */
 export function useGetStateById(stateId: string | null) {
   const { actor, isFetching } = useActor();
@@ -147,16 +148,8 @@ export function useGetStateById(stateId: string | null) {
   return useQuery<USState | null>({
     queryKey: ['geography', 'state', stateId],
     queryFn: async () => {
-      if (!actor || !stateId) {
-        return null;
-      }
-      try {
-        const result = await actor.getStateById(stateId);
-        return result;
-      } catch (error) {
-        console.error('Error fetching state by ID:', error);
-        return null;
-      }
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!stateId,
     retry: 1,
@@ -166,6 +159,7 @@ export function useGetStateById(stateId: string | null) {
 
 /**
  * Hook to fetch a specific county by ID.
+ * Backend method not yet implemented - returns null.
  */
 export function useGetCountyById(countyId: string | null) {
   const { actor, isFetching } = useActor();
@@ -173,16 +167,8 @@ export function useGetCountyById(countyId: string | null) {
   return useQuery<USCounty | null>({
     queryKey: ['geography', 'county', countyId],
     queryFn: async () => {
-      if (!actor || !countyId) {
-        return null;
-      }
-      try {
-        const result = await actor.getCountyById(countyId);
-        return result;
-      } catch (error) {
-        console.error('Error fetching county by ID:', error);
-        return null;
-      }
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!countyId,
     retry: 1,
@@ -192,6 +178,7 @@ export function useGetCountyById(countyId: string | null) {
 
 /**
  * Hook to fetch a specific city/place by ID.
+ * Backend method not yet implemented - returns null.
  */
 export function useGetCityById(cityId: string | null) {
   const { actor, isFetching } = useActor();
@@ -199,16 +186,8 @@ export function useGetCityById(cityId: string | null) {
   return useQuery<USPlace | null>({
     queryKey: ['geography', 'city', cityId],
     queryFn: async () => {
-      if (!actor || !cityId) {
-        return null;
-      }
-      try {
-        const result = await actor.getCityById(cityId);
-        return result;
-      } catch (error) {
-        console.error('Error fetching city by ID:', error);
-        return null;
-      }
+      // Backend method not yet implemented - return null
+      return null;
     },
     enabled: !!actor && !isFetching && !!cityId,
     retry: 1,

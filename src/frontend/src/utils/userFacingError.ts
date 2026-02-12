@@ -1,6 +1,6 @@
 /**
  * Normalizes errors into user-facing English messages.
- * Handles authorization, geography, proposal, task, contribution, WSP token operation, and staking errors.
+ * Handles authorization, geography, proposal, task, contribution, WSP token operation, staking, and complaint category errors.
  */
 export function getUserFacingError(error: any): string {
   if (!error) return 'An unexpected error occurred';
@@ -61,6 +61,11 @@ export function getUserFacingError(error: any): string {
     if (error.includes('Insufficient staked balance')) return 'Insufficient staked balance';
     if (error.includes('Cannot unstake locked')) return 'Cannot unstake locked tokens';
     if (error.includes('Staking period not complete')) return 'Staking period has not completed yet';
+
+    // Complaint category errors
+    if (error.includes('complaint categories') || error.includes('complaint category')) {
+      return 'Unable to load complaint categories. Please try again.';
+    }
 
     // Return the original error if no pattern matches
     return error;

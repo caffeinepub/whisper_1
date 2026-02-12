@@ -8,6 +8,7 @@
 
 import type { SecretaryIntent, SecretarySlot, SlotBag } from './types';
 import type { SecretaryContext } from '../flow/types';
+import type { NavigationHandler } from '../brain/SecretaryBrain';
 import { getFlowDefinition, getNavigationHandler } from './flowRegistry';
 import { isSlotFilled, setSlot } from './slotState';
 import { buildSlotPrompt } from '../copy/secretaryPrompts';
@@ -64,40 +65,15 @@ export function getSlotPrompt(slot: SecretarySlot, context: SecretaryContext): s
 }
 
 /**
- * Execute completion action for an intent.
- * Routes through the same UI flows that call the standardized contribution
- * logging helper, ensuring Secretary-triggered actions also log contributions.
+ * Execute completion action for an intent
  */
-export function executeCompletion(intent: SecretaryIntent, context: SecretaryContext): void {
-  const handler = getNavigationHandler();
-  
-  switch (intent) {
-    case 'report_issue':
-      // Navigate to proposals with category
-      // The proposals UI will handle issue creation and contribution logging
-      if (handler) {
-        handler({ destinationId: 'proposals', shouldClose: true });
-      }
-      break;
-      
-    case 'create_instance':
-      // Navigate to create-instance form
-      // The form will handle proposal creation and contribution logging
-      if (handler) {
-        handler({ destinationId: 'create-instance', shouldClose: true });
-      }
-      break;
-      
-    case 'find_instance':
-      // Already handled in brain
-      break;
-      
-    case 'ask_category':
-      // Show categories (already displayed)
-      break;
-      
-    case 'top_issues':
-      // Already handled in brain
-      break;
-  }
+export function executeCompletion(
+  intent: SecretaryIntent,
+  slots: SlotBag,
+  navigationHandler: NavigationHandler
+): void {
+  const flow = getFlowDefinition(intent);
+  if (!flow || !flow.onComplete) return;
+
+  flow.onComplete(slots, navigationHandler);
 }

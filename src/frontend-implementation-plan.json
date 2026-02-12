@@ -1,126 +1,93 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend wiring for proposals, staking, governance UI, and Secretary proposal deep-links",
+  "title": "Secretary slot-filling: auto-prefill, category suggestions, and robust geography typeahead selection",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Ensure Proposals list/detail React Query hooks use real canister calls (no placeholder data) and preserve existing loading/empty/error UI behavior with English user-facing errors.",
+      "summary": "Auto-enter slot-filling from a single message, prefill geography and initial report_issue description, and prompt only for remaining required slots (English prompts).",
       "acceptanceCriteria": [
-        "Frontend proposals queries resolve to real canister calls and the existing Proposals list renders with data returned from the backend.",
-        "Proposal detail dialog opens and displays details for a selected proposal using backend-provided data.",
-        "All user-facing errors remain in English and use existing error handling patterns (e.g., userFacingError mapping)."
+        "When the user types a single message like “Potholes in Omaha, Nebraska near 72nd street”, the Secretary enters slot-filling mode, pre-fills the state (and place when possible), sets a reasonable initial issue_description, and only prompts for missing required slots (e.g., category) instead of restarting at the menu.",
+        "When geography cannot be reliably extracted, the Secretary prompts for the missing geography slot using the existing slot prompt copy.",
+        "All prompts and recovery messages shown during slot-filling are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
           "operation": "modify",
-          "description": "Harden proposals query hooks (useGetAllProposals/useGetProposal) to rely strictly on canister calls when actor is available (no placeholder/stub fallbacks), and map thrown errors through the existing user-facing English error patterns. Verify the component's usage instructions before implementing."
+          "description": "Extend slot-filling entry from the menu so that after intent classification it also pre-fills report_issue.issue_description from the same user message (using a simple, deterministic heuristic that removes detected geography phrases when possible), while retaining the existing geography prefill behavior and English slot prompts for any remaining required slots."
         },
         {
-          "path": "frontend/src/components/proposals/ProposalDetailDialog.tsx",
-          "operation": "modify",
-          "description": "Ensure the detail dialog’s live proposal fetch preserves current loading state behavior while handling canister-call failures gracefully in English (consistent with existing patterns). Verify the component's usage instructions before implementing."
+          "path": "frontend/src/secretary/intent/issueDescriptionNlp.ts",
+          "operation": "create",
+          "description": "Add a small, deterministic helper to derive an initial issue_description from a single free-text message given any extracted state/county/place (e.g., strip matched geography tokens and common connectors like “in/near/at”, fallback to original text if stripping is unreliable)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Connect staking UI mutations to real canister calls and ensure successful stake/unstake refreshes staking info and WSP balance with friendly English errors.",
+      "summary": "When issue_category is the next missing slot during report_issue slot-filling, fetch and show category suggestions based on filled geography level and issue_description; allow click-to-fill or fallback to typed category (English).",
       "acceptanceCriteria": [
-        "useStake and useUnstake mutations perform real canister calls and no longer throw 'not yet implemented in backend' errors.",
-        "After a successful stake/unstake, the staking info and WSP balance queries invalidate and the UI refreshes to the updated values.",
-        "Staking operations enforce basic validation (e.g., cannot stake more than available, cannot unstake more than staked) and surface user-friendly English error messages on failure."
+        "During report_issue slot-filling, once issue_description is filled and issue_category is the next missing slot, the UI shows suggested categories.",
+        "Clicking a suggested category fills the issue_category slot and advances the slot-filling flow.",
+        "If no suggestions are returned, the Secretary asks the user to type a category (English prompt) and uses the next user message to fill issue_category."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useStakingMutations.ts",
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
           "operation": "modify",
-          "description": "Replace placeholder stake/unstake implementations with real actor.stake(amount) and actor.unstake(amount) calls; interpret ok/err results, map failures via getUserFacingError, and keep existing query invalidation for stakingInfo and wspBalance. Verify the component's usage instructions before implementing."
+          "description": "In intent-slot-filling mode, when next missing slot becomes issue_category for report_issue and issue_description is present, compute suggestions via the existing FlowRunner complaint-suggestion capability using the most specific filled geography level (place > county > state). Store the resulting suggestions for the UI; if none are returned, emit an English prompt that asks the user to type a category and allow the next user text to fill issue_category."
         },
         {
-          "path": "frontend/src/pages/profile/components/StakingSection.tsx",
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Align UI error/success behavior with the updated staking hooks, ensuring English messages and consistent handling for validation vs. canister-call failures. Verify the component's usage instructions before implementing."
+          "description": "Change suggested-category UI behavior so clicking a suggestion immediately submits it through the brain (treat as filling issue_category and advancing slot-filling), rather than only copying it into the input box."
+        },
+        {
+          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "operation": "modify",
+          "description": "Refine issue_category prompting copy to support both cases: (1) suggestions available (English prompt introducing suggested categories), (2) no suggestions available (English prompt asking the user to type a category)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add governance proposals UI (create, list, detail, vote) using authenticated canister calls and existing design system patterns, accessible from an existing navigation entry point.",
+      "summary": "Make location typeahead selection fill whichever geography slot is currently active (state/county/place) and advance slot-filling reliably without relying on undefined brain methods.",
       "acceptanceCriteria": [
-        "Frontend provides a governance proposals list with loading/empty/error states and a detail view for a selected governance proposal.",
-        "Frontend provides a create-governance-proposal flow with title/description inputs and clear success/failure feedback in English.",
-        "Frontend provides voting controls (approve/reject) and reflects updated tallies/status after voting via query invalidation/refetch.",
-        "Non-authenticated users are prompted to log in (or see an appropriate auth-required state) before creating/voting."
+        "When the next slot is state, selecting a state from the typeahead fills the state slot and triggers the next prompt.",
+        "When the next slot is county or place, selecting an option from the typeahead fills the correct slot and triggers the next prompt.",
+        "Typeahead selection does not rely on undefined/non-existent brain methods; slot determination and filling works reliably."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useGovernanceProposals.ts",
-          "operation": "create",
-          "description": "Create React Query hooks for governance: list proposals, get proposal details, create proposal, and vote; enforce identity/actor availability for authenticated actions; on success invalidate/refetch relevant governance queries and use English user-facing error mapping. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/components/GovernanceSection.tsx",
-          "operation": "create",
-          "description": "Implement a Profile page Governance section that lists governance proposals with loading/empty/error states and opens detail/create dialogs; reuse shadcn-ui Card, Dialog, Badge, Button patterns. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/components/GovernanceProposalDetailDialog.tsx",
-          "operation": "create",
-          "description": "Add a governance proposal detail dialog showing description, status, tallies, and vote controls (approve/reject) with authenticated gating and query invalidation on vote. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/profile/components/CreateGovernanceProposalDialog.tsx",
-          "operation": "create",
-          "description": "Add a create-governance-proposal dialog with title/description inputs, submit pending state, and clear English success/failure feedback; uses authenticated canister calls and invalidates governance lists after create. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Wire the new GovernanceSection into the Profile page as a new card/section (no orphan components) and ensure the section is reachable for authenticated users. Verify the component's usage instructions before implementing."
+          "description": "Fix typeahead selection handler to determine the active geography slot using the shared slot-filling logic (import getNextMissingSlot from the intent runner), then delegate selection to the brain in a slot-aware way for state/county/place, and ensure the flow advances to the next prompt."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
           "operation": "modify",
-          "description": "Register a Secretary navigation destination for governance that navigates to the Profile page and scrolls to the governance section; keep base-path-safe navigation consistent with existing registry patterns. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
-          "operation": "modify",
-          "description": "Add English UI copy strings for governance list/detail/create/vote states (titles, empty/error/loading, success/failure, auth-required prompts) and reuse across the new governance components. Verify the component's usage instructions before implementing."
+          "description": "Add a dedicated method for geography typeahead selections that fills the correct currently-missing geography slot using the selected option’s data (USState/USCounty/USPlace), clears dependent slots when appropriate (e.g., state change clears county/place), and then continues slot-filling to the next prompt."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Extend Secretary navigation to support proposals destination and deep-linking to open a specific proposal detail dialog by identifier/name, with graceful not-found handling.",
+      "summary": "Ensure slot-filling completion triggers the existing intent navigation, then visibly resets to the main menu with an English confirmation message.",
       "acceptanceCriteria": [
-        "Secretary navigation includes a destination for proposals and can trigger navigation to the proposals view using the existing navigation registry/keyword matching approach.",
-        "When the Secretary emits a navigation event targeting a specific proposal, the Proposals UI opens the proposal detail dialog for that proposal (when it exists in the loaded dataset).",
-        "If the requested proposal is not found, the UI fails gracefully (no crash) and remains on the proposals page with an English error/toast/message consistent with existing patterns.",
-        "No changes are made to immutable frontend paths; Secretary routing changes are implemented in editable modules that compose existing hooks/components."
+        "For report_issue, once required slots are filled, the Secretary navigates via the existing navigation handler to the proposals/reporting destination and closes the widget when requested by the completion handler.",
+        "After completion, the Secretary conversation resets and shows an English prompt like “Done! Anything else I can help with?” on the next visible state."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/secretaryNavigation.ts",
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
           "operation": "modify",
-          "description": "Expand deep-link creation/parsing to support proposals destinations with an optional proposal identifier/name payload (in addition to section-only IDs), while preserving existing keyword matching. Verify the component's usage instructions before implementing."
+          "description": "Harden completion behavior for intent-slot-filling: after all required slots are filled, invoke the existing completion navigation helper for that intent (ensuring it requests widget close where already defined), then reset context to menu state and enqueue a single English confirmation prompt for the next visible state."
         },
         {
-          "path": "frontend/src/utils/secretaryProjectNavigation.ts",
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Extend the Secretary project navigation payload shape (as needed) to carry a proposal identifier/name for proposal deep-link/open behaviors, keeping event-based navigation as the integration point. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/proposals/ProposalsSection.tsx",
-          "operation": "modify",
-          "description": "Update Secretary navigation event handling to: (1) support lookup by proposal identifier/name, (2) open the proposal detail dialog when found, and (3) show an English toast/message on not-found while staying on the proposals section (no crash). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire deep-link handling on app load/navigation so proposal deep-links navigate to the proposals section and emit the existing project-navigation event to trigger opening the correct proposal detail dialog. Verify the component's usage instructions before implementing."
+          "description": "Ensure the widget message-sync logic correctly reflects the post-completion reset state (including the English confirmation message) after the brain triggers navigation/closure via the existing navigationHandler."
         }
       ]
     }
