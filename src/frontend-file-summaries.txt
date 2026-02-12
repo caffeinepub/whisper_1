@@ -97,5 +97,6 @@
   "frontend/src/lib/formatTokenAmount.ts": "Utility function that formats BigInt token amounts for display with configurable decimal places, defaulting to integer display for WSP.",
   "frontend/src/pages/profile/components/StakingSection.tsx": "Read-only staking section displaying backend StakingRecord data (total staked, available balance, locked balance, pending rewards) with loading states and empty state handling.",
   "frontend/src/hooks/useAdminWspTokenOperations.ts": "React Query mutation hooks for admin-only WSP token minting and burning with input validation, error handling, and automatic cache invalidation.",
-  "frontend/src/pages/admin/components/TokenOperationsSection.tsx": "Admin-only UI section for testing WSP token operations (mint/burn) with input validation, success/failure feedback, and principal parsing."
+  "frontend/src/pages/admin/components/TokenOperationsSection.tsx": "Admin-only UI section for testing WSP token operations (mint/burn) with input validation, success/failure feedback, and principal parsing.",
+  "frontend/src/hooks/useStakingInfo.ts": "React Query hook for fetching the caller's staking information using getStakingInfo backend method with identity-scoped query key to prevent cross-user cache leaks."
 }

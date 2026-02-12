@@ -251,6 +251,7 @@ export interface _SERVICE {
     [string, USHierarchyLevel],
     Array<string>
   >,
+  'getStakingInfo' : ActorMethod<[], [] | [StakingRecord]>,
   'getStateById' : ActorMethod<[string], [] | [USState]>,
   'getStateComplaintSuggestions' : ActorMethod<[string], Array<string>>,
   'getTasks' : ActorMethod<[string], Array<[bigint, Task]>>,

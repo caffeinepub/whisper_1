@@ -1,41 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T03:22:49.316Z",
+  "generatedAt": "2026-02-12T03:43:03.021Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 2,
-    "implemented": 0,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add read-only backend query methods for staking records without changing existing user profile APIs: (1) a query that returns the caller’s staking record (returning null/empty/default when unset) and is gated by the existing #user permission check; (2) a query that returns a staking record for an arbitrary Principal, allowed only when the caller is that Principal or the caller is an admin, otherwise trap with an Unauthorized error message in English.",
+        "summary": "Add a basic backend query method named getStakingInfo that returns the caller’s staking information using the existing StakingRecord type and stakingRecords storage.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Ensure canister upgrades remain safe after adding staking state by updating the existing upgrade persistence mechanism (preupgrade/postupgrade and/or backend/migration.mo per the current codebase pattern) so staking records are persisted and restored correctly, and older deployments can upgrade with staking state initialized to empty/defaults.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useStakingInfo.ts",
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/ProfilePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useStakingInfo.ts",
+          "frontend/src/pages/profile/components/StakingSection.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useStakingInfo.ts",
+    "frontend/src/pages/profile/components/StakingSection.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

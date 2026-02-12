@@ -1,4 +1,26 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-implement-a-read-only-staking-ui-in-the-profile-page-that-fetches-staking-info-from-the-backend-using-getstakinginfo-and-displays-total-staked-available-balance-locked-balance-and-pending-rewards-with-loading-and-empty-states",
+      "featureTitle": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
+      "files": [
+        "frontend/src/hooks/useStakingInfo.ts",
+        "frontend/src/pages/profile/components/StakingSection.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

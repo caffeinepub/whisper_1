@@ -1,6 +1,35 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Phase 4 Staking (Frontend): No UI changes required for backend-only read queries & upgrade persistence",
-  "requirements": []
+  "title": "Read-only staking info UI on Profile page (getStakingInfo)",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Add a Profile-page staking section that queries getStakingInfo via a React Query hook and renders formatted read-only staking balances with loading and empty states.",
+      "acceptanceCriteria": [
+        "A React Query hook exists to fetch staking info from the backend getStakingInfo method (identity-scoped caching, consistent with existing query patterns).",
+        "The Profile page renders a Staking section card (read-only) showing the four staking fields formatted with the existing token amount formatter.",
+        "While the query is loading, the staking section shows a loading indicator.",
+        "When the backend returns null, the staking section shows an English empty-state message indicating no staking record is available.",
+        "No stake/unstake actions or inputs are present in the staking UI."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useStakingInfo.ts",
+          "operation": "create",
+          "description": "Create a dedicated React Query hook (patterned after existing identity-scoped hooks like useWspBalance) that calls the actor's getStakingInfo capability and uses an identity-scoped queryKey to prevent cross-user cache leaks. Use core-infrastructure actor wiring via useActor. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/StakingSection.tsx",
+          "operation": "modify",
+          "description": "Update the StakingSection to fetch staking info using the new getStakingInfo hook (instead of the existing getCallerStakingRecord hook), keep the read-only Card UI, keep/ensure a loading spinner state, and adjust the empty-state copy to clearly state that no staking record is available. Ensure no stake/unstake actions or inputs are added. Uses shadcn-ui Card for the section container; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Profile page renders the StakingSection card in the profile layout (wired into the page content so it is reachable during normal navigation), without introducing any staking actions/inputs. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
 }

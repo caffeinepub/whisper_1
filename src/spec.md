@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add read-only staking record queries and make staking state upgrade-safe without changing existing user profile APIs.
+**Goal:** Add a backend read-only staking info query and display the caller’s staking details on the Profile page.
 
 **Planned changes:**
-- Add a backend query to return the caller’s staking record (or null/empty/default when unset), gated by the existing `#user` permission check.
-- Add a backend query to return a staking record for an arbitrary Principal, allowed only for (a) the same Principal or (b) an admin; otherwise trap with an English "Unauthorized" error.
-- Update upgrade persistence (preupgrade/postupgrade and/or existing migration pattern) to persist and restore staking records, initializing to empty/defaults on upgrades from older deployments.
+- Backend: Expose a public Motoko query method `getStakingInfo` that returns the caller’s nullable `StakingRecord` from existing `stakingRecords` storage.
+- Frontend: Add a React Query hook to fetch `getStakingInfo` (identity-scoped caching consistent with existing patterns) and ensure candid bindings include the new method.
+- Frontend: Add a read-only “Staking” section on the Profile page showing Total Staked, Available Balance, Locked Balance, and Pending Rewards using the existing token amount formatter, plus loading and empty states.
 
-**User-visible outcome:** The app can fetch staking records (for self, and for admins/authorized lookups) while upgrades preserve staking state safely; no staking actions or rewards behavior is added.
+**User-visible outcome:** On the Profile page, users can view their staking totals and balances (or see a loading state / an empty-state message if no staking record exists), with no stake/unstake actions available.

@@ -8,7 +8,6 @@ import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
-import Migration "migration";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
@@ -16,7 +15,7 @@ import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
 // Use migration on upgrade
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
@@ -1579,5 +1578,12 @@ actor {
       Runtime.trap("Unauthorized: Can only view your own staking record unless admin");
     };
     stakingRecords.get(user);
+  };
+
+  public query ({ caller }) func getStakingInfo() : async ?StakingRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access staking information");
+    };
+    stakingRecords.get(caller);
   };
 };

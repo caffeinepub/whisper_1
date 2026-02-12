@@ -1,54 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Phase 4 Staking: Add read-only staking queries and upgrade-safe persistence",
+  "title": "Add backend getStakingInfo query and read-only staking UI",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add read-only backend query methods for staking records without changing existing user profile APIs: (1) a query that returns the caller’s staking record (returning null/empty/default when unset) and is gated by the existing #user permission check; (2) a query that returns a staking record for an arbitrary Principal, allowed only when the caller is that Principal or the caller is an admin, otherwise trap with an Unauthorized error message in English.",
+      "text": "Add a basic backend query method named getStakingInfo that returns the caller’s staking information using the existing StakingRecord type and stakingRecords storage.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "recent-messages"
         ],
         "quotes": [
-          "Run steps 2 and 3"
+          "run steps 4. Add a basic getStakingInfo method"
         ]
       },
       "acceptanceCriteria": [
-        "When the caller lacks #user permission, the caller-staking query traps with an Unauthorized message in English.",
-        "When the caller has #user permission and has no staking record stored, the caller-staking query returns a null/empty/default response (whichever matches the existing frontend expectations).",
-        "When querying staking for an arbitrary Principal: (a) caller==target principal returns the record (or null/empty/default when unset); (b) admin caller returns the record (or null/empty/default when unset); (c) all other callers trap with an Unauthorized message in English.",
-        "No staking/unstaking/reward logic is added; queries are strictly read-only."
+        "The Motoko canister exposes a public query method named getStakingInfo.",
+        "getStakingInfo returns a nullable StakingRecord for the caller (null when no record exists).",
+        "The method is included in the generated frontend candid bindings (frontend can import/call it via the actor).",
+        "No state-breaking changes are introduced to existing staking storage (stakingRecords continues to be the source of truth)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure canister upgrades remain safe after adding staking state by updating the existing upgrade persistence mechanism (preupgrade/postupgrade and/or backend/migration.mo per the current codebase pattern) so staking records are persisted and restored correctly, and older deployments can upgrade with staking state initialized to empty/defaults.",
-      "target": "backend",
+      "text": "Implement a read-only staking UI in the Profile page that fetches staking info from the backend using getStakingInfo and displays Total Staked, Available Balance, Locked Balance, and Pending Rewards, with loading and empty states.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "recent-messages"
         ],
         "quotes": [
-          "Run steps 2 and 3"
+          "and 5. Add frontend staking UI (read-only)"
         ]
       },
       "acceptanceCriteria": [
-        "After an upgrade, existing non-staking state continues to load as before (no regressions).",
-        "After an upgrade, staking records map/state is present and initialized (empty if none existed previously).",
-        "If staking records existed pre-upgrade, they are retained post-upgrade.",
-        "The upgrade path does not introduce new staking logic beyond persistence initialization."
+        "A React Query hook exists to fetch staking info from the backend getStakingInfo method (identity-scoped caching, consistent with existing query patterns).",
+        "The Profile page renders a Staking section card (read-only) showing the four staking fields formatted with the existing token amount formatter.",
+        "While the query is loading, the staking section shows a loading indicator.",
+        "When the backend returns null, the staking section shows an English empty-state message indicating no staking record is available.",
+        "No stake/unstake actions or inputs are present in the staking UI."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor architecture with all Motoko logic in backend/main.mo (do not introduce additional backend services).",
-    "Use English for any user-facing error text (e.g., Unauthorized traps)."
+    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
+    "Do not edit any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Do not implement staking/unstaking actions, locking/terms, reward accrual, or any governance voting logic.",
-    "Do not modify existing user profile APIs or add profile fields as part of Steps 2 and 3."
+    "Implement staking mutations (stake, unstake, claim rewards).",
+    "Add any real-time updates or background polling beyond existing React Query defaults.",
+    "Add third-party auth or wallets (only Internet Identity is supported)."
   ],
   "imageRequirements": {
     "required": [],

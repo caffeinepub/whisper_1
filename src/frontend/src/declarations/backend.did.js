@@ -320,6 +320,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Text)],
       ['query'],
     ),
+  'getStakingInfo' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
   'getStateById' : IDL.Func([IDL.Text], [IDL.Opt(USState)], ['query']),
   'getStateComplaintSuggestions' : IDL.Func(
       [IDL.Text],
@@ -727,6 +728,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Text)],
         ['query'],
       ),
+    'getStakingInfo' : IDL.Func([], [IDL.Opt(StakingRecord)], ['query']),
     'getStateById' : IDL.Func([IDL.Text], [IDL.Opt(USState)], ['query']),
     'getStateComplaintSuggestions' : IDL.Func(
         [IDL.Text],

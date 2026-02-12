@@ -215,6 +215,7 @@ export interface backendInterface {
     getProposal(instanceName: string): Promise<Proposal | null>;
     getSecretaryCategorySuggestion(searchTerm: string, locationLevel: USHierarchyLevel): Promise<SecretaryCategorySuggestion>;
     getSecretaryCategorySuggestions(searchTerm: string, locationLevel: USHierarchyLevel): Promise<Array<string>>;
+    getStakingInfo(): Promise<StakingRecord | null>;
     getStateById(stateId: string): Promise<USState | null>;
     getStateComplaintSuggestions(searchTerm: string): Promise<Array<string>>;
     getTasks(proposalId: string): Promise<Array<[bigint, Task]>>;

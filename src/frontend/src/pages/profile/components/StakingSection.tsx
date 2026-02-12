@@ -1,15 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconBubble } from '@/components/common/IconBubble';
 import { Coins, Loader2 } from 'lucide-react';
-import { useGetCallerStakingRecord } from '@/hooks/useQueries';
+import { useStakingInfo } from '@/hooks/useStakingInfo';
 import { formatTokenAmount } from '@/lib/formatTokenAmount';
 
 /**
- * Staking section displaying backend staking data (read-only for Step 1).
- * Shows total staked, available balance, locked balance, and pending rewards from backend StakingRecord.
+ * Read-only staking section displaying backend StakingRecord data (total staked, available balance, locked balance, pending rewards) with loading states and empty state handling.
  */
 export function StakingSection() {
-  const { data: stakingRecord, isLoading } = useGetCallerStakingRecord();
+  const { data: stakingRecord, isLoading } = useStakingInfo();
 
   return (
     <Card>
@@ -51,16 +50,10 @@ export function StakingSection() {
         ) : (
           <div className="bg-muted/50 rounded-lg p-4">
             <p className="text-sm text-muted-foreground text-center">
-              No staking record found. Staking functionality coming soon.
+              No staking record is available. Start staking to see your information here.
             </p>
           </div>
         )}
-
-        <div className="bg-muted/50 rounded-lg p-3 mt-4">
-          <p className="text-sm text-muted-foreground">
-            Note: Staking operations (stake/unstake) will be available in the next phase.
-          </p>
-        </div>
       </CardContent>
     </Card>
   );

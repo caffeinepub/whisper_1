@@ -1,47 +1,35 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T03:22:49.313Z",
-  "summary": "Diff adds a new backend/migration.mo and wires migration into backend/main.mo, but the diff summary does not show implementation of the required read-only staking query methods nor clear upgrade-safe initialization/restore of staking state for older deployments. It also introduces unrelated governance proposal type stubs and updates project_state.json, neither of which are requested by the BuildRequest.",
+  "generatedAt": "2026-02-12T03:43:03.018Z",
+  "summary": "Frontend adds a new React Query hook (useStakingInfo) and a StakingSection UI component with loading and empty states. However, the diff summary does not provide evidence that the backend getStakingInfo query was implemented/exposed, nor that the Profile page actually renders the new Staking section, nor that candid bindings were regenerated to include the new method.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Add read-only backend query methods for staking records: (1) caller’s staking record gated by existing #user permission check; (2) staking record for arbitrary Principal allowed only for self or admin, otherwise trap with Unauthorized (English). Queries must be strictly read-only and return null/empty/default when unset.",
-      "reason": "The provided backend/main.mo diff snippet does not show any new public query methods for staking records, nor any permission gating or Unauthorized traps in English related to staking queries. No staking record storage accessors are visible in the truncated section.",
+      "requirement": "Backend exposes a public query method named getStakingInfo returning a nullable StakingRecord for the caller, backed by existing stakingRecords, and available via generated frontend candid bindings.",
+      "reason": "backend/main.mo is truncated and does not show any getStakingInfo method or its implementation details (nullable return, caller lookup in stakingRecords). There is also no evidence in the diff summary of regenerated candid/bindings being updated to include getStakingInfo.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo",
+        "frontend/src/hooks/useStakingInfo.ts (calls actor.getStakingInfo but does not prove backend/bindings exist)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Ensure upgrade-safe persistence for staking state so staking records are persisted/restored correctly and older deployments upgrade with staking state initialized to empty/defaults (without regressing existing state).",
-      "reason": "backend/migration.mo defines OldActor/NewActor as both requiring stakingRecords and returns old unchanged. This does not demonstrate handling upgrades from older deployments that lack stakingRecords, nor explicit initialization to empty/defaults. The truncated main.mo snippet also does not show stakingRecords being stored as stable state or included in preupgrade/postupgrade persistence.",
+      "requirement": "Profile page renders a read-only Staking section card that fetches staking info via getStakingInfo and shows Total Staked, Available Balance, Locked Balance, Pending Rewards with loading and empty states.",
+      "reason": "A StakingSection component and hook were added, but the diff summary does not show changes to the Profile page itself to include/render this section.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend/src/pages/profile/components/StakingSection.tsx",
+        "frontend/src/hooks/useStakingInfo.ts"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Governance proposal types/stubs added to backend/main.mo.",
-      "reason": "BuildRequest non-goals explicitly exclude governance voting logic; adding governance proposal type definitions is not requested for this phase.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "project_state.json updated to add tracking entries AR-1/AR-2.",
-      "reason": "BuildRequest does not request modifications to project_state.json; this appears to be internal tracking metadata rather than required functionality.",
-      "evidence": [
-        "project_state.json"
-      ]
-    }
-  ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.64,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/hooks/useStakingInfo.ts",
+    "frontend/src/pages/profile/components/StakingSection.tsx",
     "project_state.json"
   ]
 }
