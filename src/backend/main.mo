@@ -8,8 +8,7 @@ import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
-import Bool "mo:core/Bool";
-
+import Migration "migration";
 
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
@@ -17,7 +16,7 @@ import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
 // Use migration on upgrade
-
+(with migration = Migration.run)
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
@@ -80,6 +79,18 @@ actor {
     totalVotingPoints : Nat;
     totalBountyPoints : Nat;
     totalTokenPoints : Nat;
+  };
+
+  public type ContributionActionType = {
+    #issueCreated;
+    #commentCreated;
+    #evidenceAdded;
+  };
+
+  public type CentralizedRewardValues = {
+    issueCreatedReward : ContributionReward;
+    commentCreatedReward : ContributionReward;
+    evidenceAddedReward : ContributionReward;
   };
 
   type GeoId = Text;
@@ -230,6 +241,9 @@ actor {
       population2020 = "empty";
     };
   };
+
+  var nextActionRewardId : Nat = 0;
+  var nextLogEntryId : Nat = 0;
 
   let userProfiles = Map.empty<Principal, UserProfile>();
   let geoIdToCensusIdMap = Map.empty<GeoId, CensusId>();
@@ -414,9 +428,17 @@ actor {
   let locationBasedComplaintMap = Map.empty<Text, [Text]>();
 
   // Contribution Points and Token Accounting
-  var nextLogEntryId : Nat = 0;
   let contributionLogs = Map.empty<Principal, ContributionLogPersistence>();
   let contributionCriteria = Map.empty<Text, ContributionCriteria>();
+
+  let centralizedRewardValues = {
+    issueCreatedReward = { points = 10; rewardType = "city" };
+    commentCreatedReward = { points = 5; rewardType = "voting" };
+    evidenceAddedReward = { points = 20; rewardType = "bounty" };
+  };
+
+  // Track awarded contributions to prevent duplicates
+  let awardedContributions = Map.empty<Text, Bool>();
 
   func hierarchyLevelToText(level : USHierarchyLevel) : Text {
     switch (level) {
@@ -460,15 +482,82 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  public shared ({ caller }) func recordContribution(
+  func contributionActionTypeToText(actionType : ContributionActionType) : Text {
+    switch (actionType) {
+      case (#issueCreated) { "IssueCreated" };
+      case (#commentCreated) { "CommentCreated" };
+      case (#evidenceAdded) { "EvidenceAdded" };
+    };
+  };
+
+  func textToContributionActionType(actionTypeText : Text) : ?ContributionActionType {
+    switch (actionTypeText) {
+      case ("IssueCreated") { ?#issueCreated };
+      case ("CommentCreated") { ?#commentCreated };
+      case ("EvidenceAdded") { ?#evidenceAdded };
+      case (_) { null };
+    };
+  };
+
+  func requiresReferenceId(actionType : ContributionActionType) : Bool {
+    switch (actionType) {
+      case (#issueCreated) { true };
+      case (#commentCreated) { true };
+      case (#evidenceAdded) { true };
+    };
+  };
+
+  func buildDuplicateKey(caller : Principal, actionType : Text, referenceId : ?Text) : Text {
+    let callerText = caller.toText();
+    let refId = switch (referenceId) {
+      case (?id) { id };
+      case (null) { "none" };
+    };
+    callerText # "_" # actionType # "_" # refId;
+  };
+
+  public shared ({ caller }) func logContributionEvent(
     actionType : Text,
-    points : Nat,
-    rewardType : Text,
     referenceId : ?Text,
     details : ?Text,
   ) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can record contributions");
+      Runtime.trap("Unauthorized: Only users can log contributions");
+    };
+
+    // Validate actionType
+    let actionTypeVariant = switch (textToContributionActionType(actionType)) {
+      case (?variant) { variant };
+      case (null) {
+        Runtime.trap("Invalid actionType: " # actionType);
+      };
+    };
+
+    // Validate referenceId is provided when required
+    if (requiresReferenceId(actionTypeVariant)) {
+      switch (referenceId) {
+        case (null) {
+          Runtime.trap("referenceId is required for actionType: " # actionType);
+        };
+        case (?id) {
+          if (id.size() == 0) {
+            Runtime.trap("referenceId cannot be empty for actionType: " # actionType);
+          };
+        };
+      };
+    };
+
+    // Check for duplicate contribution
+    let duplicateKey = buildDuplicateKey(caller, actionType, referenceId);
+    if (awardedContributions.containsKey(duplicateKey)) {
+      Runtime.trap("Duplicate contribution: This action has already been awarded for the given reference");
+    };
+
+    // Resolve reward values from centralized mapping
+    let reward = switch (actionTypeVariant) {
+      case (#issueCreated) { centralizedRewardValues.issueCreatedReward };
+      case (#commentCreated) { centralizedRewardValues.commentCreatedReward };
+      case (#evidenceAdded) { centralizedRewardValues.evidenceAddedReward };
     };
 
     let now = Time.now();
@@ -477,8 +566,8 @@ actor {
       contributor = caller;
       timestamp = now;
       actionType;
-      pointsAwarded = points;
-      rewardType;
+      pointsAwarded = reward.points;
+      rewardType = reward.rewardType;
       referenceId;
       details;
     };
@@ -486,6 +575,7 @@ actor {
     let entryId = nextLogEntryId;
     nextLogEntryId += 1;
 
+    // Write contribution log entry
     let newLog : ContributionLogPersistence = switch (contributionLogs.get(caller)) {
       case (null) {
         { persistentEntries = [logEntry] };
@@ -500,6 +590,9 @@ actor {
       };
     };
     contributionLogs.add(caller, newLog);
+
+    // Mark as awarded to prevent duplicates
+    awardedContributions.add(duplicateKey, true);
 
     entryId;
   };

@@ -2,12 +2,14 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-secretary-widget-discovery-flow-shows-county-city-suggestions-after-a-state-is-selected-and-that-suggestions-are-filtered-correctly-with-no-console-errors-as-described-in-step-5-of-frontend-docs-smoke-test-regression-patch-md",
-      "featureTitle": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
+      "featureId": "feature-update-the-frontend-so-each-issue-flow-action-triggers-the-backend-contribution-log-entry-after-a-successful-action-specifically-after-successful-completion-of-a-issue-creation-b-comment-creation-c-evidence-upload-the-frontend-must-call-the-backend-contribution-event-logging-entrypoint-with-the-correct-actiontype-and-a-stable-referenceid-for-deduplication-e-g-proposal-issue-identifier-comment-identifier-evidence-blob-identifier",
+      "featureTitle": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
       "files": [
-        "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/hooks/useUSGeography.ts"
+        "frontend/src/hooks/useContributionEventLogger.ts",
+        "frontend/src/hooks/useCreateInstanceProposal.ts",
+        "frontend/src/hooks/useIssueProjectTasks.ts",
+        "frontend/src/lib/contributionActionTypes.ts",
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -19,17 +21,17 @@
         "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-secretary-flow-engine-behavior-matches-the-manual-checklist-in-step-6-of-frontend-docs-smoke-test-regression-patch-md-and-the-detailed-scenarios-in-frontend-docs-smoke-test-secretary-flows-md-including-menu-rendering-discovery-report-issue-paths-with-and-without-top-issues-custom-category-flow-back-to-menu-behavior-keyword-navigation-and-unknown-input-recovery",
-      "featureTitle": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "featureId": "feature-ensure-frontend-state-that-depends-on-contribution-logs-points-can-be-refreshed-after-these-new-events-after-a-successful-contribution-log-call-invalidate-refetch-the-react-query-cache-for-the-caller-s-contribution-summary-so-earned-totals-are-up-to-date-for-any-pages-that-display-them",
+      "featureTitle": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts",
-        "frontend/src/secretary/flow/runner.ts"
+        "frontend/src/hooks/useCallerContributionSummary.ts",
+        "frontend/src/hooks/useContributionEventLogger.ts",
+        "frontend/src/hooks/useCreateInstanceProposal.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -41,7 +43,7 @@
         "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-5"
       ],
       "confidence": "high"
     }

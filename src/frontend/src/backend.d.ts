@@ -181,7 +181,7 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
-    recordContribution(actionType: string, points: bigint, rewardType: string, referenceId: string | null, details: string | null): Promise<bigint>;
+    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;

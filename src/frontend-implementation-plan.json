@@ -1,81 +1,67 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Secretary widget smoke-test steps 5–6 (geography suggestions + flow engine)",
+  "title": "Log contribution rewards from issue-flow actions and refresh contribution summary",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Show and correctly filter county/city suggestions immediately after selecting a state in the Secretary discovery flow, without console errors.",
+      "id": "REQ-4",
+      "summary": "Trigger backend contribution-event logging after successful issue creation, comment creation, and evidence upload with stable referenceIds.",
       "acceptanceCriteria": [
-        "With geography data ingested, opening the Secretary widget and running the discovery flow allows selecting a state and then immediately shows county/city suggestions.",
-        "The suggestions list updates (filters) correctly based on the selected state and user input without noticeable lag.",
-        "No errors appear in the browser console while running this flow."
+        "Creating an issue results in exactly one new contribution log entry for the caller.",
+        "Creating a comment results in exactly one new contribution log entry for the caller.",
+        "Uploading evidence results in exactly one new contribution log entry for the caller.",
+        "If the same frontend action is retried (e.g., user double-clicks, network retry, refresh), the backend dedupe prevents multiple awards, and the frontend handles the duplicate response without breaking the UI."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
-          "operation": "modify",
-          "description": "Adjust the typeahead dropdown behavior so that it can show initial suggestions immediately (even with an empty search term) after a state is selected, while still filtering efficiently as the user types; ensure keyboard navigation remains correct and no React warnings are introduced."
+          "path": "frontend/src/lib/contributionActionTypes.ts",
+          "operation": "create",
+          "description": "Create a single canonical, exported set of issue-flow contribution actionType string constants for frontend usage (issue creation, comment creation, evidence upload) to stay consistent with backend. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "operation": "modify",
-          "description": "Ensure the discovery/location typeahead renders whenever the current flow expects it (including loading/empty states), rather than being gated by a non-empty options array; ensure state→county/city suggestions appear immediately after state selection and that selection actions reliably distinguish state vs county vs place."
+          "path": "frontend/src/hooks/useContributionEventLogger.ts",
+          "operation": "create",
+          "description": "Add a small React hook/wrapper around actor.logContributionEvent that accepts (actionType, referenceId?, details?) and handles: actor availability, idempotent duplicate responses (do not break UI), and shared error normalization. This hook will be used by the three issue-flow actions. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useUSGeography.ts",
+          "path": "frontend/src/hooks/useCreateInstanceProposal.ts",
           "operation": "modify",
-          "description": "Harden the geography query hooks used by the Secretary widget so that state-driven county/place queries enable/disable cleanly, return stable empty arrays during transitions, and never throw or log console errors when state is null/cleared (supporting rapid back-to-menu resets)."
+          "description": "After a successful submitProposal (issue creation), call the new contribution event logger with actionType for issue creation and a stable referenceId (the created instanceName), only after the action succeeds. Ensure any duplicate/guardrail error from the logging call is handled gracefully without failing the primary success flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useIssueProjectTasks.ts",
+          "operation": "modify",
+          "description": "After successful creation of the user-generated item that represents the app's \"comment creation\" in the current issue-flow UI (currently: createTask returns newTaskId), call the contribution event logger with the comment actionType and a stable referenceId (e.g., the returned newTaskId serialized). Ensure duplicate/guardrail errors do not break the UI flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "If this screen contains the current app's \"evidence upload\" action (e.g., a blob/image upload that completes successfully), wire the contribution event logger call after the upload/save succeeds using a stable referenceId (e.g., returned blob identifier or other stable upload identifier). Ensure retries/double-clicks do not break the UI if the backend reports a duplicate award. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Align Secretary flow engine behavior with the step-6 manual checklist (menu, discovery, report-issue variants, custom category, back-to-menu reset, keyword navigation, unknown-input recovery) with no console errors or React hooks warnings.",
+      "id": "REQ-5",
+      "summary": "Invalidate/refetch the caller contribution summary React Query cache after new contribution events so totals update.",
       "acceptanceCriteria": [
-        "Opening the Secretary widget shows a menu with four options and a greeting message.",
-        "Discovery flow works end-to-end (state → location → result), and returning back to menu resets flow state.",
-        "Report issue flow works both when top issues exist and when they do not; selecting a category completes the flow and triggers the expected navigation behavior.",
-        "Custom category flow works via a “Something else” path and accepts a user-entered category.",
-        "Keyword navigation (e.g., typing a destination keyword) routes to the correct page and the widget closes when expected.",
-        "Unknown input produces an English recovery message and provides a working “Back to Menu” action.",
-        "No console errors or React hooks warnings occur during these flows."
+        "After any of the three actions, the caller contribution summary query (useCallerContributionSummary) is invalidated/refetched so subsequent renders show updated totals.",
+        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose existing hooks/components instead)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/flow/flows.ts",
+          "path": "frontend/src/hooks/useContributionEventLogger.ts",
           "operation": "modify",
-          "description": "Update/verify the flow node definitions and view models to match the step-6 checklist: menu with four options + greeting; discovery (state→location→result); report-issue paths (with and without top issues) including “Something else” → custom category; consistent back-to-menu availability and behavior; unknown-input recovery view model with working Back to Menu action."
+          "description": "On successful logContributionEvent completion (and on tolerated duplicate responses if applicable), invalidate/refetch the React Query cache for useCallerContributionSummary (query key prefix 'callerContributionSummary') so any totals shown across the app update. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/secretary/flow/runner.ts",
+          "path": "frontend/src/hooks/useCallerContributionSummary.ts",
           "operation": "modify",
-          "description": "Ensure flow transitions and action handling fully reset state when returning to menu (selected geography, report-issue temporary fields, suggestions/top-issues cache, active intent, and messages as appropriate), and that transitions do not emit console errors during rapid user interactions."
+          "description": "Ensure the query key remains stable/predictable for invalidation (keep the existing 'callerContributionSummary' key prefix) and document the intended invalidation behavior in code comments to support the new event logging flow. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "path": "frontend/src/hooks/useCreateInstanceProposal.ts",
           "operation": "modify",
-          "description": "Align brain behavior with the smoke-test flows: ensure menu initializes with the expected greeting/options when the widget opens; ensure keyword/deep-link navigation triggers the provided navigation handler with shouldClose=true; ensure unknown-input recovery uses English copy and always offers a working Back to Menu action; remove/avoid console.warn/error paths that can be hit during normal flows (while still handling failures gracefully)."
-        },
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "operation": "modify",
-          "description": "Eliminate React warnings in the chat input handling (e.g., replace deprecated keypress handling), ensure Back to Menu button visibility matches non-menu states, and ensure the widget closes when navigation actions request it (via the provided navigation handler integration)."
-        },
-        {
-          "path": "frontend/src/secretary/copy/secretaryCopy.ts",
-          "operation": "modify",
-          "description": "Ensure all user-facing Secretary strings required by the step-6 flows (menu greeting/options labels, recovery text, prompts) are in English and consistent with the smoke-test documents."
-        },
-        {
-          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
-          "operation": "modify",
-          "description": "Adjust prompts/messages used across discovery/report-issue/recovery so they match the manual checklist expectations (including clear recovery messaging for unknown input and correct prompts during slot-filling/report flows), ensuring English-only output."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Verify Secretary navigation wiring so that destinations/keywords used in the smoke test (e.g., proposals, create instance) route correctly and the Secretary widget closes when expected; ensure the Secretary widget receives the correct navigation handler and keyword finder without introducing new routes."
+          "description": "Ensure the post-success contribution logging flow triggers contribution summary invalidation via the shared logger hook (no direct cache logic duplicated here beyond composing the shared hook). Verify the component's usage instructions before implementing."
         }
       ]
     }

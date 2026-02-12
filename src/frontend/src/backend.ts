@@ -281,7 +281,7 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isInstanceNameTaken(instanceName: string): Promise<boolean>;
     isParent(_childId: Principal, parentId: Principal): Promise<boolean>;
-    recordContribution(actionType: string, points: bigint, rewardType: string, referenceId: string | null, details: string | null): Promise<bigint>;
+    logContributionEvent(actionType: string, referenceId: string | null, details: string | null): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setContributionCriteria(actionType: string, criteria: ContributionCriteria): Promise<void>;
     submitProposal(description: string, instanceName: string, status: string, state: string, county: string, geographyLevel: USHierarchyLevel, censusBoundaryId: string, squareMeters: bigint, population2020: string): Promise<SubmitProposalResult>;
@@ -977,17 +977,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async recordContribution(arg0: string, arg1: bigint, arg2: string, arg3: string | null, arg4: string | null): Promise<bigint> {
+    async logContributionEvent(arg0: string, arg1: string | null, arg2: string | null): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.recordContribution(arg0, arg1, arg2, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg4));
+                const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.recordContribution(arg0, arg1, arg2, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg4));
+            const result = await this.actor.logContributionEvent(arg0, to_candid_opt_n10(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n10(this._uploadFile, this._downloadFile, arg2));
             return result;
         }
     }

@@ -1,57 +1,110 @@
 {
   "kind": "build_request",
-  "title": "Execute Secretary smoke-test steps 5 and 6 (geography suggestions + flow engine)",
+  "title": "Connect contribution rewards to issue-flow actions (issue, comment, evidence)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
-      "target": "frontend",
+      "text": "Define centralized contribution reward values for the three issue-flow actions: issue creation, comment creation, and evidence upload. Store the mapping in the backend so the server (not the frontend) is the source of truth for points and rewardType per action.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Run steps 5 and 6"
+          "Run step 1. Connect contribution rewards to issue‑flow actions 1.1 Define reward values for each action (issue, comment, evidence)"
         ]
       },
       "acceptanceCriteria": [
-        "With geography data ingested, opening the Secretary widget and running the discovery flow allows selecting a state and then immediately shows county/city suggestions.",
-        "The suggestions list updates (filters) correctly based on the selected state and user input without noticeable lag.",
-        "No errors appear in the browser console while running this flow."
+        "Backend has a single, centralized mapping from actionType -> {points, rewardType} for: issue creation, comment creation, evidence upload.",
+        "The mapping is used by backend logging logic (i.e., frontend does not send arbitrary points to be trusted).",
+        "Action type strings are documented/consistent across backend + frontend (single canonical set)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "text": "Add backend logic to log contribution events for the three issue-flow actions using the existing contribution log structures in backend/main.mo. Implement a single backend entrypoint that the frontend can call with (actionType, referenceId?, details?) and the backend will: validate actionType, resolve reward values from the centralized mapping, write a ContributionLogEntry, and return the created log entry id.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "1.2 Add backend logic to log these new contribution events",
+          "1.3 Update frontend calls so each action triggers the log entry"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new or updated backend method exists that allows the frontend to record an event by actionType and optional referenceId/details, and the backend determines pointsAwarded + rewardType from configured criteria.",
+        "On success, the backend returns the created contribution log entry id.",
+        "Unauthorized callers are rejected using existing authorization checks (consistent with current contribution log methods)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add guardrails in the backend to prevent duplicate or invalid contribution events. At minimum: reject unknown actionType values, reject events with missing/invalid referenceId when required for that action, and prevent duplicate awards for the same (caller, actionType, referenceId) combination.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "1.4 Add guardrails for duplicates or invalid events"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If actionType is not one of the supported issue-flow action types, the backend rejects the request with a clear error message.",
+        "Duplicate submissions for the same (caller, actionType, referenceId) do not create additional ContributionLogEntry records and do not award additional points.",
+        "Backend enforces basic input constraints (e.g., referenceId length bounds and/or details length bounds) to avoid unbounded storage abuse.",
+        "Guardrails are applied consistently regardless of which frontend screen triggers the event."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Run steps 5 and 6"
+          "1.3 Update frontend calls so each action triggers the log entry"
         ]
       },
       "acceptanceCriteria": [
-        "Opening the Secretary widget shows a menu with four options and a greeting message.",
-        "Discovery flow works end-to-end (state → location → result), and returning back to menu resets flow state.",
-        "Report issue flow works both when top issues exist and when they do not; selecting a category completes the flow and triggers the expected navigation behavior.",
-        "Custom category flow works via a “Something else” path and accepts a user-entered category.",
-        "Keyword navigation (e.g., typing a destination keyword) routes to the correct page and the widget closes when expected.",
-        "Unknown input produces an English recovery message and provides a working “Back to Menu” action.",
-        "No console errors or React hooks warnings occur during these flows."
+        "Creating an issue results in exactly one new contribution log entry for the caller.",
+        "Creating a comment results in exactly one new contribution log entry for the caller.",
+        "Uploading evidence results in exactly one new contribution log entry for the caller.",
+        "If the same frontend action is retried (e.g., user double-clicks, network retry, refresh), the backend dedupe prevents multiple awards, and the frontend handles the duplicate response without breaking the UI."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Connect contribution rewards to issue‑flow actions"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After any of the three actions, the caller contribution summary query (useCallerContributionSummary) is invalidated/refetched so subsequent renders show updated totals.",
+        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose existing hooks/components instead)."
       ]
     }
   ],
   "constraints": [
-    "Use English for all user-facing text.",
-    "Do not edit frontend files under `frontend/src/components/ui` or other immutable paths listed in SYSTEM_CONTEXT.",
-    "Keep backend logic (if any changes are needed) within the single Motoko actor in `backend/main.mo`; only introduce/modify `backend/migration.mo` if a state upgrade is required."
+    "Backend must remain a single-actor Motoko architecture (all logic in backend/main.mo).",
+    "Do not modify files under frontend immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not implement new Secretary intents or add new product features beyond what is needed to satisfy smoke-test steps 5 and 6.",
-    "Do not introduce real-time communication features (e.g., WebSockets) or third-party auth providers."
+    "Do not add UI to display “earned points” notifications/toasts in this step (that is Phase 2 step 2).",
+    "Do not expand the admin dashboard contribution logs UI (that is Phase 2 step 4).",
+    "Do not change authentication providers (Internet Identity only)."
   ],
   "imageRequirements": {
     "required": [],

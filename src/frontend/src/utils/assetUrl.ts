@@ -27,3 +27,23 @@ export function resolveAssetUrl(path: string): string {
   
   return resolved;
 }
+
+/**
+ * Joins the configured base path with an in-app navigation path.
+ * Ensures consistent handling of trailing slashes for SPA routing.
+ * 
+ * @param path - The navigation path (e.g., '/geography', 'profile')
+ * @returns The full path including the base path
+ */
+export function joinBasePath(path: string): string {
+  const base = import.meta.env.BASE_URL || '/';
+  
+  // Normalize base: remove trailing slash if present
+  const normalizedBase = base.endsWith('/') && base !== '/' ? base.slice(0, -1) : base;
+  
+  // Ensure path starts with slash
+  const normalizedPath = path.startsWith('/') ? path : '/' + path;
+  
+  // Join base and path
+  return normalizedBase === '/' ? normalizedPath : `${normalizedBase}${normalizedPath}`;
+}

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ArrowLeft, Loader2, CheckCircle2, LogOut, Upload, X, Award } from 'lucide-react';
+import { User, ArrowLeft, Loader2, CheckCircle2, LogOut, Upload, X, Award, ImageIcon } from 'lucide-react';
 import { IconBubble } from '@/components/common/IconBubble';
 import { LoadingIndicator } from '@/components/common/LoadingIndicator';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
@@ -15,6 +15,8 @@ import { LoginButton } from '@/components/common/LoginButton';
 import { uiCopy } from '@/lib/uiCopy';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useContributionEventLogger } from '@/hooks/useContributionEventLogger';
+import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 
 export default function ProfilePage() {
   const { identity, clear, loginStatus } = useInternetIdentity();
@@ -23,12 +25,14 @@ export default function ProfilePage() {
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const { data: contributionSummary, isLoading: summaryLoading } = useCallerContributionSummary();
   const saveMutation = useSaveCallerUserProfile();
+  const logContribution = useContributionEventLogger();
   
   const [name, setName] = useState('');
   const [profileImage, setProfileImage] = useState<Uint8Array | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
   const isAuthenticated = !!identity;
   const actorReady = !!actor && !!identity;
@@ -71,7 +75,7 @@ export default function ProfilePage() {
     );
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -87,8 +91,10 @@ export default function ProfilePage() {
       return;
     }
 
+    setIsUploadingEvidence(true);
+
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const arrayBuffer = event.target?.result as ArrayBuffer;
       const uint8Array = new Uint8Array(arrayBuffer);
       setProfileImage(uint8Array);
@@ -104,6 +110,27 @@ export default function ProfilePage() {
       
       setImagePreview(url);
       setHasChanges(true);
+
+      // Log contribution event for evidence upload
+      // Use a stable referenceId based on timestamp and file name
+      const referenceId = `evidence_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      try {
+        await logContribution.mutateAsync({
+          actionType: CONTRIBUTION_ACTION_TYPES.EVIDENCE_ADDED,
+          referenceId,
+          details: `Evidence image uploaded: ${file.name}`,
+        });
+        toast.success('Evidence uploaded! Points awarded.');
+      } catch (error) {
+        // Don't break the upload flow if contribution logging fails
+        console.warn('Failed to log contribution for evidence upload:', error);
+      } finally {
+        setIsUploadingEvidence(false);
+      }
+    };
+    reader.onerror = () => {
+      setIsUploadingEvidence(false);
+      toast.error('Failed to read image file');
     };
     reader.readAsArrayBuffer(file);
   };
@@ -187,11 +214,20 @@ export default function ProfilePage() {
               variant="outline"
               size="sm"
               onClick={() => document.getElementById('profile-image-input')?.click()}
-              disabled={saveMutation.isPending || !actorReady}
+              disabled={saveMutation.isPending || !actorReady || isUploadingEvidence}
               className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary"
             >
-              <Upload className="h-4 w-4 mr-2" />
-              {imagePreview ? uiCopy.profile.changeImage : uiCopy.profile.uploadImage}
+              {isUploadingEvidence ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {imagePreview ? uiCopy.profile.changeImage : uiCopy.profile.uploadImage}
+                </>
+              )}
             </Button>
             {imagePreview && (
               <Button
@@ -199,7 +235,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="sm"
                 onClick={handleRemoveImage}
-                disabled={saveMutation.isPending || !actorReady}
+                disabled={saveMutation.isPending || !actorReady || isUploadingEvidence}
                 className="border-destructive text-destructive hover:bg-destructive/20 hover:text-destructive"
               >
                 <X className="h-4 w-4 mr-2" />
@@ -281,7 +317,7 @@ export default function ProfilePage() {
                 variant="outline"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                className="border-secondary text-secondary hover:bg-secondary/20 hover:text-secondary focus-visible:ring-secondary"
               >
                 {isLoggingOut ? (
                   <>
@@ -301,137 +337,129 @@ export default function ProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-2xl mx-auto">
-          {!isAuthenticated ? (
-            <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white">
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
+        {!isAuthenticated ? (
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white text-2xl">Profile</CardTitle>
+              <CardDescription className="text-white/70">
+                Please log in to view and edit your profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center py-8">
+              <LoginButton />
+            </CardContent>
+          </Card>
+        ) : profileLoading ? (
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardContent className="flex justify-center py-12">
+              <LoadingIndicator label="Loading profile..." />
+            </CardContent>
+          </Card>
+        ) : showProfileSetup ? (
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white text-2xl">Welcome to Whisper!</CardTitle>
+              <CardDescription className="text-white/70">
+                Let's set up your profile to get started
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="setup-name" className="text-white">
+                  Your Name
+                </Label>
+                <Input
+                  id="setup-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-secondary"
+                  disabled={saveMutation.isPending || !actorReady}
+                />
+              </div>
+
+              {renderProfileImageSection()}
+
+              <Button
+                onClick={handleSave}
+                disabled={!name.trim() || saveMutation.isPending || !actorReady}
+                className="w-full bg-secondary hover:bg-secondary/90 text-white"
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating Profile...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Create Profile
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
               <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <IconBubble size="lg" variant="secondary">
-                    <User className="h-6 w-6" />
-                  </IconBubble>
-                  <CardTitle className="text-2xl">{uiCopy.profile.pageTitle}</CardTitle>
-                </div>
+                <CardTitle className="text-white text-2xl">Your Profile</CardTitle>
                 <CardDescription className="text-white/70">
-                  {uiCopy.profile.authRequired}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  <LoginButton />
-                </div>
-              </CardContent>
-            </Card>
-          ) : profileLoading ? (
-            <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white">
-              <CardContent className="py-12">
-                <LoadingIndicator label="Loading profile..." />
-              </CardContent>
-            </Card>
-          ) : showProfileSetup ? (
-            <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <IconBubble size="lg" variant="secondary">
-                    <User className="h-6 w-6" />
-                  </IconBubble>
-                  <CardTitle className="text-2xl">{uiCopy.profile.setupTitle}</CardTitle>
-                </div>
-                <CardDescription className="text-white/70">
-                  {uiCopy.profile.setupDescription}
+                  Manage your personal information and settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {renderProfileImageSection()}
-
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-white">
-                    {uiCopy.profile.nameLabel}
+                    Name
                   </Label>
                   <Input
                     id="name"
-                    type="text"
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder={uiCopy.profile.namePlaceholder}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                    placeholder="Enter your name"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-secondary"
                     disabled={saveMutation.isPending || !actorReady}
                   />
                 </div>
 
-                <Button
-                  onClick={handleSave}
-                  disabled={!name.trim() || saveMutation.isPending || !actorReady}
-                  className="w-full bg-secondary hover:bg-secondary/90 text-white"
-                >
-                  {saveMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {uiCopy.profile.saving}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {uiCopy.profile.saveButton}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-[oklch(0.20_0.05_230)] border-accent/50 text-white">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <IconBubble size="lg" variant="secondary">
-                    <User className="h-6 w-6" />
-                  </IconBubble>
-                  <CardTitle className="text-2xl">{uiCopy.profile.pageTitle}</CardTitle>
-                </div>
-                <CardDescription className="text-white/70">
-                  {uiCopy.profile.pageDescription}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderContributionPointsSection()}
-
                 {renderProfileImageSection()}
-
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white">
-                    {uiCopy.profile.nameLabel}
-                  </Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder={uiCopy.profile.namePlaceholder}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-                    disabled={saveMutation.isPending || !actorReady}
-                  />
-                </div>
 
                 <Button
                   onClick={handleSave}
                   disabled={!hasChanges || !name.trim() || saveMutation.isPending || !actorReady}
-                  className="w-full bg-secondary hover:bg-secondary/90 text-white"
+                  className="w-full bg-secondary hover:bg-secondary/90 text-white disabled:opacity-50"
                 >
                   {saveMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {uiCopy.profile.saving}
+                      Saving...
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {uiCopy.profile.saveButton}
+                      Save Changes
                     </>
                   )}
                 </Button>
               </CardContent>
             </Card>
-          )}
-        </div>
+
+            {/* Contribution Points Section */}
+            <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white text-2xl">Contribution Points</CardTitle>
+                <CardDescription className="text-white/70">
+                  Track your contributions to the Whisper community
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderContributionPointsSection()}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

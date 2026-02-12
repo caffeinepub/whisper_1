@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Task } from '@/backend';
+import { useContributionEventLogger } from './useContributionEventLogger';
+import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 
 export function useGetTasks(proposalId: string) {
   const { actor, isFetching: actorFetching } = useActor();
@@ -19,13 +21,14 @@ export function useGetTasks(proposalId: string) {
 export function useCreateTask() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const logContribution = useContributionEventLogger();
 
   return useMutation({
     mutationFn: async ({ proposalId, description }: { proposalId: string; description: string }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.createTask(proposalId, description);
     },
-    onSuccess: (newTaskId, variables) => {
+    onSuccess: async (newTaskId, variables) => {
       // Optimistically add the new task to the cache
       queryClient.setQueryData<Array<[bigint, Task]>>(['tasks', variables.proposalId], (old) => {
         if (!old) return [[newTaskId, { id: newTaskId, description: variables.description, completed: false }]];
@@ -33,6 +36,19 @@ export function useCreateTask() {
       });
       // Also invalidate to ensure consistency with backend
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.proposalId] });
+
+      // Log contribution event after successful comment creation
+      // Use taskId as stable referenceId
+      try {
+        await logContribution.mutateAsync({
+          actionType: CONTRIBUTION_ACTION_TYPES.COMMENT_CREATED,
+          referenceId: newTaskId.toString(),
+          details: `Comment created for proposal ${variables.proposalId}`,
+        });
+      } catch (error) {
+        // Don't break the success flow if contribution logging fails
+        console.warn('Failed to log contribution for comment creation:', error);
+      }
     },
   });
 }

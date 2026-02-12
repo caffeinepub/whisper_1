@@ -1,37 +1,74 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T23:42:06.055Z",
-  "summary": "Diff adds/improves Secretary discovery typeahead behavior and wires state-selected geography queries (counties/places by state) into the FlowEngineBrain via SecretaryWidget, plus adds more defensive flow-runner fallback messaging. However, the diff summary does not provide enough evidence that the full Step 6 flow-engine checklist behaviors (menu/greeting, report-issue scenarios, keyword routing, back-to-menu resets, unknown-input recovery, etc.) are implemented end-to-end.",
+  "generatedAt": "2026-02-12T00:36:53.093Z",
+  "summary": "Diff adds a frontend contribution-event logging hook and canonical action type constants, plus introduces backend migration state for centralized reward values. However, the backend entrypoint/logic for logging events (including validation and deduplication) is not evidenced in the provided backend diff, and frontend triggers appear to be wired to proposal/task flows rather than clearly to issue/comment/evidence actions as specified.",
   "missing_requirements": [
     {
       "id": "REQ-2",
-      "requirement": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
-      "reason": "The diff shows some flow-engine infrastructure (FlowEngineBrain usage, FlowRunner fallback view model), but does not include evidence of the specific step-6-required node definitions/transitions, menu rendering with four options + greeting, report-issue branching (top issues present/absent), keyword navigation closing behavior, or explicit unknown-input recovery messaging/Back-to-Menu action across those scenarios.",
+      "requirement": "Add backend logic to log contribution events for issue creation, comment creation, and evidence upload via a single backend entrypoint callable by the frontend; backend validates actionType, resolves reward values from centralized mapping, writes a ContributionLogEntry, and returns created log entry id.",
+      "reason": "Frontend calls `actor.logContributionEvent(...)`, but the diff summary of `backend/main.mo` does not show any new/updated public method implementing this entrypoint, nor code that writes ContributionLogEntry records and returns the created id.",
       "evidence": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts",
-        "frontend/src/secretary/flow/runner.ts"
+        "backend/main.mo",
+        "frontend/src/hooks/useContributionEventLogger.ts"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Add backend guardrails: reject unknown actionType, require/validate referenceId where needed, enforce length bounds, and prevent duplicate awards for same (caller, actionType, referenceId).",
+      "reason": "While migration introduces an `awardedContributions` map, the diff summary does not show backend runtime logic that (a) validates supported action types with clear errors, (b) checks referenceId requirements/length bounds, or (c) performs deduplication before writing a new ContributionLogEntry.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Action type strings are documented/consistent across backend + frontend (single canonical set).",
+      "reason": "Frontend canonical constants are `IssueCreated`/`CommentCreated`/`EvidenceAdded`, but backend defines `ContributionActionType` variants `#issueCreated/#commentCreated/#evidenceAdded` (different casing/representation). The diff does not show a demonstrated single canonical string set used end-to-end.",
+      "evidence": [
+        "frontend/src/lib/contributionActionTypes.ts",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Frontend must trigger contribution logging after successful completion of (a) issue creation, (b) comment creation, (c) evidence upload, using stable referenceIds for deduplication.",
+      "reason": "The diff shows contribution logging after creating a task (`useCreateTask`) using `COMMENT_CREATED`, which is not clearly the specified \"comment creation\" action. Evidence of logging for actual issue creation/comment creation/evidence upload flows is not clearly present in the truncated diffs (e.g., ProfilePage changes are truncated before any backend evidence-upload call is shown).",
+      "evidence": [
+        "frontend/src/hooks/useIssueProjectTasks.ts",
+        "frontend/src/pages/ProfilePage.tsx",
+        "frontend/src/hooks/useCreateInstanceProposal.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/expanded observability/tracing integration in the Secretary flow brain (imports and tracing mention).",
-      "reason": "REQ-1/REQ-2 focus on smoke-test behaviors (geography suggestions + flow checklist). Tracing/observability is not explicitly requested as part of those requirements and may be additional scope beyond the smoke-test steps.",
+      "description": "Logging a contribution event of type `COMMENT_CREATED` when creating a task (project task creation treated as comment creation).",
+      "reason": "The requested actions were issue creation, comment creation, and evidence upload. The diff wires contribution logging to `createTask` and labels it as comment creation, which is not specified as an issue-flow action in the BuildRequest.",
       "evidence": [
-        "frontend/src/secretary/brain/FlowEngineBrain.ts"
+        "frontend/src/hooks/useIssueProjectTasks.ts"
+      ]
+    },
+    {
+      "description": "Large set of additional frontend documentation/styles/routing/geography-hook changes unrelated to contribution reward logging.",
+      "reason": "The diff summary indicates modifications/additions across multiple docs, CSS, Tailwind config, App shell routing, and geography query hooks that are not requested by the BuildRequest for this step.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/secretary/SecretaryLocationTypeahead.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/hooks/useUSGeography.ts",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/flow/runner.ts",
+    "frontend/src/hooks/useCallerContributionSummary.ts",
+    "frontend/src/hooks/useContributionEventLogger.ts",
+    "frontend/src/hooks/useCreateInstanceProposal.ts",
+    "frontend/src/hooks/useIssueProjectTasks.ts",
+    "frontend/src/lib/contributionActionTypes.ts",
+    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
   ]
 }

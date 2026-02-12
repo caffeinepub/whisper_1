@@ -231,8 +231,8 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isInstanceNameTaken' : ActorMethod<[string], boolean>,
   'isParent' : ActorMethod<[Principal, Principal], boolean>,
-  'recordContribution' : ActorMethod<
-    [string, bigint, string, [] | [string], [] | [string]],
+  'logContributionEvent' : ActorMethod<
+    [string, [] | [string], [] | [string]],
     bigint
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,

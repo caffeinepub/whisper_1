@@ -6,6 +6,7 @@ import type { ContributionSummary } from '@/backend';
 /**
  * React Query hook that loads the caller's contribution summary from the backend.
  * Exposes loading/error/data states for the Profile page with safe empty/zero states.
+ * Query key includes principal for proper cache scoping and invalidation support.
  */
 export function useCallerContributionSummary() {
   const { actor, isFetching: actorFetching } = useActor();

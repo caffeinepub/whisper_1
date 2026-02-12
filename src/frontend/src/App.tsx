@@ -7,9 +7,10 @@ import { SecretaryWidgetPortal } from '@/components/secretary/SecretaryWidgetPor
 import { ProposalsSection } from '@/components/proposals/ProposalsSection';
 import { useSecretaryNavigationRegistry } from '@/hooks/useSecretaryNavigationRegistry';
 import { uiCopy } from '@/lib/uiCopy';
-import { resolveAssetUrl } from '@/utils/assetUrl';
+import { resolveAssetUrl, joinBasePath } from '@/utils/assetUrl';
 import { MessageCircle, Users, Shield, Zap, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { NavigationRequest } from '@/secretary/brain/SecretaryBrain';
 
 const GeographyPage = lazy(() => import('@/pages/GeographyPage'));
 const AdminModerationPage = lazy(() => import('@/pages/admin/AdminModerationPage'));
@@ -29,14 +30,19 @@ function AppContent() {
   const [secretaryInitialFlow, setSecretaryInitialFlow] = useState<'discovery' | null>(null);
   const [currentPage, setCurrentPage] = useState<'home' | 'geography' | 'admin' | 'profile'>('home');
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
-  const { register, unregister } = useSecretaryNavigationRegistry();
+  const { register, unregister, navigate: navigateToDestination, findByKeyword } = useSecretaryNavigationRegistry();
 
   // Listen to popstate events to update currentPage
   useEffect(() => {
     const updatePage = () => {
       const path = window.location.pathname;
       const basePath = import.meta.env.BASE_URL || '/';
-      const relativePath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
+      
+      // Normalize basePath for comparison (handle both '/base' and '/base/')
+      const normalizedBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+      const relativePath = path.startsWith(normalizedBase) 
+        ? path.slice(normalizedBase.length) 
+        : path;
       
       if (relativePath.includes('geography')) {
         setCurrentPage('geography');
@@ -94,6 +100,21 @@ function AppContent() {
       unregister('report-issue');
     };
   }, [register, unregister]);
+
+  // Base-path-safe navigation handler for Secretary
+  const handleSecretaryNavigation = (request: NavigationRequest) => {
+    const success = navigateToDestination(request.destinationId);
+    if (success && request.shouldClose) {
+      // Close Secretary after successful navigation if requested
+      setSecretaryOpen(false);
+    }
+  };
+
+  // Base-path-safe keyword finder for Secretary
+  const handleSecretaryKeywordFind = (text: string) => {
+    const destination = findByKeyword(text);
+    return destination ? { id: destination.id } : null;
+  };
 
   const handleOpenSecretary = () => {
     setSecretaryInitialFlow(null);
@@ -311,7 +332,8 @@ function AppContent() {
       <SecretaryWidgetPortal
         open={secretaryOpen}
         onOpenChange={setSecretaryOpen}
-        initialFlow={secretaryInitialFlow}
+        navigationHandler={handleSecretaryNavigation}
+        findByKeyword={handleSecretaryKeywordFind}
       />
     </div>
   );

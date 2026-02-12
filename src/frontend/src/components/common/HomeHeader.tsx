@@ -1,159 +1,158 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
-import { LoginButton } from './LoginButton';
+import { Button } from '@/components/ui/button';
 import { UserProfileMenu } from './UserProfileMenu';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
-import { useIsCallerAdmin } from '@/hooks/useQueries';
 import { useCurrentPath } from '@/hooks/useCurrentPath';
-import { uiCopy } from '@/lib/uiCopy';
-import { resolveAssetUrl } from '@/utils/assetUrl';
+import { resolveAssetUrl, joinBasePath } from '@/utils/assetUrl';
 
 export function HomeHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { identity } = useInternetIdentity();
-  const { data: isAdmin } = useIsCallerAdmin();
   const currentPath = useCurrentPath();
+
   const isAuthenticated = !!identity;
 
   const handleNavigation = (path: string) => {
-    const basePath = import.meta.env.BASE_URL || '/';
-    const fullPath = basePath.endsWith('/') ? `${basePath}${path}` : `${basePath}/${path}`;
+    const fullPath = joinBasePath(path);
     window.history.pushState({}, '', fullPath);
     window.dispatchEvent(new PopStateEvent('popstate'));
     setMobileMenuOpen(false);
   };
 
   const isActive = (path: string) => {
+    const fullPath = joinBasePath(path);
     const basePath = import.meta.env.BASE_URL || '/';
-    const normalizedBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-    const normalizedCurrent = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
-    const normalizedPath = path === '' ? normalizedBase : `${normalizedBase}/${path}`;
-    return normalizedCurrent === normalizedPath;
+    const normalizedBase = basePath.endsWith('/') && basePath !== '/' ? basePath.slice(0, -1) : basePath;
+    
+    // For home, check if we're at the base path
+    if (path === '/') {
+      return currentPath === normalizedBase || currentPath === normalizedBase + '/';
+    }
+    
+    // For other paths, check if current path includes the target path
+    return currentPath.includes(path);
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur supports-[backdrop-filter]:bg-slate-900/90 border-b border-slate-700">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900 border-b border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
-            onClick={() => handleNavigation('')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            onClick={() => handleNavigation('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <img
               src={resolveAssetUrl('/whisper-logo-teal.svg')}
               alt="Whisper Logo"
               className="h-8 w-8"
             />
-            <span className="text-xl font-bold text-white">
-              {uiCopy.product.name}
-            </span>
+            <span className="text-xl font-bold text-white">Whisper</span>
           </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <button
-              onClick={() => handleNavigation('proposals')}
-              className={`text-sm font-medium transition-colors ${
-                isActive('proposals')
-                  ? 'text-secondary'
-                  : 'text-white hover:text-secondary'
+              onClick={() => handleNavigation('/')}
+              className={`text-white hover:text-secondary transition-colors ${
+                isActive('/') ? 'text-secondary' : ''
               }`}
             >
-              {uiCopy.navigation.proposals}
+              Home
             </button>
             <button
-              onClick={() => handleNavigation('create-instance')}
-              className={`text-sm font-medium transition-colors ${
-                isActive('create-instance')
-                  ? 'text-secondary'
-                  : 'text-white hover:text-secondary'
+              onClick={() => handleNavigation('/geography')}
+              className={`text-white hover:text-secondary transition-colors ${
+                isActive('/geography') ? 'text-secondary' : ''
               }`}
             >
-              {uiCopy.navigation.createInstance}
+              Geography
             </button>
-            {isAdmin && (
+            {isAuthenticated && (
               <button
-                onClick={() => handleNavigation('admin')}
-                className={`text-sm font-medium transition-colors ${
-                  isActive('admin')
-                    ? 'text-secondary'
-                    : 'text-white hover:text-secondary'
+                onClick={() => handleNavigation('/admin')}
+                className={`text-white hover:text-secondary transition-colors ${
+                  isActive('/admin') ? 'text-secondary' : ''
                 }`}
               >
-                {uiCopy.navigation.admin}
+                Admin
               </button>
             )}
-          </nav>
-
-          {/* Desktop Auth */}
-          <div className="hidden md:flex items-center gap-4">
             {isAuthenticated ? (
               <UserProfileMenu onNavigate={handleNavigation} />
             ) : (
-              <LoginButton />
+              <Button
+                onClick={() => handleNavigation('/profile')}
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30"
+              >
+                Login
+              </Button>
             )}
-          </div>
+          </nav>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="md:hidden text-white"
           >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6 text-white" />
-            ) : (
-              <Menu className="h-6 w-6 text-white" />
-            )}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-700">
-            <nav className="flex flex-col gap-4">
+          <nav className="md:hidden py-4 border-t border-slate-800">
+            <div className="flex flex-col gap-4">
               <button
-                onClick={() => handleNavigation('proposals')}
-                className={`text-left px-4 py-2 rounded-lg transition-colors ${
-                  isActive('proposals')
-                    ? 'bg-secondary/10 text-secondary font-medium'
-                    : 'text-white hover:bg-slate-800'
+                onClick={() => handleNavigation('/')}
+                className={`text-white hover:text-secondary transition-colors text-left ${
+                  isActive('/') ? 'text-secondary' : ''
                 }`}
               >
-                {uiCopy.navigation.proposals}
+                Home
               </button>
               <button
-                onClick={() => handleNavigation('create-instance')}
-                className={`text-left px-4 py-2 rounded-lg transition-colors ${
-                  isActive('create-instance')
-                    ? 'bg-secondary/10 text-secondary font-medium'
-                    : 'text-white hover:bg-slate-800'
+                onClick={() => handleNavigation('/geography')}
+                className={`text-white hover:text-secondary transition-colors text-left ${
+                  isActive('/geography') ? 'text-secondary' : ''
                 }`}
               >
-                {uiCopy.navigation.createInstance}
+                Geography
               </button>
-              {isAdmin && (
+              {isAuthenticated && (
                 <button
-                  onClick={() => handleNavigation('admin')}
-                  className={`text-left px-4 py-2 rounded-lg transition-colors ${
-                    isActive('admin')
-                      ? 'bg-secondary/10 text-secondary font-medium'
-                      : 'text-white hover:bg-slate-800'
+                  onClick={() => handleNavigation('/admin')}
+                  className={`text-white hover:text-secondary transition-colors text-left ${
+                    isActive('/admin') ? 'text-secondary' : ''
                   }`}
                 >
-                  {uiCopy.navigation.admin}
+                  Admin
                 </button>
               )}
-              <div className="px-4 pt-2 border-t border-slate-700">
-                {isAuthenticated ? (
-                  <UserProfileMenu onNavigate={handleNavigation} />
-                ) : (
-                  <LoginButton />
-                )}
-              </div>
-            </nav>
-          </div>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => handleNavigation('/profile')}
+                    className={`text-white hover:text-secondary transition-colors text-left ${
+                      isActive('/profile') ? 'text-secondary' : ''
+                    }`}
+                  >
+                    Profile
+                  </button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => handleNavigation('/profile')}
+                  variant="outline"
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/30 w-full"
+                >
+                  Login
+                </Button>
+              )}
+            </div>
+          </nav>
         )}
       </div>
     </header>

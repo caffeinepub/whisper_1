@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SecretaryWidget } from './SecretaryWidget';
+import type { NavigationHandler } from '@/secretary/brain/SecretaryBrain';
 
 interface SecretaryWidgetPortalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onOptionSelect?: (optionNumber: number) => void;
-  initialFlow?: 'discovery' | null;
+  navigationHandler?: NavigationHandler;
+  findByKeyword?: (text: string) => { id: string } | null;
 }
 
-export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, initialFlow }: SecretaryWidgetPortalProps) {
+export function SecretaryWidgetPortal({ 
+  open, 
+  onOpenChange, 
+  navigationHandler,
+  findByKeyword 
+}: SecretaryWidgetPortalProps) {
   const [mounted, setMounted] = useState(false);
   const [overlayRoot, setOverlayRoot] = useState<HTMLElement | null>(null);
 
@@ -43,6 +49,8 @@ export function SecretaryWidgetPortal({ open, onOpenChange, onOptionSelect, init
     <SecretaryWidget 
       open={open} 
       onClose={handleClose}
+      navigationHandler={navigationHandler}
+      findByKeyword={findByKeyword}
     />,
     overlayRoot
   );

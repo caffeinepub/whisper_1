@@ -1,30 +1,65 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [],
+  "summary": "Project is moving into Phase 2: implementing contribution rewards/points across issue-flow actions with backend logging, frontend triggers, and guardrails.",
+  "architectural_notes": [
+    "Contribution rewards system should include: configurable reward values per action (issue creation, comments, evidence uploads), backend contribution event logging, frontend action hooks to trigger logging, and guardrails to prevent duplicate/invalid events."
+  ],
+  "known_issues": [
+    "Build system may reject commands that reference step labels without explicit implementation details (returns generic 'AI couldn't process your request' error)."
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-ensure-the-secretary-widget-discovery-flow-shows-county-city-suggestions-after-a-state-is-selected-and-that-suggestions-are-filtered-correctly-with-no-console-errors-as-described-in-step-5-of-frontend-docs-smoke-test-regression-patch-md",
-      "title": "Ensure the Secretary widget discovery flow shows county/city suggestions after a state is selected, and that suggestions are filtered correctly with no console errors (as described in step 5 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md`).",
+      "id": "feature-update-the-frontend-so-each-issue-flow-action-triggers-the-backend-contribution-log-entry-after-a-successful-action-specifically-after-successful-completion-of-a-issue-creation-b-comment-creation-c-evidence-upload-the-frontend-must-call-the-backend-contribution-event-logging-entrypoint-with-the-correct-actiontype-and-a-stable-referenceid-for-deduplication-e-g-proposal-issue-identifier-comment-identifier-evidence-blob-identifier",
+      "title": "Update the frontend so each issue-flow action triggers the backend contribution log entry after a successful action. Specifically, after successful completion of: (a) issue creation, (b) comment creation, (c) evidence upload, the frontend must call the backend contribution-event logging entrypoint with the correct actionType and a stable referenceId for deduplication (e.g., proposal/issue identifier, comment identifier, evidence/blob identifier).",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-secretary-flow-engine-behavior-matches-the-manual-checklist-in-step-6-of-frontend-docs-smoke-test-regression-patch-md-and-the-detailed-scenarios-in-frontend-docs-smoke-test-secretary-flows-md-including-menu-rendering-discovery-report-issue-paths-with-and-without-top-issues-custom-category-flow-back-to-menu-behavior-keyword-navigation-and-unknown-input-recovery",
-      "title": "Ensure the Secretary flow engine behavior matches the manual checklist in step 6 of `frontend/docs/SMOKE_TEST_REGRESSION_PATCH.md` (and the detailed scenarios in `frontend/docs/SMOKE_TEST_SECRETARY_FLOWS.md`), including menu rendering, discovery, report-issue paths (with and without top issues), custom category flow, back-to-menu behavior, keyword navigation, and unknown-input recovery.",
+      "id": "feature-ensure-frontend-state-that-depends-on-contribution-logs-points-can-be-refreshed-after-these-new-events-after-a-successful-contribution-log-call-invalidate-refetch-the-react-query-cache-for-the-caller-s-contribution-summary-so-earned-totals-are-up-to-date-for-any-pages-that-display-them",
+      "title": "Ensure frontend state that depends on contribution logs/points can be refreshed after these new events. After a successful contribution log call, invalidate/refetch the React Query cache for the caller’s contribution summary so earned totals are up to date for any pages that display them.",
       "reqIds": [
-        "REQ-2"
+        "REQ-5"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Execute Secretary smoke-test steps 5 and 6 (geography suggestions + flow engine)",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Connect contribution rewards to issue-flow actions (define reward values; log contribution events in backend; trigger logs from frontend actions; add duplicate/invalid event guardrails)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Define centralized contribution reward values for the three issue-flow actions: issue creation, comment creation, and evidence upload. Store the mapping in the backend so the server (not the frontend) is the source of truth for points and rewardType per action.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add backend logic to log contribution events for the three issue-flow actions using the existing contribution log structures in backend/main.mo. Implement a single backend entrypoint that the frontend can call with (actionType, referenceId?, details?) and the backend will: validate actionType, resolve reward values from the centralized mapping, write a ContributionLogEntry, and return the created log entry id.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add guardrails in the backend to prevent duplicate or invalid contribution events. At minimum: reject unknown actionType values, reject events with missing/invalid referenceId when required for that action, and prevent duplicate awards for the same (caller, actionType, referenceId) combination.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Connect contribution rewards to issue-flow actions (issue, comment, evidence)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

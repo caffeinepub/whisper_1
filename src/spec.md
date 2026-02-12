@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Pass Secretary smoke-test steps 5 and 6 by fixing geography suggestions after state selection and ensuring the Secretary flow engine matches the documented checklist, without console errors.
+**Goal:** Connect contribution rewards to issue-flow actions so points/reward types are determined and logged by the backend when users create issues, add comments, or upload evidence.
 
 **Planned changes:**
-- Update the Secretary discovery flow so that after selecting a state, county/city suggestions appear immediately and filter correctly based on the chosen state and user input.
-- Align Secretary flow engine behavior with the step-6 checklist and documented scenarios: initial menu rendering, discovery path, report-issue paths (with/without top issues), “Something else” custom category path, back-to-menu reset behavior, keyword navigation routing/close behavior, and unknown-input recovery messaging/actions.
-- Eliminate browser console errors and React hooks warnings occurring during these flows.
+- Add a centralized backend mapping of issue-flow actionType -> {points, rewardType} for issue creation, comment creation, and evidence upload (backend as source of truth).
+- Implement/extend a single backend entrypoint to record contribution events by (actionType, optional referenceId, optional details), validate inputs, resolve rewards from the mapping, write a ContributionLogEntry, and return the created log entry id.
+- Add backend guardrails: reject unknown actionTypes, enforce required/valid referenceId where needed, apply basic input bounds, and dedupe awards for the same (caller, actionType, referenceId).
+- Update the frontend to call the backend contribution-event entrypoint after successful issue creation, comment creation, and evidence upload, passing the correct actionType and a stable referenceId.
+- After logging a contribution event, invalidate/refetch the caller contribution summary React Query cache so totals refresh.
 
-**User-visible outcome:** In the Secretary widget, users can complete discovery (state → location → result) with correctly filtered location suggestions, navigate menu/report-issue/custom-category paths as expected, recover from unknown inputs, and return to the menu with state reset—without console errors.
+**User-visible outcome:** After creating an issue, creating a comment, or uploading evidence, the user’s contribution rewards are recorded once per action (with backend deduplication) and contribution totals refresh on pages that display them.
