@@ -1,95 +1,193 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Step 6: Contribution Points summary on Profile (state-sourced, teal styling, instant updates)",
+  "title": "Admin Contribution Logs: filters, pagination, linking, and admin gating",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add a prominent, teal-accented Contribution Points total summary element to the Profile page that matches existing Profile card styling.",
+      "summary": "Ensure the Admin area contains a clearly labeled \"Contribution Logs\" section with English UI copy.",
       "acceptanceCriteria": [
-        "On the Profile page, there is a dedicated UI element for Contribution Points that includes a prominently displayed total.",
-        "The styling matches the existing Profile cards/components and includes a teal accent (e.g., icon/heading/border) consistent with current design tokens/components."
+        "Admin area includes a clearly labeled section titled \"Contribution Logs\".",
+        "All user-facing labels/messages in the section are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
           "operation": "modify",
-          "description": "Refine the existing Contribution Points section to include a more prominent total summary area (teal-accented) within the existing shadcn-ui Card layout; keep styling consistent with current Profile cards and use teal tokens (e.g., accent/secondary). Use shadcn-ui Card components and existing IconBubble variant(s) to provide the teal accent. Verify the component's usage instructions before implementing."
+          "description": "Keep the section header labeled using English copy and align structure with the Admin page layout. Use existing shadcn-ui composed components (e.g., Card, CardHeader, CardTitle) to match admin styling conventions. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/uiCopy.ts",
+          "operation": "modify",
+          "description": "Add/adjust English strings for the Contribution Logs section (filters, date range labels, pagination range/page labels, link/unlinkable reference messaging) under uiCopy.admin to ensure all user-facing text is English."
+        },
+        {
+          "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
+          "operation": "modify",
+          "description": "Wire the Contribution Logs section as an explicit Admin page section (still within the existing Admin page) and pass any necessary admin-gating props so the section renders only for admins."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Ensure Contribution Points total is rendered strictly from existing client-side state/React Query cache already used by the Profile page, without introducing new backend calls.",
+      "summary": "Fetch admin contribution logs via existing admin-only backend capabilities with paginated/incremental loading (no full dataset load).",
       "acceptanceCriteria": [
-        "No new backend methods, canister calls, or new React Query fetch hooks are introduced solely to support the Contribution Points display.",
-        "The Profile page continues to use the existing in-app state (e.g., the existing contribution summary state already present on the page) to render the total."
+        "The logs list is populated via the existing admin-only endpoints already used by the app (e.g., paginated global admin logs).",
+        "The UI does not attempt to load all logs at once; it uses pagination/incremental loading."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
           "operation": "modify",
-          "description": "Compute and display the Contribution Points total using the existing useCallerContributionSummary hook data already loaded by the Profile page; avoid adding any new data-fetching hooks or backend calls for the display."
+          "description": "Add an explicit `enabled`/`isAdmin`-driven guard so the query only runs when the admin UI is allowed to fetch logs. Keep pagination parameters (offset/limit) and continue to rely on the existing backend function. This supports preventing any contribution-log fetches for non-admin users."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserContributionLogs.ts",
+          "operation": "modify",
+          "description": "Add an explicit `enabled`/`isAdmin`-driven guard so user-scoped log queries only run when admin access is confirmed and a valid principal is provided, preventing accidental fetches."
+        },
+        {
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "operation": "modify",
+          "description": "Update the section to request logs incrementally (page-sized fetches) and avoid any logic that accumulates or requests all entries at once. Use existing shadcn-ui composed components for loading/error UI and controls (Button/Input/Card/ScrollArea). Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add a short English helper hint near the Contribution Points total and show an explicit English fallback message when total points is zero.",
+      "summary": "Render contribution log entries as a scannable, mobile-friendly list including user principal, action type, points, and timestamp.",
       "acceptanceCriteria": [
-        "The Contribution Points UI includes a short helper hint in English (may reuse existing copy if appropriate).",
-        "If the user’s total contribution points is 0, the UI shows an explicit English fallback message (e.g., “No contribution points yet”) instead of only showing a bare 0, or in addition to the 0 (as long as it is clearly a fallback state)."
+        "Each log entry row/card shows: user identifier (principal), action type, points, and a human-readable timestamp.",
+        "The list remains readable on mobile widths (no horizontal overflow for key fields; long principals are truncated/wrapped appropriately)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/uiCopy.ts",
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
           "operation": "modify",
-          "description": "Add/extend Profile-related English copy to support an explicit zero-points fallback message (e.g., a new uiCopy.profile.contributionPointsZeroFallback string) while keeping existing helper text intact."
+          "description": "Refactor the display to a simple flat list of entries (not grouped by user) where each row/card includes: contributor principal, action type, points, and a human-readable timestamp. Ensure mobile readability (truncate or wrap long principals, avoid horizontal overflow) using existing Tailwind conventions and existing composed UI components (Card/ScrollArea/etc.). Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/lib/contributionActionTypes.ts",
           "operation": "modify",
-          "description": "Render the short English helper hint near/under the total (reusing uiCopy.profile.contributionPointsHelper) and conditionally show the explicit English zero-points fallback message when the cached/state total is 0."
+          "description": "If needed for a cleaner UI, export a normalized list of known action types (for filter options and consistent labeling) while keeping compatibility with existing action type constants used elsewhere."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Update the Profile page’s displayed Contribution Points total immediately after an earned-points toast event by updating existing client-side React Query cache (no backend refetch required for UI freshness).",
+      "summary": "Add action type and date range filters for Contribution Logs and apply them consistently to the shown entries.",
       "acceptanceCriteria": [
-        "After a contribution is logged and the earned-points toast is shown, the Contribution Points total displayed on the Profile page updates immediately (same session) to reflect the newly awarded points.",
-        "This immediate update is driven by updating existing client-side state/React Query cache (e.g., via queryClient.setQueryData) rather than waiting for a backend refetch triggered solely for UI freshness."
+        "An action type filter is available (e.g., dropdown/select) and can narrow the visible entries.",
+        "A date filter is available (e.g., from/to date inputs) and can narrow the visible entries by timestamp.",
+        "Changing filters updates the displayed entries consistently (including empty-state messaging when no entries match)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useContributionEventLogger.ts",
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
           "operation": "modify",
-          "description": "On successful contribution logging (non-duplicate), immediately update the existing React Query cache for the caller contribution summary (e.g., via queryClient.setQueriesData for keys starting with ['callerContributionSummary']) by incrementing totals based on the points awarded and reward type; avoid relying on a refetch for immediate UI correctness."
+          "description": "Add filter controls for (a) action type and (b) date from/to, and apply them to the currently fetched page of results (client-side filtering over the fetched entries). Ensure changing filters updates the list and shows an English empty state when nothing matches. Use existing shadcn-ui composed components (Input/Label/Button/Card) for consistent styling. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/lib/earnedPointsToast.ts",
+          "path": "frontend/src/hooks/useDebouncedValue.ts",
           "operation": "modify",
-          "description": "Adjust cached total reading to work with the existing identity-scoped contribution summary query keys (e.g., by reading the first matching query from the React Query cache for keys starting with ['callerContributionSummary']) so the toast can reflect updated cached totals without triggering backend reads."
+          "description": "If action type filtering uses free-text input, ensure a debounced path is available/appropriate for reducing rapid re-renders; keep the hook generic and reusable (no admin-specific coupling)."
         },
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/lib/uiCopy.ts",
           "operation": "modify",
-          "description": "Ensure the Contribution Points UI renders from the React Query cached contribution summary so that cache updates applied after contribution logging (and toast display) are reflected immediately on the Profile page without additional wiring."
+          "description": "Add English UI copy for filter labels/placeholders (e.g., \"Action type\", \"From\", \"To\", \"Clear filters\", \"No entries match your filters\")."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Verify and adjust the Contribution Points summary element for mobile responsiveness (readability, spacing, no overflow) on small screens.",
+      "summary": "Provide pagination controls for Contribution Logs with clear current page/range indication and correct behavior when filters change.",
       "acceptanceCriteria": [
-        "On narrow/mobile widths, the Contribution Points element remains readable and properly spaced (no clipped text, overlapping elements, or horizontal scrolling).",
-        "The layout adapts appropriately (e.g., stacking or responsive grid behavior) while staying consistent with the Profile page design."
+        "Pagination controls allow navigating forward/back through pages (or loading more/previous) for global contribution logs.",
+        "The UI indicates the current slice of results (e.g., offset/range or page index).",
+        "Pagination continues to work correctly when filters are applied (e.g., resets offset appropriately or prevents confusing ranges)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
           "operation": "modify",
-          "description": "Adjust the Contribution Points card’s internal layout to be responsive on small screens (e.g., ensure the prominent total area and any supporting breakdown/hint stack gracefully, maintain consistent spacing, and avoid overflow). Use existing Tailwind responsive utilities consistent with current Profile styling."
+          "description": "Improve pagination UX for global logs: add Previous/Next (or Load more/Previous) controls and show a clear indicator (page index and/or offset+limit). When filters change, reset pagination state to the first page to avoid confusing ranges. Use existing shadcn-ui composed components (Button/Label/Card) and match existing admin styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
+          "operation": "modify",
+          "description": "Ensure query keys remain correctly parameterized by offset/limit so paginated navigation works reliably and cached pages do not collide."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Link each log entry’s referenceId to the related entity when supported; otherwise show a non-clickable reference.",
+      "acceptanceCriteria": [
+        "If a log entry includes a referenceId, the UI presents it as a clickable link or action that navigates to the related entity using existing app navigation patterns/routes.",
+        "If an entry cannot be linked (unknown type, missing route, or invalid referenceId), the UI displays the reference as non-clickable text (no broken links)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "operation": "modify",
+          "description": "Add reference handling per entry: when referenceId is present, attempt to map it to an existing in-app navigation target (using the app’s current pushState + popstate pattern and base-path-safe navigation utilities). If the reference cannot be mapped, render it as plain text (no broken links). Use existing shadcn-ui composed components (Button) for link-actions where applicable. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/assetUrl.ts",
+          "operation": "modify",
+          "description": "If needed, add a small helper for base-path-safe internal navigation (pushState + popstate dispatch) to avoid duplicating navigation logic across Admin UI link actions."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Enforce admin-only access for Contribution Logs with login prompt, access denied state, and no log fetches for non-admins.",
+      "acceptanceCriteria": [
+        "Unauthenticated users are prompted to log in before seeing any admin content.",
+        "Authenticated non-admin users are shown an access denied state and do not see contribution logs content.",
+        "When not an admin, the app does not execute contribution-log fetch queries (no admin log calls triggered)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
+          "operation": "modify",
+          "description": "Ensure admin gating is the single source of truth for rendering Contribution Logs UI: only mount the ContributionLogsSection after admin status is confirmed. Pass an explicit prop to the section/hooks to guarantee queries are disabled until admin is true."
+        },
+        {
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "operation": "modify",
+          "description": "Accept an explicit `isAdmin` (or `enabled`) prop and ensure contribution-log hooks are only invoked with fetching enabled when admin access is confirmed. Use existing shadcn-ui composed components for any additional gated states. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminContributionLogs.ts",
+          "operation": "modify",
+          "description": "Require an explicit enable flag (derived from confirmed admin state) to prevent any background fetching when the caller is not an admin."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserContributionLogs.ts",
+          "operation": "modify",
+          "description": "Require an explicit enable flag (derived from confirmed admin state) to prevent any background fetching when the caller is not an admin."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Make the Contribution Logs UI responsive and consistent with existing Admin styling (cards, spacing, typography, and loading/error/empty states).",
+      "acceptanceCriteria": [
+        "On mobile, the Contribution Logs section remains usable (filters accessible, list readable, pagination reachable) without layout breakage.",
+        "Loading, error, and empty states are visually consistent with the existing Admin page styling."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "operation": "modify",
+          "description": "Adjust layout to be mobile-friendly: stack filter controls on small screens, keep list rows/cards readable, and ensure pagination controls remain reachable. Reuse existing Admin page styling patterns for loading/error/empty states using composed shadcn-ui components (Card, Button, ScrollArea, Input, Label). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/AdminModerationPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Contribution Logs section spacing and card styling remain aligned with the rest of the Admin page (consistent container widths, spacing, and section ordering)."
         }
       ]
     }

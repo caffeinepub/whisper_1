@@ -1,74 +1,125 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:36:20.677Z",
+  "generatedAt": "2026-02-12T01:47:16.952Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 8,
+    "implemented": 8,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
+        "summary": "Add a dedicated Admin page section labeled \"Contribution Logs\" that is visible within the Admin area and uses English user-facing text.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/lib/uiCopy.ts",
+          "frontend/src/pages/admin/AdminModerationPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/lib/uiCopy.ts",
+          "frontend/src/pages/admin/AdminModerationPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
+        "summary": "Fetch contribution logs using the existing admin-only backend API endpoints and display them without loading all entries at once.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/hooks/useAdminContributionLogs.ts",
+          "frontend/src/hooks/useAdminUserContributionLogs.ts",
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/hooks/useAdminContributionLogs.ts",
+          "frontend/src/hooks/useAdminUserContributionLogs.ts",
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
+        "summary": "Render contribution log entries in a simple, scannable list format that includes: user (principal), action type, points, and timestamp.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/uiCopy.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/lib/contributionActionTypes.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/uiCopy.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/lib/contributionActionTypes.ts"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
+        "summary": "Add filters to the Contribution Logs section for (a) action type and (b) date (range or from/to), and apply them to the displayed entries.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/lib/earnedPointsToast.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/hooks/useDebouncedValue.ts",
+          "frontend/src/lib/uiCopy.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useContributionEventLogger.ts",
-          "frontend/src/lib/earnedPointsToast.ts",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/lib/uiCopy.ts"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
+        "summary": "Add pagination controls for the contribution logs view(s) so admins can navigate through multiple pages of results, and clearly indicate what range/page is currently shown.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/hooks/useAdminContributionLogs.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/hooks/useAdminContributionLogs.ts"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Link each log entry to its related issue/comment/evidence item when a reference identifier is present, and handle unknown/unlinkable references gracefully.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/utils/assetUrl.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Ensure only administrators can access the Contribution Logs section/page by enforcing admin gating in the UI and preventing non-admin users from viewing log data.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/AdminModerationPage.tsx",
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/hooks/useAdminContributionLogs.ts",
+          "frontend/src/hooks/useAdminUserContributionLogs.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/AdminModerationPage.tsx",
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/hooks/useAdminContributionLogs.ts",
+          "frontend/src/hooks/useAdminUserContributionLogs.ts"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Ensure the Contribution Logs UI is mobile responsive and matches the existing admin styling conventions (cards, spacing, typography, and states for loading/error/empty).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/pages/admin/AdminModerationPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
+          "frontend/src/pages/admin/AdminModerationPage.tsx"
         ]
       }
     ]
@@ -78,10 +129,12 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/hooks/useContributionEventLogger.ts",
-    "frontend/src/lib/earnedPointsToast.ts",
+    "frontend/src/hooks/useAdminContributionLogs.ts",
+    "frontend/src/hooks/useAdminUserContributionLogs.ts",
+    "frontend/src/lib/contributionActionTypes.ts",
     "frontend/src/lib/uiCopy.ts",
-    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/admin/AdminModerationPage.tsx",
+    "frontend/src/pages/admin/components/ContributionLogsSection.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

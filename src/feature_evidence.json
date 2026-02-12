@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-clearly-visible-contribution-points-summary-element-to-the-user-profile-page-that-prominently-shows-the-user-s-total-contribution-points-styled-consistently-with-the-existing-profile-layout-and-using-a-teal-accent",
-      "featureTitle": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
+      "featureId": "feature-add-a-dedicated-admin-page-section-labeled-contribution-logs-that-is-visible-within-the-admin-area-and-uses-english-user-facing-text",
+      "featureTitle": "Add a dedicated Admin page section labeled \"Contribution Logs\" that is visible within the Admin area and uses English user-facing text.",
       "files": [
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/lib/uiCopy.ts",
+        "frontend/src/pages/admin/AdminModerationPage.tsx",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,10 +24,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-source-the-displayed-contribution-points-total-strictly-from-existing-client-side-react-state-react-query-cache-already-used-by-the-profile-page-and-do-not-add-any-new-backend-calls-endpoints-for-this-display",
-      "featureTitle": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
+      "featureId": "feature-fetch-contribution-logs-using-the-existing-admin-only-backend-api-endpoints-and-display-them-without-loading-all-entries-at-once",
+      "featureTitle": "Fetch contribution logs using the existing admin-only backend API endpoints and display them without loading all entries at once.",
       "files": [
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/hooks/useAdminContributionLogs.ts",
+        "frontend/src/hooks/useAdminUserContributionLogs.ts",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -42,11 +46,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-short-english-helper-hint-under-near-the-contribution-points-total-explaining-what-contribution-points-represent-and-add-an-english-fallback-message-for-users-with-zero-total-points",
-      "featureTitle": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
+      "featureId": "feature-render-contribution-log-entries-in-a-simple-scannable-list-format-that-includes-user-principal-action-type-points-and-timestamp",
+      "featureTitle": "Render contribution log entries in a simple, scannable list format that includes: user (principal), action type, points, and timestamp.",
       "files": [
-        "frontend/src/lib/uiCopy.ts",
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/lib/contributionActionTypes.ts",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -63,12 +67,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-contribution-points-total-updates-immediately-in-the-profile-page-ui-after-an-earned-points-toast-event-without-requiring-a-backend-refetch-to-see-the-updated-number",
-      "featureTitle": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
+      "featureId": "feature-add-filters-to-the-contribution-logs-section-for-a-action-type-and-b-date-range-or-from-to-and-apply-them-to-the-displayed-entries",
+      "featureTitle": "Add filters to the Contribution Logs section for (a) action type and (b) date (range or from/to), and apply them to the displayed entries.",
       "files": [
-        "frontend/src/hooks/useContributionEventLogger.ts",
-        "frontend/src/lib/earnedPointsToast.ts",
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/lib/uiCopy.ts",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -85,10 +88,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-verify-and-adjust-the-contribution-points-ui-element-to-be-mobile-responsive-readable-layout-no-overflow-appropriate-spacing-across-small-screens",
-      "featureTitle": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
+      "featureId": "feature-add-pagination-controls-for-the-contribution-logs-view-s-so-admins-can-navigate-through-multiple-pages-of-results-and-clearly-indicate-what-range-page-is-currently-shown",
+      "featureTitle": "Add pagination controls for the contribution logs view(s) so admins can navigate through multiple pages of results, and clearly indicate what range/page is currently shown.",
       "files": [
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/hooks/useAdminContributionLogs.ts",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -101,6 +105,70 @@
       ],
       "testIds": [
         "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-link-each-log-entry-to-its-related-issue-comment-evidence-item-when-a-reference-identifier-is-present-and-handle-unknown-unlinkable-references-gracefully",
+      "featureTitle": "Link each log entry to its related issue/comment/evidence item when a reference identifier is present, and handle unknown/unlinkable references gracefully.",
+      "files": [
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-only-administrators-can-access-the-contribution-logs-section-page-by-enforcing-admin-gating-in-the-ui-and-preventing-non-admin-users-from-viewing-log-data",
+      "featureTitle": "Ensure only administrators can access the Contribution Logs section/page by enforcing admin gating in the UI and preventing non-admin users from viewing log data.",
+      "files": [
+        "frontend/src/hooks/useAdminContributionLogs.ts",
+        "frontend/src/hooks/useAdminUserContributionLogs.ts",
+        "frontend/src/pages/admin/AdminModerationPage.tsx",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-contribution-logs-ui-is-mobile-responsive-and-matches-the-existing-admin-styling-conventions-cards-spacing-typography-and-states-for-loading-error-empty",
+      "featureTitle": "Ensure the Contribution Logs UI is mobile responsive and matches the existing admin styling conventions (cards, spacing, typography, and states for loading/error/empty).",
+      "files": [
+        "frontend/src/pages/admin/AdminModerationPage.tsx",
+        "frontend/src/pages/admin/components/ContributionLogsSection.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
       ],
       "confidence": "high"
     }

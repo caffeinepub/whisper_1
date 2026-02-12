@@ -136,8 +136,8 @@ export default function AdminModerationPage() {
             <ModerationItemsList items={items || []} />
           )}
 
-          {/* Contribution Logs Section */}
-          <ContributionLogsSection />
+          {/* Contribution Logs Section - only render when admin is confirmed */}
+          {isAdmin && <ContributionLogsSection isAdmin={isAdmin} />}
         </div>
       </div>
     </div>

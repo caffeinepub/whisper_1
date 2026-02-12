@@ -5,9 +5,9 @@ import { Principal } from '@dfinity/principal';
 
 /**
  * React Query hook to fetch contribution logs for a specific user principal.
- * Admin-only capability with clear error propagation for UI handling.
+ * Admin-only capability with explicit admin flag to prevent unauthorized fetches.
  */
-export function useAdminUserContributionLogs(userPrincipal: string | null, limit: number = 100) {
+export function useAdminUserContributionLogs(userPrincipal: string | null, limit: number = 100, isAdmin: boolean = false) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<ContributionLogEntry[]>({
@@ -20,7 +20,7 @@ export function useAdminUserContributionLogs(userPrincipal: string | null, limit
       const result = await actor.adminGetUserContributionLogs(principal, BigInt(limit));
       return result;
     },
-    enabled: !!actor && !actorFetching && !!userPrincipal,
+    enabled: !!actor && !actorFetching && !!userPrincipal && isAdmin,
     retry: 1,
   });
 }

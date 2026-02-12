@@ -1,13 +1,16 @@
 # Specification
 
 ## Summary
-**Goal:** Display a clearly visible Contribution Points total on the Profile page, styled with a teal accent, sourced from existing client-side state, and updated instantly after points are earned.
+**Goal:** Add an admin-only “Contribution Logs” section in the Admin area to inspect contribution log entries with filters, pagination, and links to related entities.
 
 **Planned changes:**
-- Add a dedicated Contribution Points summary element/card to the Profile page with a prominently displayed total and teal-accent styling consistent with existing Profile components.
-- Bind the displayed total to existing Profile page client-side state / React Query cache (no new backend calls or fetch hooks added solely for this display).
-- Add English helper hint text explaining contribution points and an explicit English fallback message for users with zero points.
-- Ensure the total updates immediately after an earned-points toast event by updating existing client-side state/React Query cache (without requiring a backend refetch for UI freshness).
-- Verify and adjust layout/spacings so the Contribution Points element is mobile responsive (no overflow/clipping on small screens).
+- Add a new Admin page section labeled “Contribution Logs” with English-only user-facing text.
+- Fetch contribution logs via existing admin-only backend endpoints and render results incrementally (paginated), avoiding loading all entries at once.
+- Display log entries in a simple, scannable list showing: user (principal), action type, points, and human-readable timestamp, with mobile-friendly layout for long principals.
+- Add filters for action type and date (from/to or range) and apply them to the displayed results, including a clear empty state when no matches.
+- Add pagination controls (next/previous or page navigation) and clearly indicate the current page/range; ensure pagination behaves sensibly when filters change.
+- When a log entry has a reference identifier, link to the related issue/comment/evidence using existing navigation routes; show non-clickable text when it can’t be linked.
+- Enforce admin gating so only admins can access the section: prompt unauthenticated users to log in, show access denied for non-admins, and prevent any log-fetch calls when not an admin.
+- Ensure responsive layout and consistent admin styling, including loading/error/empty states.
 
-**User-visible outcome:** Users can see their total Contribution Points on their Profile page with a brief explanation, a clear zero-points message when applicable, and the total updates immediately after earning points.
+**User-visible outcome:** Admins can open “Contribution Logs” in the Admin area, filter and page through contribution logs, and navigate to related items from log entries; non-admins cannot access or load log data.

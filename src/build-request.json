@@ -1,116 +1,161 @@
 {
   "kind": "build_request",
-  "title": "Step 6: Display Contribution Points on Profile page (state-sourced, teal styling, instant updates)",
+  "title": "Step 7: Admin UI for inspecting contribution logs (filters, pagination, links, admin-only access)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
+      "text": "Add a dedicated Admin page section labeled \"Contribution Logs\" that is visible within the Admin area and uses English user-facing text.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "Run Step 6: Add Contribution Points display on profile page • 6.1 Add a new UI element in the Profile page showing total contribution points. • 6.3 Style it consistently with the profile layout and teal accent color."
+          "Run Step 7: Add admin UI for inspecting contribution logs • 7.1 Add a new Admin page section labeled “Contribution Logs”."
         ]
       },
       "acceptanceCriteria": [
-        "On the Profile page, there is a dedicated UI element for Contribution Points that includes a prominently displayed total.",
-        "The styling matches the existing Profile cards/components and includes a teal accent (e.g., icon/heading/border) consistent with current design tokens/components."
+        "Admin area includes a clearly labeled section titled \"Contribution Logs\".",
+        "All user-facing labels/messages in the section are in English."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
+      "text": "Fetch contribution logs using the existing admin-only backend API endpoints and display them without loading all entries at once.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "6.2 Pull the point total from the existing React state (no new backend calls)."
+          "7.2 Fetch logs using the existing admin‑only API endpoint.",
+          "7.5 Add pagination to avoid loading everything at once."
         ]
       },
       "acceptanceCriteria": [
-        "No new backend methods, canister calls, or new React Query fetch hooks are introduced solely to support the Contribution Points display.",
-        "The Profile page continues to use the existing in-app state (e.g., the existing contribution summary state already present on the page) to render the total."
+        "The logs list is populated via the existing admin-only endpoints already used by the app (e.g., paginated global admin logs).",
+        "The UI does not attempt to load all logs at once; it uses pagination/incremental loading."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
+      "text": "Render contribution log entries in a simple, scannable list format that includes: user (principal), action type, points, and timestamp.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "6.4 Show a short hint explaining what contribution points are. • 6.6 Add fallback text for users with zero points. Use English for any user-facing text in the build request."
+          "7.3 Display entries in a simple list: user, action type, points, timestamp."
         ]
       },
       "acceptanceCriteria": [
-        "The Contribution Points UI includes a short helper hint in English (may reuse existing copy if appropriate).",
-        "If the user’s total contribution points is 0, the UI shows an explicit English fallback message (e.g., “No contribution points yet”) instead of only showing a bare 0, or in addition to the 0 (as long as it is clearly a fallback state)."
+        "Each log entry row/card shows: user identifier (principal), action type, points, and a human-readable timestamp.",
+        "The list remains readable on mobile widths (no horizontal overflow for key fields; long principals are truncated/wrapped appropriately)."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
+      "text": "Add filters to the Contribution Logs section for (a) action type and (b) date (range or from/to), and apply them to the displayed entries.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "6.5 Ensure the number updates immediately after a toast event."
+          "7.4 Add filters for action type and date."
         ]
       },
       "acceptanceCriteria": [
-        "After a contribution is logged and the earned-points toast is shown, the Contribution Points total displayed on the Profile page updates immediately (same session) to reflect the newly awarded points.",
-        "This immediate update is driven by updating existing client-side state/React Query cache (e.g., via queryClient.setQueryData) rather than waiting for a backend refetch triggered solely for UI freshness."
+        "An action type filter is available (e.g., dropdown/select) and can narrow the visible entries.",
+        "A date filter is available (e.g., from/to date inputs) and can narrow the visible entries by timestamp.",
+        "Changing filters updates the displayed entries consistently (including empty-state messaging when no entries match)."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
+      "text": "Add pagination controls for the contribution logs view(s) so admins can navigate through multiple pages of results, and clearly indicate what range/page is currently shown.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "6.7 Confirm mobile responsiveness."
+          "7.5 Add pagination to avoid loading everything at once."
         ]
       },
       "acceptanceCriteria": [
-        "On narrow/mobile widths, the Contribution Points element remains readable and properly spaced (no clipped text, overlapping elements, or horizontal scrolling).",
-        "The layout adapts appropriately (e.g., stacking or responsive grid behavior) while staying consistent with the Profile page design."
+        "Pagination controls allow navigating forward/back through pages (or loading more/previous) for global contribution logs.",
+        "The UI indicates the current slice of results (e.g., offset/range or page index).",
+        "Pagination continues to work correctly when filters are applied (e.g., resets offset appropriately or prevents confusing ranges)."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Link each log entry to its related issue/comment/evidence item when a reference identifier is present, and handle unknown/unlinkable references gracefully.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "7.6 Link each log entry to the related issue/comment/evidence item."
+        ]
+      },
+      "acceptanceCriteria": [
+        "If a log entry includes a referenceId, the UI presents it as a clickable link or action that navigates to the related entity using existing app navigation patterns/routes.",
+        "If an entry cannot be linked (unknown type, missing route, or invalid referenceId), the UI displays the reference as non-clickable text (no broken links)."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Ensure only administrators can access the Contribution Logs section/page by enforcing admin gating in the UI and preventing non-admin users from viewing log data.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "7.7 Ensure only admins can access the page."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Unauthenticated users are prompted to log in before seeing any admin content.",
+        "Authenticated non-admin users are shown an access denied state and do not see contribution logs content.",
+        "When not an admin, the app does not execute contribution-log fetch queries (no admin log calls triggered)."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Ensure the Contribution Logs UI is mobile responsive and matches the existing admin styling conventions (cards, spacing, typography, and states for loading/error/empty).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "7.8 Confirm mobile responsiveness and clean admin styling."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On mobile, the Contribution Logs section remains usable (filters accessible, list readable, pagination reachable) without layout breakage.",
+        "Loading, error, and empty states are visually consistent with the existing Admin page styling."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose existing Shadcn components instead).",
-    "Do not modify immutable hook entry files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
-    "Do not add new backend calls/endpoints for the Contribution Points display; use existing client-side state/cache."
+    "Do not modify files under frontend/src/components/ui (read-only UI components must be composed, not edited).",
+    "Do not modify immutable frontend hook bootstrap files (e.g., useInternetIdentity/useActor/main.tsx) listed in SYSTEM_CONTEXT. Use composition/wrapper logic elsewhere if needed.",
+    "Backend must remain a single Motoko actor in backend/main.mo; add migration.mo only if state schema changes are required."
   ],
   "nonGoals": [
-    "Do not introduce new contribution point types, new reward rules, or changes to the backend contribution calculation.",
-    "Do not redesign the entire Profile page—only add/adjust the Contribution Points display to meet Step 6 requirements.",
-    "Do not add new authentication methods beyond existing Internet Identity."
+    "Implementing new backend admin endpoints for filtering/pagination beyond what already exists (UI should rely on existing endpoints and/or client-side filtering on fetched pages).",
+    "Adding non-admin user-facing contribution log browsing features.",
+    "Changing contribution points awarding logic or how logs are written on the backend."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

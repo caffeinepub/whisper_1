@@ -5,9 +5,9 @@ import { Principal } from '@dfinity/principal';
 
 /**
  * React Query hook for fetching admin contribution logs with pagination.
- * Only accessible to admin users; returns bounded list of contribution entries.
+ * Only accessible to admin users; requires explicit admin flag to prevent unauthorized fetches.
  */
-export function useAdminContributionLogs(offset: number = 0, limit: number = 20) {
+export function useAdminContributionLogs(offset: number = 0, limit: number = 20, isAdmin: boolean = false) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<Array<[Principal, ContributionLogEntry[]]>>({
@@ -17,7 +17,7 @@ export function useAdminContributionLogs(offset: number = 0, limit: number = 20)
       const result = await actor.adminGetContributionLogs(BigInt(offset), BigInt(limit));
       return result;
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && isAdmin,
     retry: 1,
   });
 }
