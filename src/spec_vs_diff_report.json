@@ -1,59 +1,73 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:27:47.861Z",
-  "summary": "A shared Sonner-based earned-points toast helper was added and some flows were updated to use it after successful contribution logging with a centralized lock and optional total-points-from-cache line. However, the toast text does not correctly use the awarded points value, and chat-origin usage is not evidenced.",
+  "generatedAt": "2026-02-12T01:36:20.673Z",
+  "summary": "Diff shows new logic around contribution event logging/toasts and partial ProfilePage wiring for contributionSummary/totalPoints, but the actual Profile-page Contribution Points UI element (teal-styled card, helper hint, zero fallback, responsive layout) and the guaranteed immediate cache-driven update behavior cannot be verified from the provided truncated changes.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Toast displays the earned points in the form “+<number> contribution points earned” (using the actual points earned).",
-      "reason": "The shared helper hard-codes point amounts in the toast title (+10/+5/+20 and a fallback +10) instead of using the provided pointsAwarded value.",
+      "requirement": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
+      "reason": "ProfilePage.tsx diff excerpt shows calculation of totalPoints/hasZeroPoints but does not include the actual rendered UI element/card or any teal-accent styling; truncated content prevents verification.",
       "evidence": [
+        "frontend/src/pages/ProfilePage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Add a short English helper hint explaining what contribution points represent, and an English fallback message for users with zero total points.",
+      "reason": "No helper hint text or zero-points fallback message is visible in the ProfilePage.tsx excerpt; only totalPoints/hasZeroPoints are computed. Toast copy exists, but requirement is specifically for the Profile page UI.",
+      "evidence": [
+        "frontend/src/pages/ProfilePage.tsx (truncated)",
         "frontend/src/lib/earnedPointsToast.ts"
       ]
     },
     {
       "id": "REQ-4",
-      "requirement": "Action-type-specific toast messages for ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED that still reflect the actual earned points.",
-      "reason": "While action-type-specific branches exist, the toast title hard-codes points per action type rather than using the earned points from the API result.",
+      "requirement": "Ensure the Contribution Points total updates immediately on the Profile page after an earned-points toast event, driven by updating existing client-side state/React Query cache (e.g., queryClient.setQueryData) without requiring a backend refetch.",
+      "reason": "earnedPointsToast.ts reads from the React Query cache, but the diff does not show a confirmed cache write (e.g., queryClient.setQueryData) updating the callerContributionSummary total after points are awarded; useContributionEventLogger mentions immediate cache updates in comments but the relevant implementation is not visible due to truncation.",
       "evidence": [
-        "frontend/src/lib/earnedPointsToast.ts"
+        "frontend/src/lib/earnedPointsToast.ts",
+        "frontend/src/hooks/useContributionEventLogger.ts (truncated)"
       ]
     },
     {
       "id": "REQ-5",
-      "requirement": "Ensure chat-origin toasts use Secretary-friendly phrasing variants (origin/context flag used from Secretary chat flows).",
-      "reason": "The helper supports origin='chat' and contains chat-specific copy, but the diff does not show any call site in Secretary chat flows invoking showEarnedPointsToast with origin: 'chat' (SecretaryWidget is truncated and shows only the import).",
+      "requirement": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing).",
+      "reason": "No responsive layout/CSS classes for the Contribution Points UI element are visible in the provided ProfilePage.tsx excerpt; cannot confirm mobile behavior.",
       "evidence": [
-        "frontend/src/lib/earnedPointsToast.ts",
-        "frontend/src/components/secretary/SecretaryWidget.tsx"
+        "frontend/src/pages/ProfilePage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Changed/added SecretaryWidgetPortal behavior (portal mounting, overlay-root creation, and adapting findByKeyword return type).",
-      "reason": "Not requested by the BuildRequest (scope was earned-points toast behavior after logging contribution events).",
+      "description": "Module-level dedupe registries for contribution logging (in-flight and already-logged), plus related dedupe behavior.",
+      "reason": "BuildRequest focuses on displaying contribution points and immediate UI updates; deduping contribution event logging across hook instances is not requested.",
       "evidence": [
-        "frontend/src/components/secretary/SecretaryWidgetPortal.tsx"
+        "frontend/src/hooks/useContributionEventLogger.ts (truncated)"
       ]
     },
     {
-      "description": "Earned-points toast lock logs to console when skipping duplicates.",
-      "reason": "BuildRequest required a lock but did not request console logging as part of the feature; this is additional behavior.",
+      "description": "Toast lock window to prevent duplicate earned-points toasts and origin-specific ('standard' vs 'chat') toast copy variants.",
+      "reason": "BuildRequest does not request toast de-duplication or chat-origin variants; it only requires the Profile page total to update immediately after the earned-points toast event.",
+      "evidence": [
+        "frontend/src/lib/earnedPointsToast.ts"
+      ]
+    },
+    {
+      "description": "Earned-points toast optionally displays 'Total: X points' by reading React Query cache.",
+      "reason": "Not requested; requirements are about the Profile page display and its cache-driven immediate update, not enhancing toast content.",
       "evidence": [
         "frontend/src/lib/earnedPointsToast.ts"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.58,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-    "frontend/src/components/issue-project/IssueProjectTasksTab.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
+    "frontend/src/hooks/useContributionEventLogger.ts",
     "frontend/src/lib/earnedPointsToast.ts",
+    "frontend/src/lib/uiCopy.ts",
     "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
   ]

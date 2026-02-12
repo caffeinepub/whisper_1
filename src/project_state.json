@@ -1,61 +1,51 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement Step 5: show earned-points feedback (toast) after contribution actions in the React app.",
+  "summary": "Add a Contribution Points display to the user profile page (React UI), sourced from existing client state with responsive styling and live updates.",
   "architectural_notes": [
-    "Use a shared toast component for earned-points feedback (+X contribution points).",
-    "Trigger toast immediately after successful contribution-log API call; do not refetch from backend.",
-    "Read updated total points from local React state.",
-    "Prevent duplicate toasts when actions fire quickly (simple lock/debounce)."
+    "Contribution Points total should be read from existing React client state (no new backend calls).",
+    "Contribution Points display should update immediately after the relevant toast event triggers."
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-create-a-small-shared-earned-points-toast-helper-component-that-renders-the-message-x-contribution-points-earned-using-the-existing-sonner-toaster-with-an-auto-dismiss-duration-of-2-3-seconds",
-      "title": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+      "id": "feature-add-a-clearly-visible-contribution-points-summary-element-to-the-user-profile-page-that-prominently-shows-the-user-s-total-contribution-points-styled-consistently-with-the-existing-profile-layout-and-using-a-teal-accent",
+      "title": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-trigger-the-shared-earned-points-toast-immediately-after-any-successful-contribution-log-api-call-i-e-after-usecontributioneventlogger-mutateasync-resolves-with-isduplicate-false-replacing-any-ad-hoc-toast-usage-in-existing-flows",
-      "title": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "id": "feature-source-the-displayed-contribution-points-total-strictly-from-existing-client-side-react-state-react-query-cache-already-used-by-the-profile-page-and-do-not-add-any-new-backend-calls-endpoints-for-this-display",
+      "title": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-populate-the-toast-s-updated-total-points-if-shown-strictly-from-local-react-state-react-query-cache-without-performing-any-backend-fetch-the-implementation-must-read-the-latest-cached-contribution-summary-to-derive-the-updated-total",
-      "title": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "id": "feature-add-a-short-english-helper-hint-under-near-the-contribution-points-total-explaining-what-contribution-points-represent-and-add-an-english-fallback-message-for-users-with-zero-total-points",
+      "title": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-show-different-user-facing-toast-messages-depending-on-contribution-action-type-issue-created-comment-created-evidence-added",
-      "title": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
+      "id": "feature-ensure-the-contribution-points-total-updates-immediately-in-the-profile-page-ui-after-an-earned-points-toast-event-without-requiring-a-backend-refetch-to-see-the-updated-number",
+      "title": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-secretary-friendly-english-phrasing-variants-for-earned-points-toasts-when-the-contributing-action-originates-inside-secretary-chat-flows-and-ensure-chat-origin-toasts-use-those-variants",
-      "title": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
+      "id": "feature-verify-and-adjust-the-contribution-points-ui-element-to-be-mobile-responsive-readable-layout-no-overflow-appropriate-spacing-across-small-screens",
+      "title": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
       "reqIds": [
         "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-earned-points-toast-never-appears-twice-if-two-actions-fire-quickly-by-implementing-a-simple-client-side-toast-lock-time-based-or-in-flight-boolean-within-the-shared-toast-helper-component",
-      "title": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -63,12 +53,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add shared toast for earned contribution points (+X) triggered after successful contribution-log API call; use local React state for updated total; vary messaging by action type and chat-flow origins; auto-dismiss; prevent duplicate toasts with a simple lock.",
+      "summary": "Add Contribution Points display on profile page (UI element, uses existing React state, teal styling, hint text, live update after toast, zero fallback, mobile responsive).",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
-  "projectName": "Step 5: Earned contribution-points toast feedback after logging events",
+  "projectName": "Step 6: Display Contribution Points on Profile page (state-sourced, teal styling, instant updates)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

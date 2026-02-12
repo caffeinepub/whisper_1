@@ -34,6 +34,10 @@ export default function ProfilePage() {
   const isAuthenticated = !!identity;
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
+  // Calculate total points for display
+  const totalPoints = contributionSummary ? Number(contributionSummary.totalPoints) : 0;
+  const hasZeroPoints = totalPoints === 0;
+
   useEffect(() => {
     if (userProfile) {
       setName(userProfile.name);
@@ -259,7 +263,7 @@ export default function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-start gap-6">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
                 <Avatar className="h-24 w-24">
                   {imagePreview ? (
                     <AvatarImage src={imagePreview} alt="Profile" />
@@ -270,7 +274,7 @@ export default function ProfilePage() {
                   )}
                 </Avatar>
 
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-4 w-full">
                   <div className="space-y-2">
                     <Label htmlFor="edit-name">Name</Label>
                     {isEditing ? (
@@ -364,40 +368,63 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <IconBubble size="md" variant="accent">
+                <IconBubble size="md" variant="secondary">
                   <Award className="h-5 w-5" />
                 </IconBubble>
-                <div>
+                <div className="flex-1">
                   <CardTitle>{uiCopy.profile.contributionPointsLabel}</CardTitle>
                   <CardDescription>{uiCopy.profile.contributionPointsHelper}</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Total Points</p>
-                  <p className="text-2xl font-bold">
-                    {contributionSummary ? Number(contributionSummary.totalPoints) : 0}
-                  </p>
+            <CardContent className="space-y-6">
+              {/* Prominent Total Points Display with Teal Accent */}
+              <div className="bg-secondary/10 border-2 border-secondary rounded-lg p-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-center sm:text-left">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Total Contribution Points
+                    </p>
+                    <p className="text-5xl font-bold text-secondary">
+                      {totalPoints}
+                    </p>
+                  </div>
+                  {hasZeroPoints && (
+                    <div className="bg-muted/50 rounded-lg p-4 max-w-xs">
+                      <p className="text-sm text-muted-foreground">
+                        {uiCopy.profile.contributionPointsZeroFallback}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">City Points</p>
-                  <p className="text-2xl font-bold">
-                    {contributionSummary ? Number(contributionSummary.totalCityPoints) : 0}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Voting Points</p>
-                  <p className="text-2xl font-bold">
-                    {contributionSummary ? Number(contributionSummary.totalVotingPoints) : 0}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Bounty Points</p>
-                  <p className="text-2xl font-bold">
-                    {contributionSummary ? Number(contributionSummary.totalBountyPoints) : 0}
-                  </p>
+              </div>
+
+              <Separator />
+
+              {/* Points Breakdown */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+                  Points Breakdown
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
+                    <p className="text-sm text-muted-foreground">City Points</p>
+                    <p className="text-2xl font-bold">
+                      {contributionSummary ? Number(contributionSummary.totalCityPoints) : 0}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
+                    <p className="text-sm text-muted-foreground">Voting Points</p>
+                    <p className="text-2xl font-bold">
+                      {contributionSummary ? Number(contributionSummary.totalVotingPoints) : 0}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
+                    <p className="text-sm text-muted-foreground">Bounty Points</p>
+                    <p className="text-2xl font-bold">
+                      {contributionSummary ? Number(contributionSummary.totalBountyPoints) : 0}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>

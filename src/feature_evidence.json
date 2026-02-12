@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-small-shared-earned-points-toast-helper-component-that-renders-the-message-x-contribution-points-earned-using-the-existing-sonner-toaster-with-an-auto-dismiss-duration-of-2-3-seconds",
-      "featureTitle": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+      "featureId": "feature-add-a-clearly-visible-contribution-points-summary-element-to-the-user-profile-page-that-prominently-shows-the-user-s-total-contribution-points-styled-consistently-with-the-existing-profile-layout-and-using-a-teal-accent",
+      "featureTitle": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
       "files": [
-        "frontend/src/lib/earnedPointsToast.ts"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,10 +22,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-trigger-the-shared-earned-points-toast-immediately-after-any-successful-contribution-log-api-call-i-e-after-usecontributioneventlogger-mutateasync-resolves-with-isduplicate-false-replacing-any-ad-hoc-toast-usage-in-existing-flows",
-      "featureTitle": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "featureId": "feature-source-the-displayed-contribution-points-total-strictly-from-existing-client-side-react-state-react-query-cache-already-used-by-the-profile-page-and-do-not-add-any-new-backend-calls-endpoints-for-this-display",
+      "featureTitle": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
       "files": [
-        "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -42,10 +42,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-populate-the-toast-s-updated-total-points-if-shown-strictly-from-local-react-state-react-query-cache-without-performing-any-backend-fetch-the-implementation-must-read-the-latest-cached-contribution-summary-to-derive-the-updated-total",
-      "featureTitle": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "featureId": "feature-add-a-short-english-helper-hint-under-near-the-contribution-points-total-explaining-what-contribution-points-represent-and-add-an-english-fallback-message-for-users-with-zero-total-points",
+      "featureTitle": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
       "files": [
-        "frontend/src/lib/earnedPointsToast.ts"
+        "frontend/src/lib/uiCopy.ts",
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -62,10 +63,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-show-different-user-facing-toast-messages-depending-on-contribution-action-type-issue-created-comment-created-evidence-added",
-      "featureTitle": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
+      "featureId": "feature-ensure-the-contribution-points-total-updates-immediately-in-the-profile-page-ui-after-an-earned-points-toast-event-without-requiring-a-backend-refetch-to-see-the-updated-number",
+      "featureTitle": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
       "files": [
-        "frontend/src/lib/earnedPointsToast.ts"
+        "frontend/src/hooks/useContributionEventLogger.ts",
+        "frontend/src/lib/earnedPointsToast.ts",
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -82,11 +85,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-secretary-friendly-english-phrasing-variants-for-earned-points-toasts-when-the-contributing-action-originates-inside-secretary-chat-flows-and-ensure-chat-origin-toasts-use-those-variants",
-      "featureTitle": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
+      "featureId": "feature-verify-and-adjust-the-contribution-points-ui-element-to-be-mobile-responsive-readable-layout-no-overflow-appropriate-spacing-across-small-screens",
+      "featureTitle": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/lib/earnedPointsToast.ts"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -99,26 +101,6 @@
       ],
       "testIds": [
         "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-the-earned-points-toast-never-appears-twice-if-two-actions-fire-quickly-by-implementing-a-simple-client-side-toast-lock-time-based-or-in-flight-boolean-within-the-shared-toast-helper-component",
-      "featureTitle": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
-      "files": [
-        "frontend/src/lib/earnedPointsToast.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
       ],
       "confidence": "high"
     }

@@ -44,11 +44,15 @@ export function showEarnedPointsToast({
   let totalPointsLine: string | undefined;
   if (queryClient) {
     try {
-      const cachedData = queryClient.getQueryData(['callerContributionSummary']);
-      if (cachedData && typeof cachedData === 'object' && 'totalPoints' in cachedData) {
-        const totalPoints = Number(cachedData.totalPoints);
-        if (!isNaN(totalPoints) && totalPoints > 0) {
-          totalPointsLine = `Total: ${totalPoints} points`;
+      // Find the first matching query for callerContributionSummary (identity-scoped)
+      const queries = queryClient.getQueriesData({ queryKey: ['callerContributionSummary'] });
+      if (queries && queries.length > 0) {
+        const [, cachedData] = queries[0];
+        if (cachedData && typeof cachedData === 'object' && 'totalPoints' in cachedData) {
+          const totalPoints = Number(cachedData.totalPoints);
+          if (!isNaN(totalPoints) && totalPoints > 0) {
+            totalPointsLine = `Total: ${totalPoints} points`;
+          }
         }
       }
     } catch (error) {

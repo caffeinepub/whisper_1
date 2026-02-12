@@ -141,6 +141,7 @@ export const uiCopy = {
     saveError: 'Failed to save profile',
     contributionPointsLabel: 'Contribution Points',
     contributionPointsHelper: 'Points are for tracking participation only—no token value in Phase 1',
+    contributionPointsZeroFallback: 'No contribution points yet. Start participating to earn points!',
   },
   admin: {
     pageTitle: 'Admin Moderation',

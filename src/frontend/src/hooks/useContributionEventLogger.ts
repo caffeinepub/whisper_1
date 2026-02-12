@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import { userFacingError } from '@/utils/userFacingError';
 import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
 
@@ -29,9 +30,11 @@ const loggedRegistry = new Set<string>();
  * - Normalizes errors into user-friendly English
  * - Tolerates duplicate responses silently
  * - Automatically invalidates contribution summary cache
+ * - Immediately updates React Query cache for instant UI updates
  */
 export function useContributionEventLogger() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation<ContributionLogResult, Error, LogContributionEventParams>({
@@ -153,7 +156,50 @@ export function useContributionEventLogger() {
       return promise;
     },
     onSuccess: (result) => {
-      // Invalidate contribution summary cache on success or tolerated duplicate
+      // Immediately update React Query cache for instant UI updates (no backend refetch)
+      if (!result.isDuplicate && identity) {
+        const principal = identity.getPrincipal().toString();
+        const queryKey = ['callerContributionSummary', principal];
+        
+        queryClient.setQueryData(queryKey, (oldData: any) => {
+          if (!oldData) {
+            // If no cached data, create initial structure
+            return {
+              contributor: identity.getPrincipal(),
+              totalPoints: BigInt(result.pointsAwarded),
+              totalCityPoints: result.rewardType === 'city' ? BigInt(result.pointsAwarded) : 0n,
+              totalVotingPoints: result.rewardType === 'voting' ? BigInt(result.pointsAwarded) : 0n,
+              totalBountyPoints: result.rewardType === 'bounty' ? BigInt(result.pointsAwarded) : 0n,
+              totalTokenPoints: result.rewardType === 'token' ? BigInt(result.pointsAwarded) : 0n,
+            };
+          }
+
+          // Update existing cached data
+          const updatedData = { ...oldData };
+          updatedData.totalPoints = BigInt(Number(oldData.totalPoints) + result.pointsAwarded);
+          
+          switch (result.rewardType) {
+            case 'city':
+              updatedData.totalCityPoints = BigInt(Number(oldData.totalCityPoints) + result.pointsAwarded);
+              break;
+            case 'voting':
+              updatedData.totalVotingPoints = BigInt(Number(oldData.totalVotingPoints) + result.pointsAwarded);
+              break;
+            case 'bounty':
+              updatedData.totalBountyPoints = BigInt(Number(oldData.totalBountyPoints) + result.pointsAwarded);
+              break;
+            case 'token':
+              updatedData.totalTokenPoints = BigInt(Number(oldData.totalTokenPoints) + result.pointsAwarded);
+              break;
+          }
+          
+          return updatedData;
+        });
+        
+        console.log('Contribution summary cache updated immediately:', result);
+      }
+      
+      // Also invalidate to ensure eventual consistency with backend
       queryClient.invalidateQueries({ queryKey: ['callerContributionSummary'] });
       
       if (!result.isDuplicate) {

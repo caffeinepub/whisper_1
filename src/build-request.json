@@ -1,134 +1,116 @@
 {
   "kind": "build_request",
-  "title": "Step 5: Earned contribution-points toast feedback after logging events",
+  "title": "Step 6: Display Contribution Points on Profile page (state-sourced, teal styling, instant updates)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+      "text": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7"
+          "msg-5"
         ],
         "quotes": [
-          "5.1 Create a small shared toast component for “+X contribution points earned”.",
-          "5.6 Auto‑dismiss the toast after 2–3 seconds."
+          "Run Step 6: Add Contribution Points display on profile page • 6.1 Add a new UI element in the Profile page showing total contribution points. • 6.3 Style it consistently with the profile layout and teal accent color."
         ]
       },
       "acceptanceCriteria": [
-        "A reusable module exists (component or helper) that can be called from multiple flows to show the earned-points toast.",
-        "The toast displays the earned points in the form “+<number> contribution points earned”.",
-        "Toast dismisses automatically after 2000–3000ms (inclusive)."
+        "On the Profile page, there is a dedicated UI element for Contribution Points that includes a prominently displayed total.",
+        "The styling matches the existing Profile cards/components and includes a teal accent (e.g., icon/heading/border) consistent with current design tokens/components."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+      "text": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7"
+          "msg-5"
         ],
         "quotes": [
-          "5.2 Trigger the toast immediately after a successful contribution‑log API call."
+          "6.2 Pull the point total from the existing React state (no new backend calls)."
         ]
       },
       "acceptanceCriteria": [
-        "At least the IssueProjectTasksTab flow no longer constructs its own Sonner toast message and instead uses the shared earned-points toast helper/component.",
-        "The toast only fires on success results where isDuplicate is false (duplicate results do not show the toast).",
-        "The toast is shown after the logContributionEvent call succeeds, not before."
+        "No new backend methods, canister calls, or new React Query fetch hooks are introduced solely to support the Contribution Points display.",
+        "The Profile page continues to use the existing in-app state (e.g., the existing contribution summary state already present on the page) to render the total."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+      "text": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7"
+          "msg-5"
         ],
         "quotes": [
-          "5.3 Pull the updated total points from the local React state (no backend fetch)."
+          "6.4 Show a short hint explaining what contribution points are. • 6.6 Add fallback text for users with zero points. Use English for any user-facing text in the build request."
         ]
       },
       "acceptanceCriteria": [
-        "The toast logic reads total points from React Query cache (e.g., queryClient.getQueryData for the caller contribution summary) and does not call any actor method to fetch updated totals solely for the toast.",
-        "If the cached total is unavailable, the toast still renders the earned-points message without crashing."
+        "The Contribution Points UI includes a short helper hint in English (may reuse existing copy if appropriate).",
+        "If the user’s total contribution points is 0, the UI shows an explicit English fallback message (e.g., “No contribution points yet”) instead of only showing a bare 0, or in addition to the 0 (as long as it is clearly a fallback state)."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
+      "text": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7"
+          "msg-5"
         ],
         "quotes": [
-          "5.4 Show different messages depending on the action type (issue, comment, evidence)."
+          "6.5 Ensure the number updates immediately after a toast event."
         ]
       },
       "acceptanceCriteria": [
-        "For each of the action types ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED, the toast uses distinct English phrasing (not the same generic sentence).",
-        "The action type mapping uses the canonical constants in frontend/src/lib/contributionActionTypes.ts (no new divergent strings)."
+        "After a contribution is logged and the earned-points toast is shown, the Contribution Points total displayed on the Profile page updates immediately (same session) to reflect the newly awarded points.",
+        "This immediate update is driven by updating existing client-side state/React Query cache (e.g., via queryClient.setQueryData) rather than waiting for a backend refetch triggered solely for UI freshness."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
+      "text": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7"
+          "msg-5"
         ],
         "quotes": [
-          "5.5 Add Secretary‑friendly phrasing for when actions originate inside chat flows."
+          "6.7 Confirm mobile responsiveness."
         ]
       },
       "acceptanceCriteria": [
-        "The shared toast API supports an explicit origin/context flag (e.g., \"chat\" vs \"standard\").",
-        "When origin is \"chat\", the toast copy is adjusted to be Secretary-friendly English (e.g., acknowledges the action was completed via the assistant) for each relevant action type."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6",
-          "msg-7"
-        ],
-        "quotes": [
-          "5.7 Ensure it never appears twice if two actions fire quickly (use a simple lock)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Rapid successive triggers (e.g., within a short window) result in at most one earned-points toast being shown.",
-        "The lock is implemented centrally in the shared toast module (not duplicated per call site).",
-        "The lock does not block unrelated toasts elsewhere in the app (scope limited to the earned-points toast)."
+        "On narrow/mobile widths, the Contribution Points element remains readable and properly spaced (no clipped text, overlapping elements, or horizontal scrolling).",
+        "The layout adapts appropriately (e.g., stacking or responsive grid behavior) while staying consistent with the Profile page design."
       ]
     }
   ],
   "constraints": [
-    "Use English for all user-facing text.",
-    "Do not fetch updated total points from the backend for the toast; use only local React state/React Query cache.",
-    "Do not modify files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT.",
-    "Backend remains single-actor; no backend changes are required for Step 5."
+    "Do not edit files under frontend/src/components/ui (compose existing Shadcn components instead).",
+    "Do not modify immutable hook entry files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
+    "Do not add new backend calls/endpoints for the Contribution Points display; use existing client-side state/cache."
   ],
   "nonGoals": [
-    "Adding new backend endpoints or changing backend reward/points logic.",
-    "Implementing real-time updates or WebSocket-style push for point totals.",
-    "Redesigning the global toast system beyond the earned-points toast behavior."
+    "Do not introduce new contribution point types, new reward rules, or changes to the backend contribution calculation.",
+    "Do not redesign the entire Profile page—only add/adjust the Contribution Points display to meet Step 6 requirements.",
+    "Do not add new authentication methods beyond existing Internet Identity."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -1,81 +1,74 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:27:47.864Z",
+  "generatedAt": "2026-02-12T01:36:20.677Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 6,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Create a small shared earned-points toast helper/component that renders the message \"+X contribution points earned\" using the existing Sonner toaster, with an auto-dismiss duration of 2–3 seconds.",
+        "summary": "Add a clearly visible Contribution Points summary element to the user Profile page that prominently shows the user’s total contribution points, styled consistently with the existing Profile layout and using a teal accent.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Trigger the shared earned-points toast immediately after any successful contribution-log API call (i.e., after useContributionEventLogger().mutateAsync resolves with isDuplicate === false), replacing any ad-hoc toast usage in existing flows.",
+        "summary": "Source the displayed contribution points total strictly from existing client-side React state/React Query cache already used by the Profile page, and do not add any new backend calls/endpoints for this display.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/issue-project/IssueProjectTasksTab.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Populate the toast’s “updated total points” (if shown) strictly from local React state (React Query cache) without performing any backend fetch; the implementation must read the latest cached contribution summary to derive the updated total.",
+        "summary": "Add a short English helper hint under/near the Contribution Points total explaining what contribution points represent, and add an English fallback message for users with zero total points.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/lib/uiCopy.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/lib/uiCopy.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Show different user-facing toast messages depending on contribution action type (issue created, comment created, evidence added).",
+        "summary": "Ensure the Contribution Points total updates immediately in the Profile page UI after an earned-points toast event, without requiring a backend refetch to see the updated number.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/hooks/useContributionEventLogger.ts",
+          "frontend/src/lib/earnedPointsToast.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/hooks/useContributionEventLogger.ts",
+          "frontend/src/lib/earnedPointsToast.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Add Secretary-friendly English phrasing variants for earned-points toasts when the contributing action originates inside Secretary chat flows, and ensure chat-origin toasts use those variants.",
+        "summary": "Verify and adjust the Contribution Points UI element to be mobile responsive (readable layout, no overflow, appropriate spacing) across small screens.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Ensure the earned-points toast never appears twice if two actions fire quickly by implementing a simple client-side toast lock (time-based or in-flight boolean) within the shared toast helper/component.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/lib/earnedPointsToast.ts"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       }
     ]
@@ -85,11 +78,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/create-instance/CreateInstancePlaceholderCard.tsx",
-    "frontend/src/components/issue-project/IssueProjectTasksTab.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/components/secretary/SecretaryWidgetPortal.tsx",
+    "frontend/src/hooks/useContributionEventLogger.ts",
     "frontend/src/lib/earnedPointsToast.ts",
+    "frontend/src/lib/uiCopy.ts",
     "frontend/src/pages/ProfilePage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

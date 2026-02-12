@@ -1,103 +1,95 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Step 5: Shared earned contribution-points toast after contribution logging",
+  "title": "Step 6: Contribution Points summary on Profile (state-sourced, teal styling, instant updates)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Create a reusable shared earned-points toast helper built on the existing Sonner toaster with 2–3s auto-dismiss.",
+      "summary": "Add a prominent, teal-accented Contribution Points total summary element to the Profile page that matches existing Profile card styling.",
       "acceptanceCriteria": [
-        "A reusable module exists (component or helper) that can be called from multiple flows to show the earned-points toast.",
-        "The toast displays the earned points in the form “+<number> contribution points earned”.",
-        "Toast dismisses automatically after 2000–3000ms (inclusive)."
+        "On the Profile page, there is a dedicated UI element for Contribution Points that includes a prominently displayed total.",
+        "The styling matches the existing Profile cards/components and includes a teal accent (e.g., icon/heading/border) consistent with current design tokens/components."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/earnedPointsToast.ts",
-          "operation": "create",
-          "description": "Create a shared earned-points toast helper that uses Sonner (toast.*) to render the exact primary message “+X contribution points earned” and sets duration to a value between 2000–3000ms."
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Refine the existing Contribution Points section to include a more prominent total summary area (teal-accented) within the existing shadcn-ui Card layout; keep styling consistent with current Profile cards and use teal tokens (e.g., accent/secondary). Use shadcn-ui Card components and existing IconBubble variant(s) to provide the teal accent. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Use the shared earned-points toast after successful contribution logging (non-duplicate) and remove ad-hoc toast construction in existing flows.",
+      "summary": "Ensure Contribution Points total is rendered strictly from existing client-side state/React Query cache already used by the Profile page, without introducing new backend calls.",
       "acceptanceCriteria": [
-        "At least the IssueProjectTasksTab flow no longer constructs its own Sonner toast message and instead uses the shared earned-points toast helper/component.",
-        "The toast only fires on success results where isDuplicate is false (duplicate results do not show the toast).",
-        "The toast is shown after the logContributionEvent call succeeds, not before."
+        "No new backend methods, canister calls, or new React Query fetch hooks are introduced solely to support the Contribution Points display.",
+        "The Profile page continues to use the existing in-app state (e.g., the existing contribution summary state already present on the page) to render the total."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/issue-project/IssueProjectTasksTab.tsx",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Replace the ad-hoc Sonner toast.success call with the shared helper from frontend/src/lib/earnedPointsToast.ts, invoked only after useContributionEventLogger().mutateAsync resolves and only when isDuplicate === false."
+          "description": "Compute and display the Contribution Points total using the existing useCallerContributionSummary hook data already loaded by the Profile page; avoid adding any new data-fetching hooks or backend calls for the display."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Derive any displayed “updated total points” from React Query cache only (no backend fetch) with safe fallback if unavailable.",
+      "summary": "Add a short English helper hint near the Contribution Points total and show an explicit English fallback message when total points is zero.",
       "acceptanceCriteria": [
-        "The toast logic reads total points from React Query cache (e.g., queryClient.getQueryData for the caller contribution summary) and does not call any actor method to fetch updated totals solely for the toast.",
-        "If the cached total is unavailable, the toast still renders the earned-points message without crashing."
+        "The Contribution Points UI includes a short helper hint in English (may reuse existing copy if appropriate).",
+        "If the user’s total contribution points is 0, the UI shows an explicit English fallback message (e.g., “No contribution points yet”) instead of only showing a bare 0, or in addition to the 0 (as long as it is clearly a fallback state)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/earnedPointsToast.ts",
+          "path": "frontend/src/lib/uiCopy.ts",
           "operation": "modify",
-          "description": "Enhance the shared toast helper to optionally include an “updated total points” line sourced strictly from the React Query cache (e.g., queryClient.getQueriesData with queryKey starting ['callerContributionSummary']), and gracefully omit totals when cache is missing/unexpected."
+          "description": "Add/extend Profile-related English copy to support an explicit zero-points fallback message (e.g., a new uiCopy.profile.contributionPointsZeroFallback string) while keeping existing helper text intact."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Render the short English helper hint near/under the total (reusing uiCopy.profile.contributionPointsHelper) and conditionally show the explicit English zero-points fallback message when the cached/state total is 0."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Vary earned-points toast copy by contribution action type using canonical action type constants.",
+      "summary": "Update the Profile page’s displayed Contribution Points total immediately after an earned-points toast event by updating existing client-side React Query cache (no backend refetch required for UI freshness).",
       "acceptanceCriteria": [
-        "For each of the action types ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED, the toast uses distinct English phrasing (not the same generic sentence).",
-        "The action type mapping uses the canonical constants in frontend/src/lib/contributionActionTypes.ts (no new divergent strings)."
+        "After a contribution is logged and the earned-points toast is shown, the Contribution Points total displayed on the Profile page updates immediately (same session) to reflect the newly awarded points.",
+        "This immediate update is driven by updating existing client-side state/React Query cache (e.g., via queryClient.setQueryData) rather than waiting for a backend refetch triggered solely for UI freshness."
       ],
       "file_operations": [
         {
+          "path": "frontend/src/hooks/useContributionEventLogger.ts",
+          "operation": "modify",
+          "description": "On successful contribution logging (non-duplicate), immediately update the existing React Query cache for the caller contribution summary (e.g., via queryClient.setQueriesData for keys starting with ['callerContributionSummary']) by incrementing totals based on the points awarded and reward type; avoid relying on a refetch for immediate UI correctness."
+        },
+        {
           "path": "frontend/src/lib/earnedPointsToast.ts",
           "operation": "modify",
-          "description": "Implement action-type-specific English phrasing for ISSUE_CREATED, COMMENT_CREATED, and EVIDENCE_ADDED by importing and switching on CONTRIBUTION_ACTION_TYPES from frontend/src/lib/contributionActionTypes.ts; keep the primary toast message as “+X contribution points earned” while varying the supporting copy."
+          "description": "Adjust cached total reading to work with the existing identity-scoped contribution summary query keys (e.g., by reading the first matching query from the React Query cache for keys starting with ['callerContributionSummary']) so the toast can reflect updated cached totals without triggering backend reads."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Contribution Points UI renders from the React Query cached contribution summary so that cache updates applied after contribution logging (and toast display) are reflected immediately on the Profile page without additional wiring."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Support Secretary-chat-origin earned-points toast phrasing variants and ensure chat flows can request those variants.",
+      "summary": "Verify and adjust the Contribution Points summary element for mobile responsiveness (readability, spacing, no overflow) on small screens.",
       "acceptanceCriteria": [
-        "The shared toast API supports an explicit origin/context flag (e.g., \"chat\" vs \"standard\").",
-        "When origin is \"chat\", the toast copy is adjusted to be Secretary-friendly English (e.g., acknowledges the action was completed via the assistant) for each relevant action type."
+        "On narrow/mobile widths, the Contribution Points element remains readable and properly spaced (no clipped text, overlapping elements, or horizontal scrolling).",
+        "The layout adapts appropriately (e.g., stacking or responsive grid behavior) while staying consistent with the Profile page design."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/earnedPointsToast.ts",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Extend the shared toast helper API to accept an explicit origin/context flag (e.g., 'standard' | 'chat') and provide Secretary-friendly English variants for each supported action type when origin === 'chat'."
-        },
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
-          "operation": "modify",
-          "description": "Wire the Secretary chat flow to use the shared earned-points toast helper with origin/context set to 'chat' for any contribution-logging success handling performed in/around the chat UI (ensuring any such toasts use the Secretary-friendly variants)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Prevent the earned-points toast from appearing twice during rapid successive triggers via a centralized lock in the shared helper.",
-      "acceptanceCriteria": [
-        "Rapid successive triggers (e.g., within a short window) result in at most one earned-points toast being shown.",
-        "The lock is implemented centrally in the shared toast module (not duplicated per call site).",
-        "The lock does not block unrelated toasts elsewhere in the app (scope limited to the earned-points toast)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/earnedPointsToast.ts",
-          "operation": "modify",
-          "description": "Add a simple module-scoped earned-points-only toast lock (time-based window or in-flight boolean) so rapid successive calls only show one earned-points toast while leaving other Sonner toasts unaffected."
+          "description": "Adjust the Contribution Points card’s internal layout to be responsive on small screens (e.g., ensure the prominent total area and any supporting breakdown/hint stack gracefully, maintain consistent spacing, and avoid overflow). Use existing Tailwind responsive utilities consistent with current Profile styling."
         }
       ]
     }
