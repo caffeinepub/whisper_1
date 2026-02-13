@@ -1,7 +1,7 @@
 /**
  * Data-driven flow definitions for Secretary capabilities.
  * Represents menu, discovery, report issue, and navigation as explicit nodes with transitions.
- * Extended with guided report-issue flow (title → location → category → details → confirmation).
+ * Extended with guided report-issue flow (title → location → category → details → confirmation) with textarea support for multi-line issue description.
  */
 
 import type { NodeDefinition, Transition, SecretaryContext, NodeViewModel } from './types';
@@ -25,6 +25,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [secretaryCopy.menuGreeting],
       showTextInput: true,
       textInputPlaceholder: 'Type a command or ask a question...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -66,6 +67,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: true,
       typeaheadPlaceholder: 'Type to search states...',
       buttons: [
@@ -89,6 +91,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: true,
       typeaheadPlaceholder: 'Type to search counties or cities...',
       buttons: [
@@ -109,6 +112,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -133,6 +137,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -153,6 +158,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [secretaryCopy.reportIssueLoadingData],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: false,
       buttons: [],
       showTopIssues: false,
@@ -166,6 +172,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -190,6 +197,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [],
       showTextInput: true,
       textInputPlaceholder: 'Describe the issue...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -214,6 +222,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
           ? ['Here are some suggested categories based on your description:']
           : [],
         showTextInput: false,
+        showTextarea: false,
         showTypeahead: false,
         buttons: hasSuggestions
           ? [
@@ -252,6 +261,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [],
       showTextInput: true,
       textInputPlaceholder: 'Enter a custom category...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -274,6 +284,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -297,6 +308,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [],
       showTextInput: true,
       textInputPlaceholder: 'Type a command or ask a question...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -317,6 +329,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [],
       showTextInput: true,
       textInputPlaceholder: 'Type your response...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -342,6 +355,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       assistantMessages: [],
       showTextInput: true,
       textInputPlaceholder: 'Enter a short title for the issue...',
+      showTextarea: false,
       showTypeahead: false,
       buttons: [
         {
@@ -364,6 +378,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     getViewModel: (context) => ({
       assistantMessages: [],
       showTextInput: false,
+      showTextarea: false,
       showTypeahead: true,
       typeaheadPlaceholder: 'Type to search states, counties, or cities...',
       buttons: [
@@ -395,6 +410,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
         assistantMessages: [],
         showTextInput: !hasSuggestions,
         textInputPlaceholder: 'Enter a category...',
+        showTextarea: false,
         showTypeahead: false,
         buttons: hasSuggestions
           ? [
@@ -431,8 +447,9 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     },
     getViewModel: (context) => ({
       assistantMessages: [],
-      showTextInput: true,
-      textInputPlaceholder: 'Describe the issue in detail...',
+      showTextInput: false,
+      showTextarea: true,
+      textareaPlaceholder: 'Describe the issue in detail...',
       showTypeahead: false,
       buttons: [
         {
@@ -458,6 +475,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       return {
         assistantMessages: [],
         showTextInput: false,
+        showTextarea: false,
         showTypeahead: false,
         buttons: [
           {
@@ -556,4 +574,10 @@ export const transitions: Transition[] = [
   { from: 'guided-report-category', action: 'back-to-menu', to: 'menu' },
   { from: 'guided-report-details', action: 'back-to-menu', to: 'menu' },
   { from: 'guided-report-confirmation', action: 'back-to-menu', to: 'menu' },
+
+  // Intent recognition from menu
+  { from: 'menu', action: 'intent-recognized', to: 'intent-slot-filling' },
+
+  // Free text input handling
+  { from: 'menu', action: 'free-text-input', to: 'unknown-input-recovery' },
 ];

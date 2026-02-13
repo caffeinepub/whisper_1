@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T06:36:11.408Z",
+  "generatedAt": "2026-02-13T12:45:19.755Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,24 +11,16 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
+        "id": "REQ-2",
+        "summary": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/secretary/flow/types.ts",
-          "frontend/src/secretary/state/secretaryContext.ts",
-          "frontend/src/secretary/copy/secretaryCopy.ts",
-          "frontend/src/secretary/flow/flows.ts",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/flow/runner.ts"
         ],
         "matchedFiles": [
-          "frontend/src/secretary/flow/types.ts",
-          "frontend/src/secretary/state/secretaryContext.ts",
-          "frontend/src/secretary/copy/secretaryCopy.ts",
-          "frontend/src/secretary/flow/flows.ts",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "frontend/src/secretary/flow/runner.ts"
         ]
       }
     ]
@@ -39,12 +31,9 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryCopy.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
     "frontend/src/secretary/flow/flows.ts",
+    "frontend/src/secretary/flow/runner.ts",
     "frontend/src/secretary/flow/types.ts",
-    "frontend/src/secretary/state/secretaryContext.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

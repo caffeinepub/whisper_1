@@ -1,36 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Add issueTitle field to the issue reporting (guided) creation flow",
+  "title": "Add issueDescription textarea to issue creation form",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
+      "id": "REQ-2",
+      "text": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages-6"
         ],
         "quotes": [
-          "Run step 1"
+          "Add a new textarea field for issueDescription to the issue creation form."
         ]
       },
       "acceptanceCriteria": [
-        "Secretary guided report-issue draft state includes a new `issueTitle` (or `title`) string field that defaults to an empty string.",
-        "The guided report-issue flow includes a step that prompts the user (in English) to enter the issue title and stores the entered value into the draft state.",
-        "The guided report-issue confirmation/review UI displays the entered issue title along with the existing Location/Category/Details summary.",
-        "No backend/canister API changes are required to complete this step."
+        "The issue creation form displays a clearly labeled textarea for `issueDescription` (English user-facing label).",
+        "The textarea supports multi-line input (Enter inserts a new line and does not accidentally submit the form).",
+        "The `issueDescription` value is included in the form’s internal state and is preserved while the user continues the issue creation flow.",
+        "If the form has a review/confirmation step, the entered `issueDescription` is displayed in that summary.",
+        "Submitting the issue creation form includes the `issueDescription` value in the submission payload used by the app."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn components are read-only).",
-    "Do not modify any files listed in frontend.immutablePaths in SYSTEM_CONTEXT.",
-    "Keep changes limited to step 1 only (issueTitle field); do not implement description/category/location/photos in this build."
+    "Use English for all user-facing text.",
+    "Do not modify any files under frontend/src/components/ui (compose using existing UI components instead).",
+    "Do not edit immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Implementing issueDescription, issueCategory, location selector (state→county→city), or optional photo uploads.",
-    "Persisting submitted issues to the backend or creating new backend issue types/APIs."
+    "Do not add new backend canister methods or change backend data models as part of this request.",
+    "Do not redesign unrelated parts of the issue creation flow."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,13 +1,14 @@
 /**
  * Secretary chat widget with initial greeting message, geography data wiring, speech-to-text microphone button,
  * enhanced styling with visible card background and borders, improved typeahead/suggestion selection that fills slots and advances flow directly,
- * and confirmation summary display for guided report-issue flow including issue title.
+ * confirmation summary display for guided report-issue flow including issue title, and textarea support for multi-line issue description input.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { SecretaryBrain } from '../../secretary/brain/SecretaryBrain';
@@ -35,6 +36,7 @@ export function SecretaryWidget({
   const [viewModel, setViewModel] = useState<NodeViewModel | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Speech-to-text
   const {
@@ -81,10 +83,14 @@ export function SecretaryWidget({
 
   // Focus input when opened
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      if (viewModel?.showTextarea && textareaRef.current) {
+        textareaRef.current.focus();
+      } else if (viewModel?.showTextInput && inputRef.current) {
+        inputRef.current.focus();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, viewModel?.showTextInput, viewModel?.showTextarea]);
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
@@ -225,7 +231,34 @@ export function SecretaryWidget({
               />
             )}
 
-            {viewModel?.showTextInput && (
+            {viewModel?.showTextarea && (
+              <div className="space-y-2">
+                <Textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={viewModel.textareaPlaceholder || 'Type your message...'}
+                  className="min-h-[100px] resize-none"
+                  rows={4}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant={isListening ? 'destructive' : 'outline'}
+                    size="icon"
+                    onClick={toggleMicrophone}
+                    disabled={!!speechError}
+                    title={speechError || (isListening ? 'Stop recording' : 'Start recording')}
+                  >
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <Button onClick={handleSend} size="icon">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {viewModel?.showTextInput && !viewModel?.showTextarea && (
               <div className="flex gap-2">
                 <Input
                   ref={inputRef}

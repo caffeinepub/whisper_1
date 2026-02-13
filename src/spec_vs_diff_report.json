@@ -1,31 +1,46 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T06:36:11.405Z",
-  "summary": "REQ-1 (add issueTitle to Secretary guided report-issue draft, prompt for it, and show it in confirmation) appears implemented via new draft field/default and confirmation summary support. However, the diff also adds/extends a full multi-step guided report-issue flow (location/category/details/confirmation and related actions/copy), which goes beyond the request/constraints to keep this build limited to step 1 (issueTitle only).",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-13T12:45:19.752Z",
+  "summary": "The diff implements multi-line textarea support and guided report-issue confirmation within the Secretary chat/flow system, but it does not add an `issueDescription` textarea to the actual issue creation form nor include it in that form’s state/payload as required by REQ-2.",
+  "missing_requirements": [
     {
-      "description": "Implemented additional guided report-issue steps beyond issueTitle (location, category, details, confirmation) including nodes/actions and copy, despite the constraint to keep changes limited to step 1 only and to not implement description/category/location/photos in this build.",
-      "reason": "BuildRequest explicitly limits scope to step 1 (issueTitle field) and lists description/category/location/photos as non-goals, but the diff introduces guided flow nodes and prompts for these steps.",
+      "id": "REQ-2",
+      "requirement": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description; include it in form state, show it in any review step, and include it in the submission payload.",
+      "reason": "All changes shown are within the Secretary widget and secretary flow engine/types; there is no evidence of modifications to an issue creation form component or its submit payload/state to add `issueDescription`. The textarea added appears to be for the Secretary guided report-issue flow (draft.details / reportIssueDescription), not an issue creation form field named `issueDescription`.",
       "evidence": [
-        "frontend/src/secretary/flow/types.ts (adds NodeIds/actions for guided-report-location/category/details/confirmation and edit/submit actions)",
-        "frontend/src/secretary/copy/secretaryCopy.ts (adds guidedReportLocationPrompt/guidedReportCategoryPrompt/guidedReportDetailsPrompt/guidedReportConfirmationPrompt and related buttons)",
-        "frontend/src/secretary/flow/flows.ts (comment indicates guided report-issue flow title → location → category → details → confirmation)",
-        "frontend/src/secretary/copy/secretaryPrompts.ts (confirmation summary includes location/category/details fields)"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/flow/flows.ts",
+        "frontend/src/secretary/flow/runner.ts",
+        "frontend/src/secretary/flow/types.ts"
       ]
     }
   ],
-  "confidence": 0.72,
+  "hallucinated_features": [
+    {
+      "description": "SecretaryWidget enhancements including speech-to-text microphone integration, improved styling, typeahead/suggestion behavior changes, and textarea UI handling in the Secretary chat widget.",
+      "reason": "The BuildRequest only asks for adding `issueDescription` to the issue creation form; it does not request changes to the Secretary chat widget or speech-to-text features.",
+      "evidence": [
+        "frontend/src/components/secretary/SecretaryWidget.tsx"
+      ]
+    },
+    {
+      "description": "Guided report-issue flow changes (new nodes like guided-report-title/location/category/details/confirmation) and confirmation summary display logic for the Secretary assistant.",
+      "reason": "The BuildRequest is scoped to the issue creation form field addition and explicitly avoids redesigning unrelated parts of issue creation flow; these flow-engine additions are a separate guided conversational reporting feature.",
+      "evidence": [
+        "frontend/src/secretary/flow/flows.ts",
+        "frontend/src/secretary/flow/types.ts",
+        "frontend/src/secretary/flow/runner.ts"
+      ]
+    }
+  ],
+  "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryCopy.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
     "frontend/src/secretary/flow/flows.ts",
+    "frontend/src/secretary/flow/runner.ts",
     "frontend/src/secretary/flow/types.ts",
-    "frontend/src/secretary/state/secretaryContext.ts",
     "project_state.json"
   ]
 }

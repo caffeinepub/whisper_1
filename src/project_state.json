@@ -1,16 +1,16 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Build a Structured Civic Task Engine with an issue creation form that will include fields for title, description, category, location selection, and optional photos (implemented as atomic steps).",
+  "summary": "Build an issue creation form; current task is adding an issueDescription textarea field.",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-extend-the-guided-report-issue-creation-flow-secretary-to-collect-and-store-a-new-text-field-named-issuetitle-a-short-title-for-the-issue-as-part-of-the-issue-creation-draft-using-the-existing-secretary-text-input-control",
-      "title": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
+      "id": "feature-add-a-new-textarea-field-named-issuedescription-to-the-issue-creation-form-allowing-the-user-to-enter-a-multi-line-description-of-the-issue",
+      "title": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "version": 1
     }
@@ -18,12 +18,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add a new text input field (issueTitle) to the issue creation form.",
+      "summary": "Add a new textarea field for issueDescription to the issue creation form.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add issueTitle field to the issue reporting (guided) creation flow",
+  "projectName": "Add issueDescription textarea to issue creation form",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,7 +1,7 @@
 /**
  * Core flow-engine types for the Secretary assistant.
  * Defines nodes, transitions, actions, context, and view models.
- * Extended with guided report-issue flow nodes and confirmation step support.
+ * Extended with guided report-issue flow nodes, confirmation step support, and textarea control for multi-line issue description input.
  */
 
 import type { USState, USCounty, USPlace, USHierarchyLevel } from '@/backend';
@@ -144,6 +144,10 @@ export interface NodeViewModel {
   // Input controls to show
   showTextInput: boolean;
   textInputPlaceholder?: string;
+
+  // Textarea control for multi-line input
+  showTextarea: boolean;
+  textareaPlaceholder?: string;
 
   // Typeahead control
   showTypeahead: boolean;

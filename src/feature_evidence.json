@@ -2,15 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-extend-the-guided-report-issue-creation-flow-secretary-to-collect-and-store-a-new-text-field-named-issuetitle-a-short-title-for-the-issue-as-part-of-the-issue-creation-draft-using-the-existing-secretary-text-input-control",
-      "featureTitle": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
+      "featureId": "feature-add-a-new-textarea-field-named-issuedescription-to-the-issue-creation-form-allowing-the-user-to-enter-a-multi-line-description-of-the-issue",
+      "featureTitle": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
       "files": [
         "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/brain/FlowEngineBrain.ts",
-        "frontend/src/secretary/copy/secretaryCopy.ts",
-        "frontend/src/secretary/flow/flows.ts",
-        "frontend/src/secretary/flow/types.ts",
-        "frontend/src/secretary/state/secretaryContext.ts"
+        "frontend/src/secretary/flow/runner.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,7 +18,7 @@
         "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "confidence": "high"
     }

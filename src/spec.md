@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add an `issueTitle` text field to the Secretary guided issue reporting draft and show it in the review/confirmation step.
+**Goal:** Add an `issueDescription` multi-line textarea to the issue creation form and include it throughout the submission flow.
 
 **Planned changes:**
-- Extend the guided report-issue draft state to include a new `issueTitle` (or `title`) string field defaulting to an empty string.
-- Add a guided step that prompts the user (in English) to enter the issue title using the existing Secretary text input control and store it in the draft state.
-- Update the guided report-issue confirmation/review UI to display the entered issue title alongside the existing Location/Category/Details summary.
+- Add a clearly labeled (English) textarea field named `issueDescription` to the issue creation form UI.
+- Ensure Enter inserts new lines in the textarea without accidentally submitting the form.
+- Store `issueDescription` in the form’s internal state so it persists during the issue creation flow.
+- If a review/confirmation step exists, display the entered `issueDescription` in the summary.
+- Include `issueDescription` in the issue creation submission payload.
 
-**User-visible outcome:** Users can enter a short issue title during the guided issue reporting flow and see it included in the final review/confirmation summary.
+**User-visible outcome:** Users can enter a multi-line description for a new issue, see it preserved during the flow (and in any review step), and have it submitted with the issue.

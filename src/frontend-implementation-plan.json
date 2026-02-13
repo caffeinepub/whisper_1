@@ -1,47 +1,28 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add issueTitle to Secretary guided report-issue draft and review UI",
+  "title": "Add issueDescription textarea to issue creation flow",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Add an `issueTitle` text field to the Secretary guided report-issue draft, collect it via the existing Secretary text input step, and show it in the confirmation summary.",
+      "id": "REQ-2",
+      "summary": "Add an `issueDescription` multi-line textarea to the issue creation form and include it in review + submission payload.",
       "acceptanceCriteria": [
-        "Secretary guided report-issue draft state includes a new `issueTitle` (or `title`) string field that defaults to an empty string.",
-        "The guided report-issue flow includes a step that prompts the user (in English) to enter the issue title and stores the entered value into the draft state.",
-        "The guided report-issue confirmation/review UI displays the entered issue title along with the existing Location/Category/Details summary.",
-        "No backend/canister API changes are required to complete this step."
+        "The issue creation form displays a clearly labeled textarea for `issueDescription` (English user-facing label).",
+        "The textarea supports multi-line input (Enter inserts a new line and does not accidentally submit the form).",
+        "The `issueDescription` value is included in the form’s internal state and is preserved while the user continues the issue creation flow.",
+        "If the form has a review/confirmation step, the entered `issueDescription` is displayed in that summary.",
+        "Submitting the issue creation form includes the `issueDescription` value in the submission payload used by the app."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/secretary/flow/types.ts",
-          "operation": "modify",
-          "description": "Extend `GuidedReportDraft` to include an `issueTitle: string` field (defaulted elsewhere), and extend the confirmation view-model shape to include the title in the confirmation summary. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/secretary/state/secretaryContext.ts",
-          "operation": "modify",
-          "description": "Update `createEmptyGuidedReportDraft()` to initialize `issueTitle` to an empty string and ensure reset flows preserve this default behavior. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/secretary/copy/secretaryCopy.ts",
-          "operation": "modify",
-          "description": "Add/adjust guided report-issue English copy for the new issue title step prompt (e.g., asking for a short title). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/secretary/flow/flows.ts",
-          "operation": "modify",
-          "description": "Insert a new guided step node for collecting `issueTitle` using the existing Secretary text-input control (the widget's shadcn `Input`), wire it into the guided report-issue transitions before the existing steps, and include `issueTitle` in the confirmation view model summary. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "operation": "modify",
-          "description": "Ensure the guided title text submission is routed to the flow runner and stored into `context.guidedReportDraft.issueTitle` at the correct step, without introducing any backend calls. Verify the component's usage instructions before implementing."
-        },
-        {
           "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
           "operation": "modify",
-          "description": "Update the guided report confirmation/review UI block to render the new `issueTitle` line alongside Location/Category/Details, while continuing to use the existing Secretary text input control (shadcn `Input` already used by the widget). Verify the component's usage instructions before implementing."
+          "description": "Update the issue creation flow UI to render a clearly labeled `issueDescription` textarea (multi-line) during the issue-details step (e.g., the guided report details step), while keeping single-line input for other steps. Use the shadcn-ui Textarea component (already used elsewhere in the app) to support multi-line input; Verify the component's usage instructions before implementing. Ensure Enter inserts a newline in the textarea (do not intercept Enter-to-send in this mode), preserve the textarea value across navigation within the flow by syncing with the brain/context draft state, and keep the existing review/confirmation summary showing the captured description."
+        },
+        {
+          "path": "frontend/src/secretary/flow/runner.ts",
+          "operation": "modify",
+          "description": "Ensure the issue creation submission action (e.g., guided confirmation submit) includes the captured `issueDescription` value from the current draft/state in the submission payload used by the app (without adding new backend capabilities). Keep behavior changes scoped to the issue creation flow only."
         }
       ]
     }
