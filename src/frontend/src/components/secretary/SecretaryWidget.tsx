@@ -1,7 +1,8 @@
 /**
  * Secretary chat widget with initial greeting message, geography data wiring, speech-to-text microphone button,
  * enhanced styling with visible card background and borders, improved typeahead/suggestion selection that fills slots and advances flow directly,
- * confirmation summary display for guided report-issue flow including issue title, and textarea support for multi-line issue description input.
+ * confirmation summary display for guided report-issue flow including issue title, textarea support for multi-line issue description input,
+ * issueCategory dropdown for the guided report category step, and hierarchical location selector for guided report location step.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,8 +15,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { SecretaryBrain } from '../../secretary/brain/SecretaryBrain';
 import type { NodeViewModel } from '../../secretary/flow/types';
 import { SecretaryLocationTypeahead } from './SecretaryLocationTypeahead';
+import { SecretaryIssueCategorySelect } from './SecretaryIssueCategorySelect';
+import { SecretaryHierarchicalLocationSelector } from './SecretaryHierarchicalLocationSelector';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { FlowEngineBrain } from '@/secretary/brain/FlowEngineBrain';
+import type { USState, USCounty, USPlace } from '@/backend';
 
 interface SecretaryWidgetProps {
   isOpen: boolean;
@@ -134,6 +138,28 @@ export function SecretaryWidget({
     }
   };
 
+  const handleCategoryDropdownSelect = async (category: string) => {
+    // Use the brain's category suggestion handler for dropdown selection
+    if (brain instanceof FlowEngineBrain) {
+      await brain.handleCategorySuggestionSelection(category);
+      const vm = brain.getViewModel();
+      setViewModel(vm);
+    }
+  };
+
+  const handleHierarchicalLocationContinue = async (
+    state: USState | null,
+    county: USCounty | null,
+    place: USPlace | null
+  ) => {
+    // Use the brain's hierarchical location selection handler
+    if (brain instanceof FlowEngineBrain) {
+      await brain.handleHierarchicalLocationSelection(state, county, place);
+      const vm = brain.getViewModel();
+      setViewModel(vm);
+    }
+  };
+
   const toggleMicrophone = () => {
     if (isListening) {
       stopListening();
@@ -145,6 +171,12 @@ export function SecretaryWidget({
   if (!isOpen) return null;
 
   const messages = brain.getMessages();
+  
+  // Get initial location values for hierarchical selector
+  const context = brain instanceof FlowEngineBrain ? brain.getContext() : null;
+  const initialState = context?.guidedReportDraft.location.state || null;
+  const initialCounty = context?.guidedReportDraft.location.county || null;
+  const initialPlace = context?.guidedReportDraft.location.place || null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)]">
@@ -231,6 +263,24 @@ export function SecretaryWidget({
               />
             )}
 
+            {viewModel?.showHierarchicalLocationSelector && (
+              <SecretaryHierarchicalLocationSelector
+                initialState={initialState}
+                initialCounty={initialCounty}
+                initialPlace={initialPlace}
+                onContinue={handleHierarchicalLocationContinue}
+              />
+            )}
+
+            {viewModel?.showCategoryDropdown && (
+              <SecretaryIssueCategorySelect
+                options={viewModel.categoryDropdownOptions || []}
+                onSelect={handleCategoryDropdownSelect}
+                placeholder={viewModel.categoryDropdownPlaceholder}
+                label={viewModel.categoryDropdownLabel}
+              />
+            )}
+
             {viewModel?.showTextarea && (
               <div className="space-y-2">
                 <Textarea
@@ -258,7 +308,7 @@ export function SecretaryWidget({
               </div>
             )}
 
-            {viewModel?.showTextInput && !viewModel?.showTextarea && (
+            {viewModel?.showTextInput && !viewModel?.showTextarea && !viewModel?.showHierarchicalLocationSelector && (
               <div className="flex gap-2">
                 <Input
                   ref={inputRef}

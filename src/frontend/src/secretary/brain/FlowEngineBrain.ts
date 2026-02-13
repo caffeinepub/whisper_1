@@ -1,6 +1,6 @@
 /**
  * Default in-frontend SecretaryBrain implementation using the flow engine.
- * Extended with task intent integration for create_task, find_tasks, and update_task.
+ * Extended with task intent integration and hierarchical location selection for guided report-issue flow.
  */
 
 import type { SecretaryBrain, NavigationHandler } from './SecretaryBrain';
@@ -139,30 +139,6 @@ export class FlowEngineBrain implements SecretaryBrain {
         })),
       ];
       typeaheadOptions = combined;
-    } else if (currentNode === 'guided-report-location') {
-      // Show states initially
-      if (!context.guidedReportDraft.location.state) {
-        typeaheadOptions = this.allStates.map((state) => ({
-          id: state.hierarchicalId,
-          label: state.longName,
-          data: state,
-        }));
-      } else {
-        // After state is selected, show counties and places for that state
-        const combined = [
-          ...this.countiesForState.map((county) => ({
-            id: county.hierarchicalId,
-            label: `${county.shortName} (County)`,
-            data: county,
-          })),
-          ...this.placesForState.map((place) => ({
-            id: place.hierarchicalId,
-            label: `${place.shortName} (City)`,
-            data: place,
-          })),
-        ];
-        typeaheadOptions = combined;
-      }
     }
     
     const vm = this.runner.getViewModel();
@@ -450,7 +426,50 @@ export class FlowEngineBrain implements SecretaryBrain {
   }
 
   /**
-   * Handle geography selection (for compatibility)
+   * Handle hierarchical location selection for guided report flow
+   */
+  async handleHierarchicalLocationSelection(
+    state: USState | null,
+    county: USCounty | null,
+    place: USPlace | null
+  ): Promise<void> {
+    const context = this.runner.getContext();
+    
+    // Store the location in the guided draft
+    context.guidedReportDraft.location.state = state;
+    context.guidedReportDraft.location.county = county;
+    context.guidedReportDraft.location.place = place;
+    
+    // Derive canonical locationId (prefer place > county > state)
+    let locationId = '';
+    if (place) {
+      locationId = place.hierarchicalId;
+    } else if (county) {
+      locationId = county.hierarchicalId;
+    } else if (state) {
+      locationId = state.hierarchicalId;
+    }
+    context.guidedReportDraft.locationId = locationId;
+    
+    // Build stable human-readable locationLabel
+    const locationParts: string[] = [];
+    if (place) {
+      locationParts.push(place.shortName);
+    }
+    if (county) {
+      locationParts.push(county.shortName);
+    }
+    if (state) {
+      locationParts.push(state.shortName);
+    }
+    context.guidedReportDraft.locationLabel = locationParts.join(', ');
+    
+    // Transition to category selection
+    await this.handleAction({ type: 'guided-location-selected' });
+  }
+
+  /**
+   * Handle geography selection (for compatibility with typeahead flows)
    */
   async handleGeographySelection(selection: { id: string; label: string; data: any }): Promise<void> {
     const context = this.runner.getContext();
@@ -484,12 +503,10 @@ export class FlowEngineBrain implements SecretaryBrain {
     // Determine which action type based on current node
     const currentNode = context.currentNode;
     
-    let actionType: 'state-selected' | 'location-selected' | 'guided-location-selected' = 'location-selected';
+    let actionType: 'state-selected' | 'location-selected' = 'location-selected';
     
     if (currentNode === 'discovery-select-state') {
       actionType = 'state-selected';
-    } else if (currentNode === 'guided-report-location') {
-      actionType = 'guided-location-selected';
     }
     
     await this.handleAction({

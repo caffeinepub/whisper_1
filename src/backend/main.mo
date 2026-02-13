@@ -308,6 +308,11 @@ actor {
     history : [TaskHistoryEntry];
   };
 
+  public type CreateTaskResult = {
+    #success : { taskId : Nat; message : Text };
+    #error : { message : Text };
+  };
+
   // ===================== Persistent Storage for Structured Civic Tasks ========================
 
   // Storage for tasks (by id) and for locationId index
@@ -600,14 +605,11 @@ actor {
   };
 
   // Core backend query for complaint categories by geography level and optional search
-  public query ({ caller }) func getComplaintCategoriesByGeographyLevel(
+  // Public access - no authentication required for civic engagement exploration
+  public query func getComplaintCategoriesByGeographyLevel(
     level : USHierarchyLevel,
     searchTerm : ?Text,
   ) : async [Text] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access complaint categories");
-    };
-
     switch (searchTerm) {
       case (null) { getLevelCategoriesWithoutSearch(level) };
       case (?term) {
@@ -713,7 +715,8 @@ actor {
     #ok(post);
   };
 
-  // Get posts for a specific instance - no authentication required (public feed)
+  // Get posts for a specific instance - public access (no authentication required)
+  // This supports the hyperlocal feed being viewable by anyone including guests
   public query func getPostsByInstance(instanceName : Text, limit : Nat, offset : Nat) : async [Post] {
     let instancePosts = switch (postsByInstance.get(instanceName)) {
       case (null) { return [] };
@@ -755,7 +758,7 @@ actor {
     resultList.toArray();
   };
 
-  // Get a single post by ID - no authentication required
+  // Get a single post by ID - public access (no authentication required)
   public query func getPost(postId : Nat) : async ?Post {
     switch (posts.get(postId)) {
       case (?post) {
@@ -825,7 +828,7 @@ actor {
     };
   };
 
-  // Get all posts by a specific author - no authentication required
+  // Get all posts by a specific author - public access (no authentication required)
   public query func getPostsByAuthor(author : Principal, limit : Nat, offset : Nat) : async [Post] {
     let allPosts = posts.values().toArray();
     let authorPosts = allPosts.filter(func(post : Post) : Bool {
@@ -1011,13 +1014,19 @@ actor {
   // ===================== ICRC-1 Token Methods ========================
 
   public query ({ caller }) func icrc1_balance_of(account : Principal) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check token balances");
+    };
     switch (wspBalances.get(account)) {
       case (?balance) { balance };
       case (null) { 0 };
     };
   };
 
-  public query func icrc1_total_supply() : async Nat {
+  public query ({ caller }) func icrc1_total_supply() : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check total supply");
+    };
     wspTotalSupply;
   };
 
@@ -1501,18 +1510,12 @@ actor {
     );
   };
 
-  // Geography query functions - require user authentication
-  public query ({ caller }) func getAllStates() : async [USState] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access geography data");
-    };
+  // Geography query functions - public access for civic engagement exploration
+  public query func getAllStates() : async [USState] {
     usGeography.states.values().toArray();
   };
 
-  public query ({ caller }) func getCountiesForState(stateGeoId : GeoId) : async [USCounty] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access geography data");
-    };
+  public query func getCountiesForState(stateGeoId : GeoId) : async [USCounty] {
     let countiesList = List.empty<USCounty>();
     for ((countyGeoId, county) in usGeography.counties.entries()) {
       if (countyGeoId.startsWith(#text(stateGeoId))) { countiesList.add(county) };
@@ -1523,10 +1526,7 @@ actor {
     } else { countiesArray };
   };
 
-  public query ({ caller }) func getPlacesForCounty(countyGeoId : GeoId) : async [USPlace] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access geography data");
-    };
+  public query func getPlacesForCounty(countyGeoId : GeoId) : async [USPlace] {
     let placesList = List.empty<USPlace>();
     for ((placeGeoId, place) in usGeography.places.entries()) {
       if (placeGeoId.startsWith(#text(countyGeoId))) { placesList.add(place) };
@@ -1537,11 +1537,8 @@ actor {
     } else { placesArray };
   };
 
-  // New Backend Support: Fetch Places for State
-  public query ({ caller }) func getPlacesForState(stateGeoId : GeoId) : async [USPlace] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access geography data");
-    };
+  // New Backend Support: Fetch Places for State - public access
+  public query func getPlacesForState(stateGeoId : GeoId) : async [USPlace] {
     let filteredPlacesList = List.empty<USPlace>();
     for ((placeGeoId, place) in usGeography.places.entries()) {
       if (placeGeoId.startsWith(#text(stateGeoId))) {
@@ -1607,9 +1604,19 @@ actor {
     category : Text,
     locationId : Text,
     issueId : ?Text,
-  ) : async Nat {
+  ) : async CreateTaskResult {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create tasks");
+    };
+
+    if (title.isEmpty()) {
+      return #error({ message = "Task title cannot be empty" });
+    };
+    if (description.isEmpty()) {
+      return #error({ message = "Task description cannot be empty" });
+    };
+    if (category.isEmpty()) {
+      return #error({ message = "Task category cannot be empty" });
     };
 
     let taskId = nextTaskId;
@@ -1672,7 +1679,7 @@ actor {
     let log = { persistentEntries = persistentEntryList.toArray() };
     contributionLogs.add(caller, log);
 
-    taskId;
+    #success({ taskId; message = "Task successfully created" });
   };
 
   public shared ({ caller }) func updateTask(
@@ -1813,23 +1820,28 @@ actor {
       Runtime.trap("Unauthorized: Only users can convert issues to tasks");
     };
 
-    let taskId = await createTask(
+    switch (await createTask(
       title,
       description,
       category,
       locationId,
       ?issueId,
-    );
+    )) {
+      case (#success { taskId }) {
+        // Register in issue index
+        let issueTasks = switch (taskIssueIndex.get(issueId)) {
+          case (null) { List.empty<Nat>() };
+          case (?existingTasks) { existingTasks };
+        };
+        issueTasks.add(taskId);
+        taskIssueIndex.add(issueId, issueTasks);
 
-    // Register in issue index
-    let issueTasks = switch (taskIssueIndex.get(issueId)) {
-      case (null) { List.empty<Nat>() };
-      case (?existingTasks) { existingTasks };
+        taskId;
+      };
+      case (#error { message }) {
+        Runtime.trap(message);
+      };
     };
-    issueTasks.add(taskId);
-    taskIssueIndex.add(issueId, issueTasks);
-
-    taskId;
   };
 
   // ====================== End Structured TaskPersistent Model =====================

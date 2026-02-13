@@ -1,29 +1,30 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Build an issue creation form; current task is adding an issueDescription textarea field.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-a-new-textarea-field-named-issuedescription-to-the-issue-creation-form-allowing-the-user-to-enter-a-multi-line-description-of-the-issue",
-      "title": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
+      "id": "feature-update-the-secretary-guided-report-issue-flow-to-collect-location-via-a-hierarchical-selector-state-county-place-city-instead-of-or-in-addition-to-the-current-single-typeahead-step-and-store-the-resulting-canonical-locationid-plus-a-human-readable-location-label-in-the-guided-report-draft-so-the-confirmation-summary-displays-the-selected-location-reliably",
+      "title": "Update the Secretary guided report-issue flow to collect location via a hierarchical selector (state → county → place/city) instead of (or in addition to) the current single typeahead step, and store the resulting canonical `locationId` plus a human-readable location label in the guided report draft so the confirmation summary displays the selected location reliably.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-any-required-secretary-specific-ui-component-s-to-render-the-hierarchical-location-selector-in-the-widget-composing-from-existing-geography-selector-components-hooks-where-possible-and-ensure-it-matches-the-app-s-existing-styling-system-shadcn-tailwind-and-keyboard-accessibility-expectations",
+      "title": "Add any required Secretary-specific UI component(s) to render the hierarchical location selector in the widget, composing from existing geography selector components/hooks where possible, and ensure it matches the app’s existing styling system (shadcn + Tailwind) and keyboard/accessibility expectations.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Add a new textarea field for issueDescription to the issue creation form.",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Add issueDescription textarea to issue creation form",
+  "new_feature_requests": [],
+  "projectName": "Step 4: Add hierarchical location selector (state → county → city) to the Secretary guided report-issue flow",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

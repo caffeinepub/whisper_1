@@ -1,28 +1,64 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add issueDescription textarea to issue creation flow",
+  "title": "Secretary guided report-issue: hierarchical location selector (state → county → city) with stable locationId + label",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add an `issueDescription` multi-line textarea to the issue creation form and include it in review + submission payload.",
+      "id": "REQ-1",
+      "summary": "Replace the guided report-issue location step with a hierarchical selector that stores canonical locationId and a stable human-readable label in the guided draft for confirmation rendering.",
       "acceptanceCriteria": [
-        "The issue creation form displays a clearly labeled textarea for `issueDescription` (English user-facing label).",
-        "The textarea supports multi-line input (Enter inserts a new line and does not accidentally submit the form).",
-        "The `issueDescription` value is included in the form’s internal state and is preserved while the user continues the issue creation flow.",
-        "If the form has a review/confirmation step, the entered `issueDescription` is displayed in that summary.",
-        "Submitting the issue creation form includes the `issueDescription` value in the submission payload used by the app."
+        "In the guided report-issue flow, the location step presents a clear state → county → place selection UI (with county/place disabled until prerequisites are selected).",
+        "After selecting a place or county/state level (as applicable), the flow can advance to the category step without requiring the user to type a location string.",
+        "The confirmation summary shows the chosen location label (e.g., 'Seattle, King County, WA' or equivalent based on available data) and does not regress to blank/placeholder text.",
+        "The existing Secretary widget continues to work for other flows (menu, discovery, legacy report issue flow) without UI regressions.",
+        "All user-facing text added/changed for this feature is in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/secretary/flow/types.ts",
           "operation": "modify",
-          "description": "Update the issue creation flow UI to render a clearly labeled `issueDescription` textarea (multi-line) during the issue-details step (e.g., the guided report details step), while keeping single-line input for other steps. Use the shadcn-ui Textarea component (already used elsewhere in the app) to support multi-line input; Verify the component's usage instructions before implementing. Ensure Enter inserts a newline in the textarea (do not intercept Enter-to-send in this mode), preserve the textarea value across navigation within the flow by syncing with the brain/context draft state, and keep the existing review/confirmation summary showing the captured description."
+          "description": "Extend GuidedReportDraft to persist a canonical locationId and a stable locationLabel for the guided report flow (while keeping existing structured selections as needed), and extend NodeViewModel to support rendering a hierarchical location selector in the guided location step."
         },
         {
-          "path": "frontend/src/secretary/flow/runner.ts",
+          "path": "frontend/src/secretary/state/secretaryContext.ts",
           "operation": "modify",
-          "description": "Ensure the issue creation submission action (e.g., guided confirmation submit) includes the captured `issueDescription` value from the current draft/state in the submission payload used by the app (without adding new backend capabilities). Keep behavior changes scoped to the issue creation flow only."
+          "description": "Initialize/reset the guided report draft to include empty locationId/locationLabel values so confirmation rendering never falls back to blank/placeholder unexpectedly."
+        },
+        {
+          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
+          "operation": "modify",
+          "description": "Update buildGuidedReportConfirmationSummary to prefer the guided draft’s stored locationLabel (and fall back deterministically only if absent) so the confirmation summary reliably displays the chosen location."
+        },
+        {
+          "path": "frontend/src/secretary/flow/flows.ts",
+          "operation": "modify",
+          "description": "Update the guided-report-location node view model to render the hierarchical selector UI (and not require typeahead input) while preserving typeahead behavior for discovery and legacy flows."
+        },
+        {
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "operation": "modify",
+          "description": "Add guided-report-specific handling for hierarchical location selection: derive and store canonical locationId (place > county > state) and a human-readable locationLabel in the guided draft, then advance via the existing guided-location-selected transition without requiring typed input."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add Secretary-specific widget UI for the hierarchical location selector by composing existing geography selector components/hooks with shadcn + Tailwind styling and accessible keyboard interactions.",
+      "acceptanceCriteria": [
+        "Location selection controls are usable via keyboard (tab focus, enter/space to open/select) and display loading/error/empty states consistent with existing geography selectors.",
+        "The Secretary widget layout remains usable within its fixed panel size (no overflow that blocks primary actions).",
+        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose new components instead)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
+          "operation": "create",
+          "description": "Create a Secretary-specific hierarchical selector component that composes existing geography selection UI. Use the existing LocationSelector (which composes SelectState/SelectCounty/SelectPlace) to provide state → county → place selection with proper disabled prerequisites, and include a primary \"Continue\" action enabled once a valid locationId can be derived. Use shadcn-ui styling conventions via existing components and Tailwind utility classes; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Wire the new SecretaryHierarchicalLocationSelector into the widget rendering based on the guided-report-location view model, and connect its onContinue to FlowEngineBrain so the flow advances without requiring a typeahead search. Ensure the fixed panel remains usable (no action-blocking overflow) and preserve existing typeahead/category UI for other flows; Verify the component's usage instructions before implementing."
         }
       ]
     }

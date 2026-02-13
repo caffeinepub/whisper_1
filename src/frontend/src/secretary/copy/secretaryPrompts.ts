@@ -1,7 +1,7 @@
 /**
  * Composable prompt builders for Secretary nodes including slot-filling prompts,
  * category suggestion prompts, repair confirmations, and guided report-issue prompts in English.
- * Extended with task-related slot prompts.
+ * Extended with task-related slot prompts and stable locationLabel fallback for confirmation summary.
  */
 
 import type { SecretarySlot } from '../intent/types';
@@ -90,7 +90,7 @@ export function buildRepairConfirmationPrompt(slot: SecretarySlot, newValue: str
 }
 
 /**
- * Build a guided report confirmation summary
+ * Build a guided report confirmation summary with stable locationLabel fallback
  */
 export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): {
   title: string;
@@ -98,17 +98,22 @@ export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): 
   category: string;
   details: string;
 } {
-  const locationParts: string[] = [];
-  if (draft.location.place) {
-    locationParts.push(draft.location.place.shortName);
+  // Prefer stored locationLabel, fall back to building from location parts
+  let locationStr = draft.locationLabel;
+  
+  if (!locationStr) {
+    const locationParts: string[] = [];
+    if (draft.location.place) {
+      locationParts.push(draft.location.place.shortName);
+    }
+    if (draft.location.county) {
+      locationParts.push(draft.location.county.shortName);
+    }
+    if (draft.location.state) {
+      locationParts.push(draft.location.state.shortName);
+    }
+    locationStr = locationParts.join(', ') || 'Not specified';
   }
-  if (draft.location.county) {
-    locationParts.push(draft.location.county.shortName);
-  }
-  if (draft.location.state) {
-    locationParts.push(draft.location.state.shortName);
-  }
-  const locationStr = locationParts.join(', ') || 'Not specified';
 
   return {
     title: draft.issueTitle || 'Not specified',

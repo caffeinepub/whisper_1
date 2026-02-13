@@ -1,7 +1,7 @@
 /**
  * Flow runner/controller that executes transitions and manages state.
  * Handles node entry/exit, action processing, and view model generation.
- * Extended with textarea field support in default view model for multi-line issue description input.
+ * Extended with textarea field support, category dropdown support, and hierarchical location selector support in default view model.
  * Provides FlowRunner class wrapper for compatibility with FlowEngineBrain.
  */
 
@@ -99,6 +99,8 @@ export function getNodeViewModel(context: SecretaryContext): NodeViewModel {
       textInputPlaceholder: 'Type your message...',
       showTextarea: false,
       showTypeahead: false,
+      showCategoryDropdown: false,
+      showHierarchicalLocationSelector: false,
       buttons: [],
       showTopIssues: false,
       showSuggestions: false,

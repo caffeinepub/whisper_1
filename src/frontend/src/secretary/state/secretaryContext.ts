@@ -1,7 +1,7 @@
 /**
  * Secretary conversation context/state container.
  * Manages state separate from UI components for testability.
- * Extended with guided report-issue draft state management.
+ * Extended with guided report-issue draft state management including stable locationId and locationLabel.
  */
 
 import type { SecretaryContext, NodeId, GuidedReportDraft } from '../flow/types';
@@ -9,7 +9,7 @@ import { createEmptySlotBag, clearSlot, clearDependentSlots } from '../intent/sl
 import type { SecretarySlot } from '../intent/types';
 
 /**
- * Create initial empty guided report draft
+ * Create initial empty guided report draft with stable locationId and locationLabel
  */
 function createEmptyGuidedReportDraft(): GuidedReportDraft {
   return {
@@ -19,6 +19,8 @@ function createEmptyGuidedReportDraft(): GuidedReportDraft {
       county: null,
       place: null,
     },
+    locationId: '',
+    locationLabel: '',
     category: '',
     details: '',
   };

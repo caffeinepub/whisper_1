@@ -1,37 +1,57 @@
 {
   "kind": "build_request",
-  "title": "Add issueDescription textarea to issue creation form",
+  "title": "Step 4: Add hierarchical location selector (state → county → city) to the Secretary guided report-issue flow",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-2",
-      "text": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
+      "id": "REQ-1",
+      "text": "Update the Secretary guided report-issue flow to collect location via a hierarchical selector (state → county → place/city) instead of (or in addition to) the current single typeahead step, and store the resulting canonical `locationId` plus a human-readable location label in the guided report draft so the confirmation summary displays the selected location reliably.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-6"
+          "msg-4"
         ],
         "quotes": [
-          "Add a new textarea field for issueDescription to the issue creation form."
+          "Yes"
         ]
       },
       "acceptanceCriteria": [
-        "The issue creation form displays a clearly labeled textarea for `issueDescription` (English user-facing label).",
-        "The textarea supports multi-line input (Enter inserts a new line and does not accidentally submit the form).",
-        "The `issueDescription` value is included in the form’s internal state and is preserved while the user continues the issue creation flow.",
-        "If the form has a review/confirmation step, the entered `issueDescription` is displayed in that summary.",
-        "Submitting the issue creation form includes the `issueDescription` value in the submission payload used by the app."
+        "In the guided report-issue flow, the location step presents a clear state → county → place selection UI (with county/place disabled until prerequisites are selected).",
+        "After selecting a place or county/state level (as applicable), the flow can advance to the category step without requiring the user to type a location string.",
+        "The confirmation summary shows the chosen location label (e.g., 'Seattle, King County, WA' or equivalent based on available data) and does not regress to blank/placeholder text.",
+        "The existing Secretary widget continues to work for other flows (menu, discovery, legacy report issue flow) without UI regressions.",
+        "All user-facing text added/changed for this feature is in English."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add any required Secretary-specific UI component(s) to render the hierarchical location selector in the widget, composing from existing geography selector components/hooks where possible, and ensure it matches the app’s existing styling system (shadcn + Tailwind) and keyboard/accessibility expectations.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Yes"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Location selection controls are usable via keyboard (tab focus, enter/space to open/select) and display loading/error/empty states consistent with existing geography selectors.",
+        "The Secretary widget layout remains usable within its fixed panel size (no overflow that blocks primary actions).",
+        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose new components instead)."
       ]
     }
   ],
   "constraints": [
-    "Use English for all user-facing text.",
-    "Do not modify any files under frontend/src/components/ui (compose using existing UI components instead).",
-    "Do not edit immutable paths listed in SYSTEM_CONTEXT."
+    "Backend must remain single-actor (all Motoko logic in backend/main.mo); do not introduce additional backend services.",
+    "Do not edit files under frontend/src/components/ui or other immutable paths specified in SYSTEM_CONTEXT; compose around them.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not add new backend canister methods or change backend data models as part of this request.",
-    "Do not redesign unrelated parts of the issue creation flow."
+    "Implementing optional photo upload for issue creation (tracked separately).",
+    "Adding new backend APIs or persistent storage changes for location selection.",
+    "Changing the issueCategory dropdown behavior (already implemented).",
+    "Adding feed likes/comments or other feed interaction milestones."
   ],
   "imageRequirements": {
     "required": [],

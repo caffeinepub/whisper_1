@@ -1,7 +1,8 @@
 /**
  * Core flow-engine types for the Secretary assistant.
  * Defines nodes, transitions, actions, context, and view models.
- * Extended with guided report-issue flow nodes, confirmation step support, and textarea control for multi-line issue description input.
+ * Extended with guided report-issue flow nodes, confirmation step support, textarea control for multi-line issue description input,
+ * issueCategory dropdown support for the guided report category step, and hierarchical location selector with stable locationId and locationLabel.
  */
 
 import type { USState, USCounty, USPlace, USHierarchyLevel } from '@/backend';
@@ -88,7 +89,7 @@ export interface NodeDefinition {
 }
 
 /**
- * Guided report-issue draft state
+ * Guided report-issue draft state with stable locationId and locationLabel
  */
 export interface GuidedReportDraft {
   issueTitle: string;
@@ -97,6 +98,8 @@ export interface GuidedReportDraft {
     county: USCounty | null;
     place: USPlace | null;
   };
+  locationId: string;
+  locationLabel: string;
   category: string;
   details: string;
 }
@@ -153,6 +156,15 @@ export interface NodeViewModel {
   showTypeahead: boolean;
   typeaheadOptions?: Array<{ id: string; label: string; data: any }>;
   typeaheadPlaceholder?: string;
+
+  // Category dropdown control
+  showCategoryDropdown: boolean;
+  categoryDropdownOptions?: string[];
+  categoryDropdownPlaceholder?: string;
+  categoryDropdownLabel?: string;
+
+  // Hierarchical location selector control
+  showHierarchicalLocationSelector: boolean;
 
   // Action buttons
   buttons: Array<{

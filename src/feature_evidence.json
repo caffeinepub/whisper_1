@@ -2,11 +2,35 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-new-textarea-field-named-issuedescription-to-the-issue-creation-form-allowing-the-user-to-enter-a-multi-line-description-of-the-issue",
-      "featureTitle": "Add a new textarea field named `issueDescription` to the issue creation form, allowing the user to enter a multi-line description of the issue.",
+      "featureId": "feature-update-the-secretary-guided-report-issue-flow-to-collect-location-via-a-hierarchical-selector-state-county-place-city-instead-of-or-in-addition-to-the-current-single-typeahead-step-and-store-the-resulting-canonical-locationid-plus-a-human-readable-location-label-in-the-guided-report-draft-so-the-confirmation-summary-displays-the-selected-location-reliably",
+      "featureTitle": "Update the Secretary guided report-issue flow to collect location via a hierarchical selector (state → county → place/city) instead of (or in addition to) the current single typeahead step, and store the resulting canonical `locationId` plus a human-readable location label in the guided report draft so the confirmation summary displays the selected location reliably.",
       "files": [
-        "frontend/src/components/secretary/SecretaryWidget.tsx",
-        "frontend/src/secretary/flow/runner.ts"
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/copy/secretaryPrompts.ts",
+        "frontend/src/secretary/flow/flows.ts",
+        "frontend/src/secretary/flow/types.ts",
+        "frontend/src/secretary/state/secretaryContext.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-any-required-secretary-specific-ui-component-s-to-render-the-hierarchical-location-selector-in-the-widget-composing-from-existing-geography-selector-components-hooks-where-possible-and-ensure-it-matches-the-app-s-existing-styling-system-shadcn-tailwind-and-keyboard-accessibility-expectations",
+      "featureTitle": "Add any required Secretary-specific UI component(s) to render the hierarchical location selector in the widget, composing from existing geography selector components/hooks where possible, and ensure it matches the app’s existing styling system (shadcn + Tailwind) and keyboard/accessibility expectations.",
+      "files": [
+        "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
+        "frontend/src/components/secretary/SecretaryWidget.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
