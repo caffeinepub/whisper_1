@@ -16,12 +16,18 @@ interface PostComposerProps {
 export function PostComposer({ instanceName: providedInstanceName }: PostComposerProps) {
   const [localInstanceName, setLocalInstanceName] = useState('');
   const [content, setContent] = useState('');
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const { identity } = useInternetIdentity();
   const createPost = useCreatePost();
 
   const isAuthenticated = !!identity;
   const showInstanceInput = !providedInstanceName;
   const effectiveInstanceName = providedInstanceName || localInstanceName;
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedPhoto(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +55,7 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
 
       // Clear form on success
       setContent('');
+      setSelectedPhoto(null);
       if (showInstanceInput) {
         setLocalInstanceName('');
       }
@@ -88,6 +95,20 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
               rows={4}
               className="resize-none"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="photo">Photo (optional)</Label>
+            <Input
+              id="photo"
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              disabled={createPost.isPending || !isAuthenticated}
+            />
+            <p className="text-xs text-muted-foreground">
+              Photo upload will be enabled in a later step.
+            </p>
           </div>
 
           <Button

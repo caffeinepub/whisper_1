@@ -115,7 +115,7 @@
   "frontend/src/hooks/useFlagPost.ts": "React Query mutation hook for flagging posts with authentication checks, automatic query invalidation, and success/error toast notifications.",
   "frontend/src/hooks/useAdminFlaggedPosts.ts": "React Query hooks for admin-only flagged post management including list retrieval, flag clearing, and post deletion with automatic cache invalidation.",
   "frontend/src/utils/profileImageUrl.ts": "Utility functions for converting profile image byte arrays to browser-safe object URLs with proper Uint8Array type handling and memory cleanup via revocation.",
-  "frontend/src/components/feed/PostComposer.tsx": "Post creation form with optional instanceName prop; when provided, hides the instance input field and uses the prop value for post creation, otherwise shows editable instance input.",
+  "frontend/src/components/feed/PostComposer.tsx": "Post creation form with optional instanceName prop; now includes state management for selected photo file with onChange handler and automatic clearing after successful post submission, without implementing upload logic.",
   "frontend/src/components/feed/PostCard.tsx": "Feed card component displaying post preview with author profile integration, avatar display, instance badge, and actions for viewing details and flagging.",
   "frontend/src/components/feed/FeedList.tsx": "Infinite scroll feed list component that includes instanceName in IntersectionObserver effect dependencies to ensure observer is recreated when instance changes, preventing stale scroll state.",
   "frontend/src/components/feed/PostDetailDialog.tsx": "Modal dialog displaying full post content with author profile information, avatar, instance badge, and formatted timestamps.",

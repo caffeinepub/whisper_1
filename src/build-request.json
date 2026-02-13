@@ -1,57 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Step 4: Add hierarchical location selector (state → county → city) to the Secretary guided report-issue flow",
+  "title": "Micro step 2: Store selected photo file in PostComposer state (no upload)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Update the Secretary guided report-issue flow to collect location via a hierarchical selector (state → county → place/city) instead of (or in addition to) the current single typeahead step, and store the resulting canonical `locationId` plus a human-readable location label in the guided report draft so the confirmation summary displays the selected location reliably.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Yes"
-        ]
-      },
-      "acceptanceCriteria": [
-        "In the guided report-issue flow, the location step presents a clear state → county → place selection UI (with county/place disabled until prerequisites are selected).",
-        "After selecting a place or county/state level (as applicable), the flow can advance to the category step without requiring the user to type a location string.",
-        "The confirmation summary shows the chosen location label (e.g., 'Seattle, King County, WA' or equivalent based on available data) and does not regress to blank/placeholder text.",
-        "The existing Secretary widget continues to work for other flows (menu, discovery, legacy report issue flow) without UI regressions.",
-        "All user-facing text added/changed for this feature is in English."
-      ]
-    },
-    {
       "id": "REQ-2",
-      "text": "Add any required Secretary-specific UI component(s) to render the hierarchical location selector in the widget, composing from existing geography selector components/hooks where possible, and ensure it matches the app’s existing styling system (shadcn + Tailwind) and keyboard/accessibility expectations.",
+      "text": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Yes"
+          "Run step 2"
         ]
       },
       "acceptanceCriteria": [
-        "Location selection controls are usable via keyboard (tab focus, enter/space to open/select) and display loading/error/empty states consistent with existing geography selectors.",
-        "The Secretary widget layout remains usable within its fixed panel size (no overflow that blocks primary actions).",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose new components instead)."
+        "`PostComposer` defines a new `useState` value to hold the selected photo file (e.g., `File | null`).",
+        "The `<Input id=\"photo\" type=\"file\" ...>` has an `onChange` handler that updates the new state from `e.target.files` (set to `null` when no file is selected).",
+        "On successful post submission (after `createPost.mutateAsync` resolves), the selected photo state is cleared back to `null` (alongside the existing content/instance-name resets).",
+        "No backend calls, upload logic, or changes to the `useCreatePost` payload are added in this step.",
+        "Changes are limited to this single file: `frontend/src/components/feed/PostComposer.tsx`."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain single-actor (all Motoko logic in backend/main.mo); do not introduce additional backend services.",
-    "Do not edit files under frontend/src/components/ui or other immutable paths specified in SYSTEM_CONTEXT; compose around them.",
-    "Use English for any user-facing text."
+    "Do not edit any frontend files under `frontend/src/components/ui` (read-only shadcn components).",
+    "Keep the change atomic: minimal state only; do not implement upload/storage or include the photo in the create-post mutation in this step."
   ],
   "nonGoals": [
-    "Implementing optional photo upload for issue creation (tracked separately).",
-    "Adding new backend APIs or persistent storage changes for location selection.",
-    "Changing the issueCategory dropdown behavior (already implemented).",
-    "Adding feed likes/comments or other feed interaction milestones."
+    "Implementing photo upload to the Internet Computer or any blob storage.",
+    "Persisting the photo reference in backend types or post records (planned for a later micro step).",
+    "Adding image previews, validation, compression, or resizing."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,45 +1,24 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T13:41:52.313Z",
+  "generatedAt": "2026-02-13T14:35:28.150Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Update the Secretary guided report-issue flow to collect location via a hierarchical selector (state → county → place/city) instead of (or in addition to) the current single typeahead step, and store the resulting canonical `locationId` plus a human-readable location label in the guided report draft so the confirmation summary displays the selected location reliably.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/secretary/flow/types.ts",
-          "frontend/src/secretary/state/secretaryContext.ts",
-          "frontend/src/secretary/copy/secretaryPrompts.ts",
-          "frontend/src/secretary/flow/flows.ts",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/secretary/flow/types.ts",
-          "frontend/src/secretary/state/secretaryContext.ts",
-          "frontend/src/secretary/copy/secretaryPrompts.ts",
-          "frontend/src/secretary/flow/flows.ts",
-          "frontend/src/secretary/brain/FlowEngineBrain.ts"
-        ]
-      },
-      {
         "id": "REQ-2",
-        "summary": "Add any required Secretary-specific UI component(s) to render the hierarchical location selector in the widget, composing from existing geography selector components/hooks where possible, and ensure it matches the app’s existing styling system (shadcn + Tailwind) and keyboard/accessibility expectations.",
+        "summary": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/components/feed/PostComposer.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-          "frontend/src/components/secretary/SecretaryWidget.tsx"
+          "frontend/src/components/feed/PostComposer.tsx"
         ]
       }
     ]
@@ -49,15 +28,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryCopy.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/flow/flows.ts",
-    "frontend/src/secretary/flow/runner.ts",
-    "frontend/src/secretary/flow/types.ts",
-    "frontend/src/secretary/state/secretaryContext.ts",
+    "frontend/src/components/feed/PostComposer.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

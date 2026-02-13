@@ -1,48 +1,41 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T13:41:52.309Z",
-  "summary": "The diff adds a Secretary-specific hierarchical location selector component and wires new guided-report state fields (locationId/locationLabel) and confirmation-summary fallback logic. However, the diff evidence is insufficient to confirm all accessibility/loading/empty-state behaviors and fixed-panel layout constraints, and there are apparent unrelated documentation/roadmap updates included via frontend-file-summaries.txt that were not requested.",
+  "generatedAt": "2026-02-13T14:35:28.146Z",
+  "summary": "REQ-2’s core behavior (store selected File in state, update via onChange, clear on successful submit, and no upload/payload changes) appears implemented in PostComposer.tsx, but the change is not atomic to a single file as required; two additional files were modified.",
   "missing_requirements": [
     {
       "id": "REQ-2",
-      "requirement": "Location selection controls are usable via keyboard (tab focus, enter/space to open/select) and display loading/error/empty states consistent with existing geography selectors.",
-      "reason": "A new SecretaryHierarchicalLocationSelector composes the existing LocationSelector, but the diff summary does not show any explicit keyboard interaction handling or explicit loading/error/empty-state UI additions for the Secretary location step; those behaviors may exist inside LocationSelector/useLocationSelection but are not evidenced here.",
+      "requirement": "Changes are limited to this single file: `frontend/src/components/feed/PostComposer.tsx`.",
+      "reason": "The diff shows modifications to two additional files besides PostComposer.tsx, violating the constraint that changes be limited to a single file.",
       "evidence": [
-        "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "The Secretary widget layout remains usable within its fixed panel size (no overflow that blocks primary actions).",
-      "reason": "The new selector adds a full-width Continue button and a LocationSelector, but the diff summary does not show any widget/panel layout adjustments (e.g., scroll containment, height constraints) to ensure no overflow blocks primary actions in the fixed panel.",
-      "evidence": [
-        "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-        "frontend/src/components/secretary/SecretaryWidget.tsx"
+        "frontend/src/components/feed/PostComposer.tsx",
+        "frontend-file-summaries.txt",
+        "project_state.json"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Updates/additions to broader architecture/docs/plan and other unrelated feature areas (e.g., Tasks pages, routing, Tailwind tokens, Create Instance form, proposal dialogs) reflected in the repository’s frontend-file-summaries.txt.",
-      "reason": "The BuildRequest is narrowly scoped to adding a hierarchical location selector to the Secretary guided report-issue flow, and explicitly lists several non-goals. The diff includes a modified file that describes numerous unrelated features and document changes, which were not requested as part of REQ-1/REQ-2.",
+      "description": "Updates to repository metadata/state tracking files (frontend-file-summaries.txt and project_state.json).",
+      "reason": "BuildRequest explicitly requires changes be limited to `frontend/src/components/feed/PostComposer.tsx`; modifying these additional files is not requested.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    },
+    {
+      "description": "Added UI copy under the photo input: “Photo upload will be enabled in a later step.”",
+      "reason": "The BuildRequest’s scope is minimal state handling only; adding new UI messaging is not requested and goes beyond the stated atomic change.",
+      "evidence": [
+        "frontend/src/components/feed/PostComposer.tsx"
       ]
     }
   ],
-  "confidence": 0.58,
+  "confidence": 0.82,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-    "frontend/src/components/secretary/SecretaryWidget.tsx",
-    "frontend/src/secretary/brain/FlowEngineBrain.ts",
-    "frontend/src/secretary/copy/secretaryCopy.ts",
-    "frontend/src/secretary/copy/secretaryPrompts.ts",
-    "frontend/src/secretary/flow/flows.ts",
-    "frontend/src/secretary/flow/runner.ts",
-    "frontend/src/secretary/flow/types.ts",
-    "frontend/src/secretary/state/secretaryContext.ts",
+    "frontend/src/components/feed/PostComposer.tsx",
     "project_state.json"
   ]
 }

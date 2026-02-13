@@ -1,64 +1,23 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Secretary guided report-issue: hierarchical location selector (state → county → city) with stable locationId + label",
+  "title": "PostComposer: store selected photo file in component state (no upload)",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Replace the guided report-issue location step with a hierarchical selector that stores canonical locationId and a stable human-readable label in the guided draft for confirmation rendering.",
-      "acceptanceCriteria": [
-        "In the guided report-issue flow, the location step presents a clear state → county → place selection UI (with county/place disabled until prerequisites are selected).",
-        "After selecting a place or county/state level (as applicable), the flow can advance to the category step without requiring the user to type a location string.",
-        "The confirmation summary shows the chosen location label (e.g., 'Seattle, King County, WA' or equivalent based on available data) and does not regress to blank/placeholder text.",
-        "The existing Secretary widget continues to work for other flows (menu, discovery, legacy report issue flow) without UI regressions.",
-        "All user-facing text added/changed for this feature is in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/secretary/flow/types.ts",
-          "operation": "modify",
-          "description": "Extend GuidedReportDraft to persist a canonical locationId and a stable locationLabel for the guided report flow (while keeping existing structured selections as needed), and extend NodeViewModel to support rendering a hierarchical location selector in the guided location step."
-        },
-        {
-          "path": "frontend/src/secretary/state/secretaryContext.ts",
-          "operation": "modify",
-          "description": "Initialize/reset the guided report draft to include empty locationId/locationLabel values so confirmation rendering never falls back to blank/placeholder unexpectedly."
-        },
-        {
-          "path": "frontend/src/secretary/copy/secretaryPrompts.ts",
-          "operation": "modify",
-          "description": "Update buildGuidedReportConfirmationSummary to prefer the guided draft’s stored locationLabel (and fall back deterministically only if absent) so the confirmation summary reliably displays the chosen location."
-        },
-        {
-          "path": "frontend/src/secretary/flow/flows.ts",
-          "operation": "modify",
-          "description": "Update the guided-report-location node view model to render the hierarchical selector UI (and not require typeahead input) while preserving typeahead behavior for discovery and legacy flows."
-        },
-        {
-          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
-          "operation": "modify",
-          "description": "Add guided-report-specific handling for hierarchical location selection: derive and store canonical locationId (place > county > state) and a human-readable locationLabel in the guided draft, then advance via the existing guided-location-selected transition without requiring typed input."
-        }
-      ]
-    },
-    {
       "id": "REQ-2",
-      "summary": "Add Secretary-specific widget UI for the hierarchical location selector by composing existing geography selector components/hooks with shadcn + Tailwind styling and accessible keyboard interactions.",
+      "summary": "Add minimal React state to PostComposer to track the currently selected optional photo file and clear it after successful post submission, without adding any upload/storage behavior.",
       "acceptanceCriteria": [
-        "Location selection controls are usable via keyboard (tab focus, enter/space to open/select) and display loading/error/empty states consistent with existing geography selectors.",
-        "The Secretary widget layout remains usable within its fixed panel size (no overflow that blocks primary actions).",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT (compose new components instead)."
+        "`PostComposer` defines a new `useState` value to hold the selected photo file (e.g., `File | null`).",
+        "The `<Input id=\"photo\" type=\"file\" ...>` has an `onChange` handler that updates the new state from `e.target.files` (set to `null` when no file is selected).",
+        "On successful post submission (after `createPost.mutateAsync` resolves), the selected photo state is cleared back to `null` (alongside the existing content/instance-name resets).",
+        "No backend calls, upload logic, or changes to the `useCreatePost` payload are added in this step.",
+        "Changes are limited to this single file: `frontend/src/components/feed/PostComposer.tsx`."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/secretary/SecretaryHierarchicalLocationSelector.tsx",
-          "operation": "create",
-          "description": "Create a Secretary-specific hierarchical selector component that composes existing geography selection UI. Use the existing LocationSelector (which composes SelectState/SelectCounty/SelectPlace) to provide state → county → place selection with proper disabled prerequisites, and include a primary \"Continue\" action enabled once a valid locationId can be derived. Use shadcn-ui styling conventions via existing components and Tailwind utility classes; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "path": "frontend/src/components/feed/PostComposer.tsx",
           "operation": "modify",
-          "description": "Wire the new SecretaryHierarchicalLocationSelector into the widget rendering based on the guided-report-location view model, and connect its onContinue to FlowEngineBrain so the flow advances without requiring a typeahead search. Ensure the fixed panel remains usable (no action-blocking overflow) and preserve existing typeahead/category UI for other flows; Verify the component's usage instructions before implementing."
+          "description": "Introduce a `useState<File | null>` to hold the selected photo for the existing \"Photo (optional)\" file input; add an `onChange` handler that reads `e.target.files?.[0] ?? null` and stores it; after `createPost.mutateAsync` resolves successfully, clear the photo state back to `null` alongside existing resets. Do not add any upload logic or include the file in the create-post mutation payload; keep all changes within this file only."
         }
       ]
     }
