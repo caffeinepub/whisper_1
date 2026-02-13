@@ -92,7 +92,12 @@ export function buildRepairConfirmationPrompt(slot: SecretarySlot, newValue: str
 /**
  * Build a guided report confirmation summary
  */
-export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): string {
+export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): {
+  title: string;
+  location: string;
+  category: string;
+  details: string;
+} {
   const locationParts: string[] = [];
   if (draft.location.place) {
     locationParts.push(draft.location.place.shortName);
@@ -105,5 +110,10 @@ export function buildGuidedReportConfirmationSummary(draft: GuidedReportDraft): 
   }
   const locationStr = locationParts.join(', ') || 'Not specified';
 
-  return `**Location:** ${locationStr}\n**Category:** ${draft.category || 'Not specified'}\n**Details:** ${draft.details || 'Not specified'}`;
+  return {
+    title: draft.issueTitle || 'Not specified',
+    location: locationStr,
+    category: draft.category || 'Not specified',
+    details: draft.details || 'Not specified',
+  };
 }

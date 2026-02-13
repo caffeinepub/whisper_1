@@ -1,78 +1,47 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Neighborhood-based instances via geography selection and browser location flow",
+  "title": "Add issueTitle to Secretary guided report-issue draft and review UI",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Provide a state → county → place selector using existing US geography hooks and derive a canonical session locationId (hierarchicalId) with dependency clearing.",
+      "summary": "Add an `issueTitle` text field to the Secretary guided report-issue draft, collect it via the existing Secretary text input step, and show it in the confirmation summary.",
       "acceptanceCriteria": [
-        "A user can select State, then County, then optionally Place using existing geography data already fetched from the backend.",
-        "The app derives a single locationId string that equals the selected entity’s hierarchicalId, preferring place over county over state.",
-        "If the user changes State, dependent selections (county/place) are cleared and the derived locationId updates accordingly."
+        "Secretary guided report-issue draft state includes a new `issueTitle` (or `title`) string field that defaults to an empty string.",
+        "The guided report-issue flow includes a step that prompts the user (in English) to enter the issue title and stores the entered value into the draft state.",
+        "The guided report-issue confirmation/review UI displays the entered issue title along with the existing Location/Category/Details summary.",
+        "No backend/canister API changes are required to complete this step."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/location/LocationSelector.tsx",
-          "operation": "create",
-          "description": "Create a composed location selector UI that reuses existing geography query hooks and the existing create-instance dropdown components (SelectState, SelectCounty, SelectPlace) to support state→county→place selection, while deriving a canonical locationId (place > county > state). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useLocationSelection.ts",
-          "operation": "create",
-          "description": "Add a hook to manage selected state/county/place objects, enforce dependency clearing (changing state clears county/place; changing county clears place), and expose derived locationId plus selected display names for downstream instance name generation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add a location acquisition flow that supports browser Geolocation API or manual selection with clear English fallback messaging.",
-      "acceptanceCriteria": [
-        "The UI offers a “Use my current location” action that requests browser geolocation permission.",
-        "If geolocation is unavailable/denied/errors, the UI clearly falls back to manual location selection without breaking the page.",
-        "User-facing text for this flow is in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useBrowserGeolocation.ts",
-          "operation": "create",
-          "description": "Implement a small hook wrapping the browser Geolocation API, returning status (idle/loading/success/error), coordinates when available, and a user-facing error reason when unavailable/denied, without relying on any external geocoding services."
-        },
-        {
-          "path": "frontend/src/components/location/LocationAcquisitionCard.tsx",
-          "operation": "create",
-          "description": "Create a UI card that offers “Use my current location” (invokes Geolocation) and a manual selection fallback (renders LocationSelector). On geolocation denial/unavailability, show clear English guidance and keep manual selection fully functional. Use existing shadcn/ui Card/Button/Alert components by composing them (do not edit components under frontend/src/components/ui). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/uiCopy.ts",
+          "path": "frontend/src/secretary/flow/types.ts",
           "operation": "modify",
-          "description": "Add/extend English UI copy strings for the location acquisition flow (button labels, permission denied/unavailable messaging, and manual selection guidance) to keep user-facing text centralized."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Deterministically map the chosen locationId to a single WHISPER- instance name, persist/restore the chosen location, and ensure Feed refreshes consistently on changes.",
-      "acceptanceCriteria": [
-        "When a locationId is set, the app deterministically generates an instanceName using the existing WHISPER- naming convention utilities (place→county→state) and uses it for PostComposer and FeedList.",
-        "The chosen locationId is persisted locally (e.g., via existing instanceScope localStorage utilities) and restored on refresh so the Feed opens on the same local instance by default.",
-        "The user can change their selected location and the Feed remounts/refreshes to show posts for the new instance."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useInstanceScopeLocation.ts",
-          "operation": "create",
-          "description": "Create a hook that persists/restores the selected canonical locationId using the existing instanceScope utilities (setLastUsedLocationId/getLastUsedLocationId) and also persists enough selection metadata (state/county/place names) to regenerate the instanceName deterministically on reload."
+          "description": "Extend `GuidedReportDraft` to include an `issueTitle: string` field (defaulted elsewhere), and extend the confirmation view-model shape to include the title in the confirmation summary. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/pages/FeedPage.tsx",
+          "path": "frontend/src/secretary/state/secretaryContext.ts",
           "operation": "modify",
-          "description": "Replace the free-text instance selector with the new LocationAcquisitionCard + derived instanceName flow. Generate instanceName via existing whisperInstanceNaming.generateWhisperInstanceName (place→county→state) and pass it consistently to PostComposer and FeedList; ensure FeedList remounts/refreshes when the location changes. Verify the component's usage instructions before implementing."
+          "description": "Update `createEmptyGuidedReportDraft()` to initialize `issueTitle` to an empty string and ensure reset flows preserve this default behavior. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/utils/instanceScope.ts",
+          "path": "frontend/src/secretary/copy/secretaryCopy.ts",
           "operation": "modify",
-          "description": "Extend instance scope utilities as needed to support clearing/validating persisted location data (while keeping the existing last-location-id behavior intact) so location restoration is resilient to malformed localStorage."
+          "description": "Add/adjust guided report-issue English copy for the new issue title step prompt (e.g., asking for a short title). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/secretary/flow/flows.ts",
+          "operation": "modify",
+          "description": "Insert a new guided step node for collecting `issueTitle` using the existing Secretary text-input control (the widget's shadcn `Input`), wire it into the guided report-issue transitions before the existing steps, and include `issueTitle` in the confirmation view model summary. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "operation": "modify",
+          "description": "Ensure the guided title text submission is routed to the flow runner and stored into `context.guidedReportDraft.issueTitle` at the correct step, without introducing any backend calls. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/secretary/SecretaryWidget.tsx",
+          "operation": "modify",
+          "description": "Update the guided report confirmation/review UI block to render the new `issueTitle` line alongside Location/Category/Details, while continuing to use the existing Secretary text input control (shadcn `Input` already used by the widget). Verify the component's usage instructions before implementing."
         }
       ]
     }

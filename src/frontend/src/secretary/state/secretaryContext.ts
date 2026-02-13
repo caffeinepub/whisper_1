@@ -13,6 +13,7 @@ import type { SecretarySlot } from '../intent/types';
  */
 function createEmptyGuidedReportDraft(): GuidedReportDraft {
   return {
+    issueTitle: '',
     location: {
       state: null,
       county: null,

@@ -1,84 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Set up neighborhood-based instances using geography data and user location selection",
+  "title": "Add issueTitle field to the issue reporting (guided) creation flow",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Use the existing U.S. geography dataset and existing geography query hooks to let the user choose a location (state → county → place) and derive a single canonical locationId (hierarchicalId) for the session/device.",
+      "text": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-1"
+          "msg-1"
         ],
         "quotes": [
-          "run micro steps 1.2 Set up neighborhood instances\n1.2.1 Use existing geography data"
+          "Run step 1"
         ]
       },
       "acceptanceCriteria": [
-        "A user can select State, then County, then optionally Place using existing geography data already fetched from the backend.",
-        "The app derives a single locationId string that equals the selected entity’s hierarchicalId, preferring place over county over state.",
-        "If the user changes State, dependent selections (county/place) are cleared and the derived locationId updates accordingly."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Add a location acquisition flow that supports either (a) detecting device location via the browser Geolocation API or (b) manually choosing a location, with clear fallback behavior when permission is denied or unavailable.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-messages-1"
-        ],
-        "quotes": [
-          "1.2.2 Detect user location or chosen location"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The UI offers a “Use my current location” action that requests browser geolocation permission.",
-        "If geolocation is unavailable/denied/errors, the UI clearly falls back to manual location selection without breaking the page.",
-        "User-facing text for this flow is in English."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Map the chosen/detected user location to exactly one local Whisper instance name and use that instance consistently in the Feed, persisting the chosen location so subsequent visits reopen the same local instance by default.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-messages-1"
-        ],
-        "quotes": [
-          "1.2.3 Map user to a single local instance"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When a locationId is set, the app deterministically generates an instanceName using the existing WHISPER- naming convention utilities (place→county→state) and uses it for PostComposer and FeedList.",
-        "The chosen locationId is persisted locally (e.g., via existing instanceScope localStorage utilities) and restored on refresh so the Feed opens on the same local instance by default.",
-        "The user can change their selected location and the Feed remounts/refreshes to show posts for the new instance."
+        "Secretary guided report-issue draft state includes a new `issueTitle` (or `title`) string field that defaults to an empty string.",
+        "The guided report-issue flow includes a step that prompts the user (in English) to enter the issue title and stores the entered value into the draft state.",
+        "The guided report-issue confirmation/review UI displays the entered issue title along with the existing Location/Category/Details summary.",
+        "No backend/canister API changes are required to complete this step."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything under frontend/src/components/ui (compose them instead).",
-    "Do not add external geocoding/location APIs; location detection must rely only on browser capabilities and the existing backend geography dataset."
+    "Do not edit files under frontend/src/components/ui (shadcn components are read-only).",
+    "Do not modify any files listed in frontend.immutablePaths in SYSTEM_CONTEXT.",
+    "Keep changes limited to step 1 only (issueTitle field); do not implement description/category/location/photos in this build."
   ],
   "nonGoals": [
-    "Implementing true reverse-geocoding (lat/lng → city/county/place) via third-party APIs.",
-    "Creating multiple backend services or a microservices architecture.",
-    "Persisting the user’s home location in backend canister state (this iteration is device/session persisted)."
+    "Implementing issueDescription, issueCategory, location selector (state→county→city), or optional photo uploads.",
+    "Persisting submitted issues to the backend or creating new backend issue types/APIs."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

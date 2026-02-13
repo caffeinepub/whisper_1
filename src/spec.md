@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Let users choose or detect their location and consistently scope the app to a single neighborhood-based Whisper instance.
+**Goal:** Add an `issueTitle` text field to the Secretary guided issue reporting draft and show it in the review/confirmation step.
 
 **Planned changes:**
-- Add a manual location selector using existing U.S. geography data and hooks (State → County → optional Place) and derive a canonical `locationId` from the selected entity’s `hierarchicalId` (prefer place over county over state).
-- Add a location acquisition flow that offers “Use my current location” via the browser Geolocation API, with clear fallback to manual selection when unavailable/denied/errors.
-- Deterministically map the active `locationId` to exactly one `instanceName` using existing WHISPER- naming utilities, use it for Feed and PostComposer, and persist/restore the chosen `locationId` locally so the same local instance opens by default on subsequent visits.
+- Extend the guided report-issue draft state to include a new `issueTitle` (or `title`) string field defaulting to an empty string.
+- Add a guided step that prompts the user (in English) to enter the issue title using the existing Secretary text input control and store it in the draft state.
+- Update the guided report-issue confirmation/review UI to display the entered issue title alongside the existing Location/Category/Details summary.
 
-**User-visible outcome:** Users can set their local area (automatically via device location when allowed, or manually via a state/county/place picker), and the app will show and post to the matching local Whisper feed consistently across refreshes until they change it.
+**User-visible outcome:** Users can enter a short issue title during the guided issue reporting flow and see it included in the final review/confirmation summary.

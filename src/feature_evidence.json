@@ -2,11 +2,15 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-use-the-existing-u-s-geography-dataset-and-existing-geography-query-hooks-to-let-the-user-choose-a-location-state-county-place-and-derive-a-single-canonical-locationid-hierarchicalid-for-the-session-device",
-      "featureTitle": "Use the existing U.S. geography dataset and existing geography query hooks to let the user choose a location (state → county → place) and derive a single canonical locationId (hierarchicalId) for the session/device.",
+      "featureId": "feature-extend-the-guided-report-issue-creation-flow-secretary-to-collect-and-store-a-new-text-field-named-issuetitle-a-short-title-for-the-issue-as-part-of-the-issue-creation-draft-using-the-existing-secretary-text-input-control",
+      "featureTitle": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
       "files": [
-        "frontend/src/components/location/LocationSelector.tsx",
-        "frontend/src/hooks/useLocationSelection.ts"
+        "frontend/src/components/secretary/SecretaryWidget.tsx",
+        "frontend/src/secretary/brain/FlowEngineBrain.ts",
+        "frontend/src/secretary/copy/secretaryCopy.ts",
+        "frontend/src/secretary/flow/flows.ts",
+        "frontend/src/secretary/flow/types.ts",
+        "frontend/src/secretary/state/secretaryContext.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -19,50 +23,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-location-acquisition-flow-that-supports-either-a-detecting-device-location-via-the-browser-geolocation-api-or-b-manually-choosing-a-location-with-clear-fallback-behavior-when-permission-is-denied-or-unavailable",
-      "featureTitle": "Add a location acquisition flow that supports either (a) detecting device location via the browser Geolocation API or (b) manually choosing a location, with clear fallback behavior when permission is denied or unavailable.",
-      "files": [
-        "frontend/src/components/location/LocationAcquisitionCard.tsx",
-        "frontend/src/hooks/useBrowserGeolocation.ts",
-        "frontend/src/lib/uiCopy.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-map-the-chosen-detected-user-location-to-exactly-one-local-whisper-instance-name-and-use-that-instance-consistently-in-the-feed-persisting-the-chosen-location-so-subsequent-visits-reopen-the-same-local-instance-by-default",
-      "featureTitle": "Map the chosen/detected user location to exactly one local Whisper instance name and use that instance consistently in the Feed, persisting the chosen location so subsequent visits reopen the same local instance by default.",
-      "files": [
-        "frontend/src/hooks/useInstanceScopeLocation.ts",
-        "frontend/src/pages/FeedPage.tsx",
-        "frontend/src/utils/instanceScope.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

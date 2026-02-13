@@ -204,6 +204,24 @@ export class FlowEngineBrain implements SecretaryBrain {
     // Add user message to history
     addMessage(context, 'user', text);
 
+    // Check if we're in guided-report-title node
+    if (context.currentNode === 'guided-report-title') {
+      // Store the title in the draft
+      context.guidedReportDraft.issueTitle = text.trim();
+      // Transition to location selection
+      await this.runner.handleAction({ type: 'guided-title-submitted' });
+      return;
+    }
+
+    // Check if we're in guided-report-details node
+    if (context.currentNode === 'guided-report-details') {
+      // Store the details in the draft
+      context.guidedReportDraft.details = text.trim();
+      // Transition to confirmation
+      await this.runner.handleAction({ type: 'guided-details-submitted' });
+      return;
+    }
+
     // Check if we're in an active task intent flow
     const activeIntent = context.activeIntent;
     if (activeIntent === 'create_task' || activeIntent === 'find_tasks' || activeIntent === 'update_task') {
@@ -484,7 +502,19 @@ export class FlowEngineBrain implements SecretaryBrain {
    * Handle category suggestion selection (for compatibility)
    */
   async handleCategorySuggestionSelection(suggestion: string): Promise<void> {
-    // Use the correct action type for suggestion selection
+    const context = this.runner.getContext();
+    
+    // If we're in guided-report-category node, store the category
+    if (context.currentNode === 'guided-report-category') {
+      context.guidedReportDraft.category = suggestion;
+      await this.handleAction({
+        type: 'guided-category-selected',
+        payload: { suggestion },
+      });
+      return;
+    }
+    
+    // Otherwise use the legacy action type
     await this.handleAction({
       type: 'suggestion-selected',
       payload: { suggestion },

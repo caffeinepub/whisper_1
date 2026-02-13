@@ -1,56 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T20:38:07.047Z",
+  "generatedAt": "2026-02-13T06:36:11.408Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Use the existing U.S. geography dataset and existing geography query hooks to let the user choose a location (state → county → place) and derive a single canonical locationId (hierarchicalId) for the session/device.",
+        "summary": "Extend the guided report-issue creation flow (Secretary) to collect and store a new text field named `issueTitle` (a short title for the issue) as part of the issue creation draft, using the existing Secretary text input control.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/location/LocationSelector.tsx",
-          "frontend/src/hooks/useLocationSelection.ts"
+          "frontend/src/secretary/flow/types.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/copy/secretaryCopy.ts",
+          "frontend/src/secretary/flow/flows.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/location/LocationSelector.tsx",
-          "frontend/src/hooks/useLocationSelection.ts"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Add a location acquisition flow that supports either (a) detecting device location via the browser Geolocation API or (b) manually choosing a location, with clear fallback behavior when permission is denied or unavailable.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useBrowserGeolocation.ts",
-          "frontend/src/components/location/LocationAcquisitionCard.tsx",
-          "frontend/src/lib/uiCopy.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useBrowserGeolocation.ts",
-          "frontend/src/components/location/LocationAcquisitionCard.tsx",
-          "frontend/src/lib/uiCopy.ts"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Map the chosen/detected user location to exactly one local Whisper instance name and use that instance consistently in the Feed, persisting the chosen location so subsequent visits reopen the same local instance by default.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useInstanceScopeLocation.ts",
-          "frontend/src/pages/FeedPage.tsx",
-          "frontend/src/utils/instanceScope.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useInstanceScopeLocation.ts",
-          "frontend/src/pages/FeedPage.tsx",
-          "frontend/src/utils/instanceScope.ts"
+          "frontend/src/secretary/flow/types.ts",
+          "frontend/src/secretary/state/secretaryContext.ts",
+          "frontend/src/secretary/copy/secretaryCopy.ts",
+          "frontend/src/secretary/flow/flows.ts",
+          "frontend/src/secretary/brain/FlowEngineBrain.ts",
+          "frontend/src/components/secretary/SecretaryWidget.tsx"
         ]
       }
     ]
@@ -60,14 +38,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/location/LocationAcquisitionCard.tsx",
-    "frontend/src/components/location/LocationSelector.tsx",
-    "frontend/src/hooks/useBrowserGeolocation.ts",
-    "frontend/src/hooks/useInstanceScopeLocation.ts",
-    "frontend/src/hooks/useLocationSelection.ts",
-    "frontend/src/lib/uiCopy.ts",
-    "frontend/src/pages/FeedPage.tsx",
-    "frontend/src/utils/instanceScope.ts",
+    "frontend/src/components/secretary/SecretaryWidget.tsx",
+    "frontend/src/secretary/brain/FlowEngineBrain.ts",
+    "frontend/src/secretary/copy/secretaryCopy.ts",
+    "frontend/src/secretary/copy/secretaryPrompts.ts",
+    "frontend/src/secretary/flow/flows.ts",
+    "frontend/src/secretary/flow/types.ts",
+    "frontend/src/secretary/state/secretaryContext.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

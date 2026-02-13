@@ -24,6 +24,7 @@ export type NodeId =
   | 'report-complete'
   | 'unknown-input-recovery'
   | 'intent-slot-filling'
+  | 'guided-report-title'
   | 'guided-report-location'
   | 'guided-report-category'
   | 'guided-report-details'
@@ -48,10 +49,12 @@ export type ActionType =
   | 'free-text-input'
   | 'intent-recognized'
   | 'slot-filled'
+  | 'guided-title-submitted'
   | 'guided-location-selected'
   | 'guided-category-selected'
   | 'guided-details-submitted'
   | 'guided-confirm-submit'
+  | 'guided-edit-title'
   | 'guided-edit-location'
   | 'guided-edit-category'
   | 'guided-edit-details';
@@ -88,6 +91,7 @@ export interface NodeDefinition {
  * Guided report-issue draft state
  */
 export interface GuidedReportDraft {
+  issueTitle: string;
   location: {
     state: USState | null;
     county: USCounty | null;
@@ -165,6 +169,7 @@ export interface NodeViewModel {
   // Confirmation summary display
   showConfirmationSummary: boolean;
   confirmationSummary?: {
+    title: string;
     location: string;
     category: string;
     details: string;

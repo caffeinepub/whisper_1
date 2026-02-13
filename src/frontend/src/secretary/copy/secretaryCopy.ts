@@ -27,6 +27,7 @@ export const secretaryCopy = {
   reportIssueCategorySelected: 'Thank you! Your issue has been recorded. You\'ll earn contribution points for reporting this issue.',
 
   // Guided report-issue flow
+  guidedReportTitlePrompt: 'What would you like to call this issue? Please enter a short title.',
   guidedReportLocationPrompt: 'Where is the issue located? Please select a state, then optionally a county or city.',
   guidedReportCategoryPrompt: 'What category best describes this issue?',
   guidedReportCategoryPromptWithSuggestions: 'Here are some suggested categories based on your location. Choose one or select "Something else" to enter a custom category.',
@@ -37,6 +38,7 @@ export const secretaryCopy = {
   // Guided report-issue buttons
   guidedReportSomethingElse: 'Something else',
   guidedReportConfirm: 'Confirm & Submit',
+  guidedReportEditTitle: 'Edit Title',
   guidedReportEditLocation: 'Edit Location',
   guidedReportEditCategory: 'Edit Category',
   guidedReportEditDetails: 'Edit Details',

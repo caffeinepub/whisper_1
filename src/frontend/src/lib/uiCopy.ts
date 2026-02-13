@@ -3,7 +3,7 @@ export const uiCopy = {
     name: 'Whisper',
   },
   hero: {
-    title: 'Your Voice, Your Community',
+    title: 'By the people. Of the people. For the people.',
     subtitle: 'Empowering citizens to shape their local government through transparent, blockchain-based civic engagement.',
     primaryCta: 'Get Started',
     secondaryCta: 'Report an Issue',

@@ -1,104 +1,205 @@
-# Smoke Test: Instance Creation and Issue Project Workflow
+# Smoke Test: Instance Followups
 
-This document provides a comprehensive manual smoke test for the end-to-end flow from proposal creation through Issue Project task management, now extended to include regression validations.
+This document provides comprehensive manual smoke test documentation covering the complete end-to-end flow from proposal creation through Issue Project task management, with regression validation steps for all patched issues.
 
-## Prerequisites
-- Backend deployed with geography data ingested
-- At least one admin user assigned (first user becomes admin automatically)
-- Test with both admin and non-admin users
-
-## Test Flow
+## Core Flow Tests
 
 ### 1. Proposal Creation
 1. Navigate to home page
-2. Scroll to "Get Started" section or click "Get Started" in header
-3. Click "Open Secretary" button
-4. In Secretary widget, select "Create Instance"
-5. Fill in proposal form:
-   - Select state (e.g., "California")
-   - Select county (e.g., "Los Angeles County")
-   - Enter description (e.g., "Community engagement platform for LA")
-6. Click "Submit Proposal"
-7. **Expected**: Success message appears
-8. **Expected**: Proposal appears in proposals list
+2. Click "Create Instance"
+3. Select state, county, place
+4. Verify auto-generated WHISPER- prefixed instance name
+5. Enter description
+6. Submit proposal
+7. Verify success toast with earned points
+8. Verify inline earned-points badge displays
 
 ### 2. Admin Moderation
-1. Log in as admin user
-2. Navigate to Admin → Moderation page
-3. **Expected**: Newly created proposal appears in moderation queue
-4. Click "Approve" on the proposal
-5. **Expected**: Proposal status changes to "Approved"
-6. **Expected**: Proposal removed from moderation queue
+1. Log in as admin
+2. Navigate to Admin → Moderation
+3. Verify proposal appears in queue
+4. Approve proposal
+5. Verify status updates to "Approved"
+6. Verify proposal removed from queue
 
-### 3. Issue Project Creation (via Secretary)
+### 3. Issue Project Task Management
+1. Navigate to Proposals
+2. Click on approved proposal
+3. Open Issue Project detail dialog
+4. Navigate to Tasks tab
+5. Create task with description
+6. Verify task appears in list
+7. Mark task complete
+8. Verify task status updates
+9. Verify earned-points toast and inline badge
+
+### 4. Evidence Upload
+1. In Issue Project detail dialog
+2. Navigate to Evidence tab
+3. Upload image file
+4. Verify upload progress
+5. Verify image preview displays
+6. Verify earned-points toast and inline badge
+
+## Regression Validation
+
+### Patch 1: IconBubble Children Pattern
+1. Navigate to Create Instance form
+2. Verify icon bubble renders correctly (no console errors)
+3. Verify icon is centered in bubble
+4. Verify bubble has teal secondary variant styling
+
+### Patch 2: UI Copy Property Names
+1. Navigate to Create Instance form
+2. Verify all labels display correctly (no "undefined")
+3. Verify button text is "Submit Proposal"
+4. Verify success toast shows correct message
+
+### Patch 3: Proposal Detail Dialog Props
+1. Open proposal detail dialog
+2. Click on Issue Project
+3. Verify Issue Project detail dialog opens (no console errors)
+4. Verify no invalid 'proposal' prop warning
+
+### Patch 4: Task Hooks proposalId Parameter
+1. Open Issue Project detail dialog
+2. Navigate to Tasks tab
+3. Verify tasks load correctly (no "proposalId undefined" errors)
+4. Create new task
+5. Verify task creation succeeds
+
+### Patch 5: TaskWithId Iteration
+1. Open Issue Project detail dialog with multiple tasks
+2. Navigate to Tasks tab
+3. Verify all tasks render correctly
+4. Verify each task shows id, description, completed status
+5. Verify no iteration errors in console
+
+## Hyperlocal Feed + Issues + Secretary (New)
+
+### Feed Tests
+1. Navigate to Feed page
+2. Select location (state → county → place)
+3. Verify displayed "Current Location" matches selection
+4. Refresh page → verify location persists
+5. Create post → verify appears in feed immediately
+6. Switch to different location → verify post does NOT appear
+7. Test pagination: create 25+ posts, scroll to load more
+8. Test filters: create posts with different categories, apply filters
+
+### Issue Tests
+1. Navigate to Issues page
+2. Click "Create Issue"
+3. Fill title, description, category, select location
+4. Upload optional photo
+5. Submit → verify redirected to issue detail
+6. Verify issue appears in list for that location
+7. Test status transitions: claim issue, update status
+8. Add progress note → verify appears in timeline
+9. Navigate to Issue Map → verify marker appears
+
+### Secretary Tests
 1. Open Secretary widget
-2. Select "Report an Issue"
-3. Select geography (state/county/place)
-4. Enter issue description (e.g., "pothole on main street")
-5. **Expected**: Category suggestions appear
-6. Select a category (e.g., "Road Potholes")
-7. **Expected**: Success message
-8. **Expected**: Navigates to proposals section
-9. **Expected**: Proposal detail dialog opens with selected category badge
+2. Say "Show me the feed" → verify navigates to Feed
+3. Say "Create a post" → verify opens composer
+4. Say "Report an issue" → verify starts guided flow
+5. Complete guided issue report flow with location/category/description
+6. Verify confirmation summary displays
+7. Confirm → verify issue created
+8. Test corrections: change category mid-flow
 
-### 4. Task Management
-1. In proposal detail dialog, click "Tasks" tab
-2. Enter task description (e.g., "Inspect pothole location")
-3. Click "Add Task"
-4. **Expected**: Task appears in list immediately
-5. **Expected**: Task shows as incomplete (unchecked)
-6. Click checkbox to complete task
-7. **Expected**: Task shows as complete (checked, strikethrough)
-8. Add multiple tasks and toggle completion
-9. **Expected**: Each task updates independently
-10. **Expected**: No full page reloads
+### Mobile Tests
+1. Open app on mobile device or 360px viewport
+2. Navigate to Feed → verify no horizontal scrolling
+3. Create post → verify form fits screen
+4. Scroll feed → verify smooth infinite scroll
+5. Navigate to Issues → verify list cards stack vertically
+6. Open issue detail → verify timeline readable
+7. Navigate to Issue Map → verify map + filters usable
 
-### 5. Regression Validations
+## Base Path Deployment Validation
 
-#### Header Logo (Regression 1)
-1. While on home page, verify logo appears in header (desktop and mobile)
-2. **Expected**: Logo visible next to "Whisper" text
-3. If logo fails to load, text remains visible
+### Static Asset Loading
+1. Deploy to non-root base path (e.g., `/whisper/`)
+2. Verify hero image loads correctly
+3. Verify logo SVG loads correctly
+4. Verify all static assets resolve with base path
 
-#### Hover Colors (Regression 2)
-1. Hover over navigation links in header
-2. **Expected**: Hover color is accent (not black)
+### Client-Side Navigation
+1. Click navigation links (Home, Feed, Issues, Tasks, Profile)
+2. Verify URLs include base path
+3. Verify browser back/forward buttons work
+4. Verify direct URL access works (e.g., `/whisper/feed`)
 
-#### Profile Load/Save (Regression 3)
-1. Navigate to Profile page
-2. **Expected**: Profile loads without "Actor not available" error
-3. Edit name and save
-4. **Expected**: Save succeeds
-5. Log out and log back in
-6. **Expected**: Profile loads correctly
+### Secretary Widget Functionality
+1. Open Secretary widget
+2. Verify widget renders correctly
+3. Test navigation commands → verify base-path-safe navigation
+4. Test discovery flow → verify works under non-root base path
 
-#### Back to Home Navigation (Regression 4)
-1. From Profile or Geography page, click "Back to Home"
-2. **Expected**: Navigates to home page without full reload
-3. **Expected**: Browser back/forward buttons work correctly
+### Secretary-Triggered Navigation
+1. Open Secretary
+2. Navigate to proposal by name
+3. Verify proposal detail dialog opens
+4. Navigate to Issue Project
+5. Verify Issue Project detail dialog opens
+6. Verify all navigation respects base path
 
-#### Secretary Geography Suggestions (Regression 5)
-1. Open Secretary → "Report an Issue"
-2. Select different geography levels (state/county/place)
-3. **Expected**: Suggestions change based on selected level
-4. **Expected**: No errors or blank suggestion lists
+## Performance Checks
 
-## Issue Tracking Template
+### Feed Performance
+1. Create 100+ posts in instance
+2. Load feed page
+3. Verify initial load < 2 seconds
+4. Scroll through feed
+5. Verify no jank or stuttering
+6. Verify infinite scroll triggers smoothly
 
-If any test fails, document using this template:
+### Map Performance
+1. Create 50+ issues with coordinates
+2. Load Issue Map page
+3. Verify markers render < 3 seconds
+4. Pan and zoom map
+5. Verify smooth interaction
+6. Apply filters → verify quick update
 
-**Test Step**: [e.g., "Task Management - Add Task"]  
-**Expected Behavior**: [What should happen]  
-**Actual Behavior**: [What actually happened]  
-**Severity**: ☐ Critical ☐ High ☐ Medium ☐ Low  
-**Screenshots/Logs**: [Attach if available]  
-**Reproducible**: ☐ Always ☐ Sometimes ☐ Once  
+## Error Handling
 
----
+### Network Errors
+1. Disconnect network
+2. Attempt to create post
+3. Verify user-friendly error message
+4. Reconnect network
+5. Retry → verify succeeds
 
-**Test Date**: _______________  
-**Tester**: _______________  
-**Environment**: ☐ Local ☐ Testnet ☐ Mainnet  
-**Overall Status**: ☐ Pass ☐ Fail  
+### Validation Errors
+1. Attempt to create post with empty content
+2. Verify error message: "Post content cannot be empty"
+3. Attempt to create issue with empty title
+4. Verify error message: "Task title cannot be empty"
 
-**Notes**:
+### Authorization Errors
+1. Log out
+2. Attempt to create post
+3. Verify error message: "Unauthorized: Only users can create posts"
+4. Log in
+5. Retry → verify succeeds
+
+## Accessibility Checks
+
+### Keyboard Navigation
+1. Tab through Feed page
+2. Verify all interactive elements reachable
+3. Press Enter on post card → verify opens detail
+4. Press Escape → verify closes dialog
+
+### Screen Reader
+1. Enable screen reader
+2. Navigate to Feed page
+3. Verify location selector announces correctly
+4. Verify post cards announce author, content, timestamp
+5. Verify buttons announce action (e.g., "Create Post")
+
+## Conclusion
+
+This comprehensive smoke test suite covers all core functionality, regression validation, new features (feed, issues, Secretary), mobile optimization, base path deployment, performance, error handling, and accessibility. Run these tests after each build to ensure quality and catch regressions early.

@@ -1,7 +1,7 @@
 /**
  * Data-driven flow definitions for Secretary capabilities.
  * Represents menu, discovery, report issue, and navigation as explicit nodes with transitions.
- * Extended with guided report-issue flow (location → category → details → confirmation).
+ * Extended with guided report-issue flow (title → location → category → details → confirmation).
  */
 
 import type { NodeDefinition, Transition, SecretaryContext, NodeViewModel } from './types';
@@ -268,8 +268,11 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 
   'report-complete': {
     id: 'report-complete',
+    onEnter: (context) => {
+      addMessage(context, 'assistant', secretaryCopy.reportIssueCategorySelected);
+    },
     getViewModel: (context) => ({
-      assistantMessages: [secretaryCopy.reportIssueCategorySelected],
+      assistantMessages: [],
       showTextInput: false,
       showTypeahead: false,
       buttons: [
@@ -287,16 +290,19 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
 
   'unknown-input-recovery': {
     id: 'unknown-input-recovery',
+    onEnter: (context) => {
+      addMessage(context, 'assistant', secretaryCopy.unknownInputRecovery);
+    },
     getViewModel: (context) => ({
-      assistantMessages: [secretaryCopy.unknownInputRecovery],
+      assistantMessages: [],
       showTextInput: true,
-      textInputPlaceholder: 'Try again...',
+      textInputPlaceholder: 'Type a command or ask a question...',
       showTypeahead: false,
       buttons: [
         {
           label: secretaryCopy.backToMenu,
           action: { type: 'back-to-menu' },
-          variant: 'default',
+          variant: 'ghost',
         },
       ],
       showTopIssues: false,
@@ -325,7 +331,31 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
     }),
   },
 
-  // Guided report-issue flow nodes
+  // =================== Guided Report-Issue Flow Nodes ===================
+
+  'guided-report-title': {
+    id: 'guided-report-title',
+    onEnter: (context) => {
+      addMessage(context, 'assistant', secretaryCopy.guidedReportTitlePrompt);
+    },
+    getViewModel: (context) => ({
+      assistantMessages: [],
+      showTextInput: true,
+      textInputPlaceholder: 'Enter a short title for the issue...',
+      showTypeahead: false,
+      buttons: [
+        {
+          label: secretaryCopy.backToMenu,
+          action: { type: 'back-to-menu' },
+          variant: 'ghost',
+        },
+      ],
+      showTopIssues: false,
+      showSuggestions: false,
+      showConfirmationSummary: false,
+    }),
+  },
+
   'guided-report-location': {
     id: 'guided-report-location',
     onEnter: (context) => {
@@ -423,19 +453,8 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
       addMessage(context, 'assistant', secretaryCopy.guidedReportConfirmationPrompt);
     },
     getViewModel: (context) => {
-      const draft = context.guidedReportDraft;
-      const locationParts: string[] = [];
-      if (draft.location.place) {
-        locationParts.push(draft.location.place.shortName);
-      }
-      if (draft.location.county) {
-        locationParts.push(draft.location.county.shortName);
-      }
-      if (draft.location.state) {
-        locationParts.push(draft.location.state.shortName);
-      }
-      const locationStr = locationParts.join(', ') || 'Not specified';
-
+      const summary = buildGuidedReportConfirmationSummary(context.guidedReportDraft);
+      
       return {
         assistantMessages: [],
         showTextInput: false,
@@ -445,6 +464,11 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
             label: secretaryCopy.guidedReportConfirm,
             action: { type: 'guided-confirm-submit' },
             variant: 'default',
+          },
+          {
+            label: secretaryCopy.guidedReportEditTitle,
+            action: { type: 'guided-edit-title' },
+            variant: 'outline',
           },
           {
             label: secretaryCopy.guidedReportEditLocation,
@@ -470,219 +494,66 @@ export const nodeDefinitions: Record<string, NodeDefinition> = {
         showTopIssues: false,
         showSuggestions: false,
         showConfirmationSummary: true,
-        confirmationSummary: {
-          location: locationStr,
-          category: draft.category || 'Not specified',
-          details: draft.details || 'Not specified',
-        },
+        confirmationSummary: summary,
       };
     },
   },
 };
 
 /**
- * Transition definitions
+ * Transition definitions for all flows
  */
 export const transitions: Transition[] = [
   // Menu transitions
-  {
-    from: 'menu',
-    action: 'menu-option',
-    to: (context, payload) => {
-      switch (payload) {
-        case 1:
-          return 'discovery-select-state';
-        case 2:
-          return 'guided-report-location'; // Start guided flow
-        case 3:
-        case 4:
-          return 'menu'; // External navigation handled by brain
-        default:
-          return 'menu';
-      }
-    },
-  },
-  {
-    from: 'menu',
-    action: 'free-text-input',
-    to: 'unknown-input-recovery',
-  },
+  { from: 'menu', action: 'menu-option', to: (context, payload) => {
+    if (payload === 1) return 'discovery-select-state';
+    if (payload === 2) return 'guided-report-title'; // Start guided report flow with title
+    if (payload === 3) return 'menu'; // View proposals (navigate externally)
+    if (payload === 4) return 'menu'; // Create instance (navigate externally)
+    return 'menu';
+  }},
 
   // Discovery flow transitions
-  {
-    from: 'discovery-select-state',
-    action: 'state-selected',
-    to: 'discovery-select-location',
-  },
-  {
-    from: 'discovery-select-location',
-    action: 'location-selected',
-    to: 'discovery-result',
-  },
-  {
-    from: 'discovery-result',
-    action: 'view-top-issues',
-    to: 'discovery-top-issues',
-  },
-
-  // Legacy report issue flow transitions
-  {
-    from: 'report-loading',
-    action: 'report-issue',
-    to: 'report-top-issues',
-  },
-  {
-    from: 'report-top-issues',
-    action: 'top-issue-selected',
-    to: 'report-complete',
-  },
-  {
-    from: 'report-top-issues',
-    action: 'report-issue',
-    to: 'report-collect-description',
-  },
-  {
-    from: 'report-collect-description',
-    action: 'description-submitted',
-    to: 'report-show-suggestions',
-  },
-  {
-    from: 'report-show-suggestions',
-    action: 'suggestion-selected',
-    to: 'report-complete',
-  },
-  {
-    from: 'report-show-suggestions',
-    action: 'something-else',
-    to: 'report-custom-category',
-  },
-  {
-    from: 'report-custom-category',
-    action: 'custom-category-submitted',
-    to: 'report-complete',
-  },
+  { from: 'discovery-select-state', action: 'state-selected', to: 'discovery-select-location' },
+  { from: 'discovery-select-location', action: 'location-selected', to: 'discovery-result' },
+  { from: 'discovery-result', action: 'view-top-issues', to: 'discovery-top-issues' },
 
   // Guided report-issue flow transitions
-  {
-    from: 'guided-report-location',
-    action: 'guided-location-selected',
-    to: 'guided-report-category',
-  },
-  {
-    from: 'guided-report-category',
-    action: 'guided-category-selected',
-    to: 'guided-report-details',
-  },
-  {
-    from: 'guided-report-category',
-    action: 'something-else',
-    to: 'guided-report-details', // Skip to details, user will enter custom category there
-  },
-  {
-    from: 'guided-report-details',
-    action: 'guided-details-submitted',
-    to: 'guided-report-confirmation',
-  },
-  {
-    from: 'guided-report-confirmation',
-    action: 'guided-confirm-submit',
-    to: 'menu', // Completion handled by brain
-  },
-  {
-    from: 'guided-report-confirmation',
-    action: 'guided-edit-location',
-    to: 'guided-report-location',
-  },
-  {
-    from: 'guided-report-confirmation',
-    action: 'guided-edit-category',
-    to: 'guided-report-category',
-  },
-  {
-    from: 'guided-report-confirmation',
-    action: 'guided-edit-details',
-    to: 'guided-report-details',
-  },
+  { from: 'guided-report-title', action: 'guided-title-submitted', to: 'guided-report-location' },
+  { from: 'guided-report-location', action: 'guided-location-selected', to: 'guided-report-category' },
+  { from: 'guided-report-category', action: 'guided-category-selected', to: 'guided-report-details' },
+  { from: 'guided-report-category', action: 'something-else', to: 'guided-report-details' },
+  { from: 'guided-report-details', action: 'guided-details-submitted', to: 'guided-report-confirmation' },
+  { from: 'guided-report-confirmation', action: 'guided-confirm-submit', to: 'report-complete' },
+  { from: 'guided-report-confirmation', action: 'guided-edit-title', to: 'guided-report-title' },
+  { from: 'guided-report-confirmation', action: 'guided-edit-location', to: 'guided-report-location' },
+  { from: 'guided-report-confirmation', action: 'guided-edit-category', to: 'guided-report-category' },
+  { from: 'guided-report-confirmation', action: 'guided-edit-details', to: 'guided-report-details' },
 
-  // Back to menu transitions
-  {
-    from: 'discovery-select-state',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'discovery-select-location',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'discovery-result',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'discovery-top-issues',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-loading',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-top-issues',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-collect-description',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-show-suggestions',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-custom-category',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'report-complete',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'unknown-input-recovery',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'intent-slot-filling',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'guided-report-location',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'guided-report-category',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'guided-report-details',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
-  {
-    from: 'guided-report-confirmation',
-    action: 'back-to-menu',
-    to: 'menu',
-  },
+  // Legacy report issue flow transitions
+  { from: 'report-loading', action: 'report-issue', to: 'report-top-issues' },
+  { from: 'report-top-issues', action: 'top-issue-selected', to: 'report-collect-description' },
+  { from: 'report-collect-description', action: 'description-submitted', to: 'report-show-suggestions' },
+  { from: 'report-show-suggestions', action: 'suggestion-selected', to: 'report-complete' },
+  { from: 'report-show-suggestions', action: 'something-else', to: 'report-custom-category' },
+  { from: 'report-custom-category', action: 'custom-category-submitted', to: 'report-complete' },
+
+  // Back to menu from any node
+  { from: 'discovery-select-state', action: 'back-to-menu', to: 'menu' },
+  { from: 'discovery-select-location', action: 'back-to-menu', to: 'menu' },
+  { from: 'discovery-result', action: 'back-to-menu', to: 'menu' },
+  { from: 'discovery-top-issues', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-loading', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-top-issues', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-collect-description', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-show-suggestions', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-custom-category', action: 'back-to-menu', to: 'menu' },
+  { from: 'report-complete', action: 'back-to-menu', to: 'menu' },
+  { from: 'unknown-input-recovery', action: 'back-to-menu', to: 'menu' },
+  { from: 'intent-slot-filling', action: 'back-to-menu', to: 'menu' },
+  { from: 'guided-report-title', action: 'back-to-menu', to: 'menu' },
+  { from: 'guided-report-location', action: 'back-to-menu', to: 'menu' },
+  { from: 'guided-report-category', action: 'back-to-menu', to: 'menu' },
+  { from: 'guided-report-details', action: 'back-to-menu', to: 'menu' },
+  { from: 'guided-report-confirmation', action: 'back-to-menu', to: 'menu' },
 ];
