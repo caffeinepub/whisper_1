@@ -1,133 +1,109 @@
 import { useState } from 'react';
-import { HomeHeader } from '@/components/common/HomeHeader';
-import { BackNav } from '@/components/common/BackNav';
+import { PageLayout } from '@/components/common/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
 import { useCreateTask } from '@/hooks/useTasks';
 import { joinBasePath } from '@/utils/assetUrl';
+import { parseTasksRoute } from '@/utils/tasksRoute';
 import { uiCopy } from '@/lib/uiCopy';
 
-interface TaskCreatePageProps {
-  locationId: string;
-}
-
-export default function TaskCreatePage({ locationId }: TaskCreatePageProps) {
+export default function TaskCreatePage() {
+  const { locationId } = parseTasksRoute();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const { mutate: createTask, isPending } = useCreateTask();
 
-  const handleBackToList = () => {
-    const listPath = joinBasePath(`/tasks/${locationId}`);
-    window.history.pushState({}, '', listPath);
+  const handleNavigate = (path: string) => {
+    const fullPath = joinBasePath(path);
+    window.history.pushState({}, '', fullPath);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!title.trim() || !description.trim() || !category.trim()) {
-      return;
-    }
+    if (!locationId) return;
 
     createTask(
       {
-        title: title.trim(),
-        description: description.trim(),
-        category: category.trim(),
+        title,
+        description,
+        category: category || 'General',
         locationId,
         issueId: null,
       },
       {
-        onSuccess: (result) => {
-          if (result.__kind__ === 'success') {
-            const taskId = result.success.taskId;
-            const detailPath = joinBasePath(`/tasks/${locationId}/${taskId}`);
-            window.history.pushState({}, '', detailPath);
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }
+        onSuccess: () => {
+          handleNavigate(`/tasks/${locationId}`);
         },
       }
     );
   };
 
-  const isFormValid = title.trim() && description.trim() && category.trim();
+  const handleCancel = () => {
+    handleNavigate(`/tasks/${locationId}`);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <HomeHeader />
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <BackNav onClick={handleBackToList} label="Back to Tasks" />
-        
-        <div className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{uiCopy.tasks.createTask}</CardTitle>
-              <CardDescription>{uiCopy.tasks.createDescription}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">{uiCopy.tasks.titleLabel}</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={uiCopy.tasks.titlePlaceholder}
-                    disabled={isPending}
-                    required
-                  />
-                </div>
+    <PageLayout showBack backTo={`/tasks/${locationId}`}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{uiCopy.tasks.createTask}</CardTitle>
+          <CardDescription>Create a new civic task for this location</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">{uiCopy.tasks.descriptionLabel}</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={uiCopy.tasks.descriptionPlaceholder}
-                    disabled={isPending}
-                    rows={4}
-                    required
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the task"
+                rows={4}
+                required
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">{uiCopy.tasks.categoryLabel}</Label>
-                  <Input
-                    id="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder={uiCopy.tasks.categoryPlaceholder}
-                    disabled={isPending}
-                    required
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g., Infrastructure, Safety, Environment"
+              />
+            </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={!isFormValid || isPending}>
-                    {isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      uiCopy.tasks.createTask
-                    )}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={handleBackToList} disabled={isPending}>
-                    {uiCopy.common.cancel}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Creating...' : 'Create Task'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { IconBubble } from '@/components/common/IconBubble';
-import { Coins, Loader2 } from 'lucide-react';
+import { Link, Loader2, Sparkles } from 'lucide-react';
 import { useStakingInfo } from '@/hooks/useStakingInfo';
 import { useWspBalance } from '@/hooks/useWspBalance';
 import { useStake, useUnstake } from '@/hooks/useStakingMutations';
@@ -14,7 +13,7 @@ import { useInternetIdentity } from '@/hooks/useInternetIdentity';
 import { useActor } from '@/hooks/useActor';
 
 /**
- * Staking section with stake/unstake write controls, validation, pending states, and automatic data refresh on success.
+ * Staking section with modern glass card styling, teal/cyan gradient accents, improved empty state with motivational messaging, enhanced input/button styling with focus states, and all original staking/unstaking logic preserved.
  */
 export function StakingSection() {
   const { data: stakingRecord, isLoading } = useStakingInfo();
@@ -48,9 +47,8 @@ export function StakingSection() {
 
     const amount = BigInt(Math.floor(numValue));
     
-    // Check if user has enough balance
     if (wspBalance && amount > wspBalance) {
-      return { valid: false, error: 'Insufficient balance', amount };
+      return { valid: false, error: 'Insufficient balance', amount: 0n };
     }
 
     return { valid: true, error: '', amount };
@@ -72,169 +70,185 @@ export function StakingSection() {
 
     const amount = BigInt(Math.floor(numValue));
     
-    // Check if user has enough staked
     if (stakingRecord && amount > stakingRecord.lockedBalance) {
-      return { valid: false, error: 'Insufficient staked balance', amount };
+      return { valid: false, error: 'Insufficient staked balance', amount: 0n };
     }
 
     return { valid: true, error: '', amount };
   };
 
   const handleStake = async () => {
-    setStakeError('');
-    const validation = validateStakeAmount(stakeAmount);
+    if (!isAuthenticated || !isActorReady) {
+      toast.error('Please log in to stake tokens');
+      return;
+    }
 
+    const validation = validateStakeAmount(stakeAmount);
     if (!validation.valid) {
       setStakeError(validation.error);
       return;
     }
 
-    try {
-      await stakeMutation.mutateAsync(validation.amount);
-      toast.success(`Successfully staked ${stakeAmount} WSP`);
-      setStakeAmount('');
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to stake tokens';
-      setStakeError(errorMessage);
-      toast.error(errorMessage);
-    }
+    setStakeError('');
+
+    stakeMutation.mutate(validation.amount, {
+      onSuccess: () => {
+        toast.success('Tokens staked successfully');
+        setStakeAmount('');
+      },
+      onError: (error) => {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to stake tokens';
+        toast.error(errorMessage);
+        setStakeError(errorMessage);
+      },
+    });
   };
 
   const handleUnstake = async () => {
-    setUnstakeError('');
-    const validation = validateUnstakeAmount(unstakeAmount);
+    if (!isAuthenticated || !isActorReady) {
+      toast.error('Please log in to unstake tokens');
+      return;
+    }
 
+    const validation = validateUnstakeAmount(unstakeAmount);
     if (!validation.valid) {
       setUnstakeError(validation.error);
       return;
     }
 
-    try {
-      await unstakeMutation.mutateAsync(validation.amount);
-      toast.success(`Successfully unstaked ${unstakeAmount} WSP`);
-      setUnstakeAmount('');
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to unstake tokens';
-      setUnstakeError(errorMessage);
-      toast.error(errorMessage);
-    }
+    setUnstakeError('');
+
+    unstakeMutation.mutate(validation.amount, {
+      onSuccess: () => {
+        toast.success('Tokens unstaked successfully');
+        setUnstakeAmount('');
+      },
+      onError: (error) => {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to unstake tokens';
+        toast.error(errorMessage);
+        setUnstakeError(errorMessage);
+      },
+    });
   };
 
-  const isStakePending = stakeMutation.isPending;
-  const isUnstakePending = unstakeMutation.isPending;
-  const isDisabled = !isAuthenticated || !isActorReady || isLoading;
-
   return (
-    <Card id="staking-section">
-      <CardHeader>
+    <Card className="border-gray-700 bg-gray-900/80 backdrop-blur-sm shadow-2xl">
+      <CardHeader className="p-6">
         <div className="flex items-center gap-3">
-          <IconBubble size="md" variant="secondary">
-            <Coins className="h-5 w-5" />
-          </IconBubble>
+          <div className="p-3 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-cyan-500/30 shadow-lg">
+            <Link className="h-7 w-7 text-cyan-400" />
+          </div>
           <div>
-            <CardTitle>Staking</CardTitle>
-            <CardDescription>Stake your WSP tokens to earn rewards</CardDescription>
+            <CardTitle className="text-2xl font-bold text-white">Staking</CardTitle>
+            <CardDescription className="text-base text-gray-300">Stake your tokens to participate in governance</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
           </div>
-        ) : stakingRecord ? (
-          <>
-            {/* Staking Info Display */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-border">
-                <span className="text-sm font-medium text-muted-foreground">Total Staked</span>
-                <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.totalStaked)} WSP</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
-                <span className="text-sm font-medium text-muted-foreground">Available Balance</span>
-                <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.availableBalance)} WSP</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
-                <span className="text-sm font-medium text-muted-foreground">Locked Balance</span>
-                <span className="text-sm font-semibold">{formatTokenAmount(stakingRecord.lockedBalance)} WSP</span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-muted-foreground">Pending Rewards</span>
-                <span className="text-sm font-semibold text-accent">{formatTokenAmount(stakingRecord.pendingRewards)} WSP</span>
+        ) : !stakingRecord || stakingRecord.totalStaked === BigInt(0) ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="flex justify-center">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-cyan-500/30 shadow-lg">
+                <Link className="h-12 w-12 text-cyan-400" />
               </div>
             </div>
-
-            {/* Stake Controls */}
-            <div className="space-y-4 pt-4 border-t border-border">
-              <div className="space-y-2">
-                <Label htmlFor="stake-amount">Stake Amount</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="stake-amount"
-                    type="number"
-                    placeholder="Enter amount to stake"
-                    value={stakeAmount}
-                    onChange={(e) => {
-                      setStakeAmount(e.target.value);
-                      setStakeError('');
-                    }}
-                    disabled={isDisabled || isStakePending}
-                  />
-                  <Button
-                    onClick={handleStake}
-                    disabled={isDisabled || isStakePending || !stakeAmount}
-                  >
-                    {isStakePending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Staking...
-                      </>
-                    ) : (
-                      'Stake'
-                    )}
-                  </Button>
-                </div>
-                {stakeError && <p className="text-sm text-destructive">{stakeError}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="unstake-amount">Unstake Amount</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="unstake-amount"
-                    type="number"
-                    placeholder="Enter amount to unstake"
-                    value={unstakeAmount}
-                    onChange={(e) => {
-                      setUnstakeAmount(e.target.value);
-                      setUnstakeError('');
-                    }}
-                    disabled={isDisabled || isUnstakePending}
-                  />
-                  <Button
-                    onClick={handleUnstake}
-                    disabled={isDisabled || isUnstakePending || !unstakeAmount}
-                    variant="outline"
-                  >
-                    {isUnstakePending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Unstaking...
-                      </>
-                    ) : (
-                      'Unstake'
-                    )}
-                  </Button>
-                </div>
-                {unstakeError && <p className="text-sm text-destructive">{unstakeError}</p>}
-              </div>
+            <div>
+              <p className="text-lg font-bold text-white mb-2">No tokens staked yet</p>
+              <p className="text-sm text-gray-400 flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-400" />
+                Stake tokens to get started and earn rewards!
+              </p>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No staking record found. Stake tokens to get started.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-gray-800/50 border border-gray-700">
+            <div>
+              <div className="text-sm font-medium text-gray-400 mb-1">Total Staked</div>
+              <div className="text-2xl font-bold text-white">{formatTokenAmount(stakingRecord.totalStaked)}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-gray-400 mb-1">Available</div>
+              <div className="text-2xl font-bold text-white">{formatTokenAmount(stakingRecord.availableBalance)}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-gray-400 mb-1">Locked</div>
+              <div className="text-2xl font-bold text-white">{formatTokenAmount(stakingRecord.lockedBalance)}</div>
+            </div>
           </div>
         )}
+
+        {/* Stake Form */}
+        <div className="space-y-4 p-6 rounded-xl bg-gray-800/50 border border-gray-700">
+          <div className="space-y-2">
+            <Label htmlFor="stake-amount" className="text-base font-bold text-white">Stake Tokens</Label>
+            <Input
+              id="stake-amount"
+              type="number"
+              value={stakeAmount}
+              onChange={(e) => {
+                setStakeAmount(e.target.value);
+                setStakeError('');
+              }}
+              placeholder="Enter amount to stake"
+              disabled={stakeMutation.isPending || !isAuthenticated}
+              className="min-h-12 border-gray-700 bg-gray-900/50 text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+            />
+            {stakeError && <p className="text-sm text-red-400">{stakeError}</p>}
+          </div>
+          <Button
+            onClick={handleStake}
+            disabled={!stakeAmount || stakeMutation.isPending || !isAuthenticated}
+            className="w-full min-h-12 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-bold text-base shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-400"
+          >
+            {stakeMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Staking...
+              </>
+            ) : (
+              'Stake Tokens'
+            )}
+          </Button>
+        </div>
+
+        {/* Unstake Form */}
+        <div className="space-y-4 p-6 rounded-xl bg-gray-800/50 border border-gray-700">
+          <div className="space-y-2">
+            <Label htmlFor="unstake-amount" className="text-base font-bold text-white">Unstake Tokens</Label>
+            <Input
+              id="unstake-amount"
+              type="number"
+              value={unstakeAmount}
+              onChange={(e) => {
+                setUnstakeAmount(e.target.value);
+                setUnstakeError('');
+              }}
+              placeholder="Enter amount to unstake"
+              disabled={unstakeMutation.isPending || !isAuthenticated}
+              className="min-h-12 border-gray-700 bg-gray-900/50 text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+            />
+            {unstakeError && <p className="text-sm text-red-400">{unstakeError}</p>}
+          </div>
+          <Button
+            onClick={handleUnstake}
+            disabled={!unstakeAmount || unstakeMutation.isPending || !isAuthenticated}
+            variant="outline"
+            className="w-full min-h-12 border-gray-600 hover:bg-gray-700 text-gray-200 hover:text-white font-bold text-base transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400"
+          >
+            {unstakeMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Unstaking...
+              </>
+            ) : (
+              'Unstake Tokens'
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

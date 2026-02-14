@@ -1,81 +1,74 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T00:53:30.782Z",
+  "generatedAt": "2026-02-14T22:47:58.756Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
+        "summary": "Update the Whisper Profile page styling to a more solid, grounded, trustworthy civic aesthetic while preserving the existing page structure and all functionality. Apply the specified palette (deep navy/slate base, teal/cyan accents, warm gold highlights) and increase visual hierarchy using stronger elevation, subtle borders, and light glassmorphism. Implement changes only via Tailwind className updates and visual wrappers using existing UI components (e.g., Card) and existing dependencies.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/components/common/LoginButton.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/components/common/LoginButton.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
+        "summary": "Enhance the WSP Token Balance section styling in frontend/src/pages/ProfilePage.tsx to strongly accentuate the balance: make the numeric display larger/bolder with gradient text (teal→cyan) and subtle emphasis (e.g., glow/text-shadow via utilities where available). Add conditional visual flourish when the balance is > 0 (e.g., Sparkles icon and/or progress ring element) without changing balance logic. Keep existing loading and zero-balance subtext behavior.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/common/BackNav.tsx",
-          "frontend/src/pages/FeedPage.tsx",
-          "frontend/src/pages/GeographyPage.tsx",
-          "frontend/src/pages/tasks/TasksListPage.tsx",
-          "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "frontend/src/pages/tasks/TaskCreatePage.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/common/BackNav.tsx",
-          "frontend/src/pages/FeedPage.tsx",
-          "frontend/src/pages/GeographyPage.tsx",
-          "frontend/src/pages/tasks/TasksListPage.tsx",
-          "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "frontend/src/pages/tasks/TaskCreatePage.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+        "summary": "Enhance the Contribution Points section styling in frontend/src/pages/ProfilePage.tsx: apply distinct accent treatments per category (City/Voting/Bounty/Token) using colored borders and/or icons, reinforce hierarchy (category label vs value), and add wholesome motivational subtext below the section header (e.g., “Your contributions build stronger communities”). For categories whose point value is 0, show a small visual hint such as a Sparkles icon and/or an “Earn more” link-styled element (non-navigating if no route exists) without changing component structure or data logic.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/GeographyPage.tsx",
-          "frontend/src/pages/tasks/TasksListPage.tsx",
-          "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "frontend/src/pages/tasks/TaskCreatePage.tsx",
-          "frontend/src/pages/FeedPage.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/GeographyPage.tsx",
-          "frontend/src/pages/tasks/TasksListPage.tsx",
-          "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "frontend/src/pages/tasks/TaskCreatePage.tsx",
-          "frontend/src/pages/FeedPage.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+        "summary": "Restyle the Staking and Governance sections (frontend/src/pages/profile/components/StakingSection.tsx and frontend/src/pages/profile/components/GovernanceSection.tsx) to match the new civic palette and improve CTA prominence: increase button size/weight and apply the requested gradient backgrounds (teal→cyan for staking CTAs; purple→pink for governance “Create Proposal”), add hover scale effects (using existing Tailwind utilities / tailwind-animate if already configured), and ensure icons use Lucide-react with accent colors. Do not change any staking/governance logic, validation, or dialog behavior.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/profile/components/GovernanceSection.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/profile/components/GovernanceSection.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Apply mobile-first spacing and typography improvements across the Profile page and its sections: ensure vertical stacking, generous padding (p-6 where appropriate), touch-friendly buttons (min-h-12), bolder headings (text-xl/text-2xl, font-bold), and readable body text (text-base, font-medium). Ensure contrast and accessibility for text on dark backgrounds, including focus-visible rings consistent with accent colors.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/components/common/BackNav.tsx"
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/profile/components/GovernanceSection.tsx"
         ],
         "matchedFiles": [
           "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/components/common/BackNav.tsx"
+          "frontend/src/pages/profile/components/StakingSection.tsx",
+          "frontend/src/pages/profile/components/GovernanceSection.tsx"
         ]
       }
     ]
@@ -85,15 +78,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/components/common/BackNav.tsx",
-    "frontend/src/components/common/LoginButton.tsx",
-    "frontend/src/pages/FeedPage.tsx",
-    "frontend/src/pages/GeographyPage.tsx",
     "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/tasks/TaskCreatePage.tsx",
-    "frontend/src/pages/tasks/TaskDetailPage.tsx",
-    "frontend/src/pages/tasks/TasksListPage.tsx",
+    "frontend/src/pages/profile/components/GovernanceSection.tsx",
+    "frontend/src/pages/profile/components/StakingSection.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

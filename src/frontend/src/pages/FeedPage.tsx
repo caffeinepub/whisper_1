@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { HomeHeader } from '@/components/common/HomeHeader';
-import { BackNav } from '@/components/common/BackNav';
+import { PageLayout } from '@/components/common/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PostComposer } from '@/components/feed/PostComposer';
 import { FeedList } from '@/components/feed/FeedList';
@@ -40,51 +39,46 @@ export default function FeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <HomeHeader />
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <BackNav to="/" />
-        
-        <div className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Feed</CardTitle>
-              <CardDescription>View and share posts from your community</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Select Location</h3>
-                <LocationSelector
-                  selectedState={selection.state}
-                  selectedCounty={selection.county}
-                  selectedPlace={selection.place}
-                  onStateChange={setSelectedState}
-                  onCountyChange={setSelectedCounty}
-                  onPlaceChange={setSelectedPlace}
-                />
-              </div>
+    <PageLayout showBack backTo="/">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Feed</CardTitle>
+            <CardDescription>View and share posts from your community</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Select Location</h3>
+              <LocationSelector
+                selectedState={selection.state}
+                selectedCounty={selection.county}
+                selectedPlace={selection.place}
+                onStateChange={setSelectedState}
+                onCountyChange={setSelectedCounty}
+                onPlaceChange={setSelectedPlace}
+              />
+            </div>
 
-              {locationId && (
-                <PostComposer
-                  key={locationId}
-                  instanceName={locationId}
-                />
-              )}
-            </CardContent>
-          </Card>
+            {locationId && (
+              <PostComposer
+                key={locationId}
+                instanceName={locationId}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-          {locationId && (
-            <FeedList
-              posts={posts}
-              hasNextPage={hasNextPage || false}
-              isFetchingNextPage={isFetchingNextPage}
-              onLoadMore={() => fetchNextPage()}
-              instanceName={locationId}
-              onViewDetails={handleViewDetails}
-              onFlag={handleFlag}
-            />
-          )}
-        </div>
+        {locationId && (
+          <FeedList
+            posts={posts}
+            hasNextPage={hasNextPage || false}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            instanceName={locationId}
+            onViewDetails={handleViewDetails}
+            onFlag={handleFlag}
+          />
+        )}
       </div>
 
       {selectedPostId !== null && (
@@ -102,6 +96,6 @@ export default function FeedPage() {
           onOpenChange={(open) => !open && setFlagPostId(null)}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

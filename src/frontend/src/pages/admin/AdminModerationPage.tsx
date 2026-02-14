@@ -1,30 +1,36 @@
-import { HomeHeader } from '@/components/common/HomeHeader';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ModerationItemsList } from './components/ModerationItemsList';
-import { TokenOperationsSection } from './components/TokenOperationsSection';
-import { ContributionLogsSection } from './components/ContributionLogsSection';
-import { FlaggedPostsSection } from './components/FlaggedPostsSection';
+import { useState } from 'react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useModerationItems } from '@/hooks/useModerationItems';
 import { useUpdateProposalStatus } from '@/hooks/useUpdateProposalStatus';
 import { useHideProposal } from '@/hooks/useHideProposal';
 import { useDeleteProposal } from '@/hooks/useDeleteProposal';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Loader2, Shield, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { PageLayout } from '@/components/common/PageLayout';
+import { BackNav } from '@/components/common/BackNav';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { ModerationItemsList } from './components/ModerationItemsList';
+import { FlaggedPostsSection } from './components/FlaggedPostsSection';
+import { TokenOperationsSection } from './components/TokenOperationsSection';
+import { ContributionLogsSection } from './components/ContributionLogsSection';
+import { toast } from 'sonner';
 
 export default function AdminModerationPage() {
-  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
-  const { data: moderationItems, isLoading: itemsLoading, isError } = useModerationItems({ enabled: isAdmin || false });
+  const { data: isAdmin, isLoading } = useIsAdmin();
+  const [activeTab, setActiveTab] = useState('moderation');
+  const { data: moderationItems, isLoading: itemsLoading } = useModerationItems({ enabled: !!isAdmin });
   const updateStatus = useUpdateProposalStatus();
   const hideProposal = useHideProposal();
   const deleteProposal = useDeleteProposal();
-
   const [pendingActions, setPendingActions] = useState<Record<string, boolean>>({});
 
   const handleApprove = async (instanceName: string) => {
     setPendingActions((prev) => ({ ...prev, [instanceName]: true }));
     try {
       await updateStatus.mutateAsync({ instanceName, newStatus: 'Approved' });
+      toast.success('Proposal approved successfully');
+    } catch (error) {
+      toast.error('Failed to approve proposal');
     } finally {
       setPendingActions((prev) => ({ ...prev, [instanceName]: false }));
     }
@@ -34,6 +40,9 @@ export default function AdminModerationPage() {
     setPendingActions((prev) => ({ ...prev, [instanceName]: true }));
     try {
       await updateStatus.mutateAsync({ instanceName, newStatus: 'Rejected' });
+      toast.success('Proposal rejected successfully');
+    } catch (error) {
+      toast.error('Failed to reject proposal');
     } finally {
       setPendingActions((prev) => ({ ...prev, [instanceName]: false }));
     }
@@ -43,6 +52,9 @@ export default function AdminModerationPage() {
     setPendingActions((prev) => ({ ...prev, [instanceName]: true }));
     try {
       await hideProposal.mutateAsync(instanceName);
+      toast.success('Proposal hidden successfully');
+    } catch (error) {
+      toast.error('Failed to hide proposal');
     } finally {
       setPendingActions((prev) => ({ ...prev, [instanceName]: false }));
     }
@@ -52,109 +64,95 @@ export default function AdminModerationPage() {
     setPendingActions((prev) => ({ ...prev, [instanceName]: true }));
     try {
       await deleteProposal.mutateAsync(instanceName);
+      toast.success('Proposal deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete proposal');
     } finally {
       setPendingActions((prev) => ({ ...prev, [instanceName]: false }));
     }
   };
 
-  if (isAdminLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <HomeHeader />
-        <main className="container mx-auto px-4 pt-24 pb-12">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-          </div>
-        </main>
-      </div>
+      <PageLayout>
+        <BackNav to="/" />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageLayout>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background">
-        <HomeHeader />
-        <main className="container mx-auto px-4 pt-24 pb-12">
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Access Denied
-              </CardTitle>
-              <CardDescription>
-                You do not have permission to access the admin moderation panel.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                This page is restricted to administrators only. If you believe you should have access,
-                please contact a system administrator.
-              </p>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <PageLayout maxWidth="md">
+        <BackNav to="/" />
+        <Card className="mt-8 border-destructive">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Access Denied
+            </CardTitle>
+            <CardDescription>
+              You do not have permission to access this page. Admin privileges are required.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <HomeHeader />
+    <PageLayout>
+      <BackNav to="/" />
+      
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Admin Moderation</CardTitle>
+            <CardDescription>Manage proposals, posts, tokens, and contributions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="moderation">Proposals</TabsTrigger>
+                <TabsTrigger value="posts">Flagged Posts</TabsTrigger>
+                <TabsTrigger value="tokens">Tokens</TabsTrigger>
+                <TabsTrigger value="contributions">Contributions</TabsTrigger>
+              </TabsList>
 
-      <main className="container mx-auto px-4 pt-24 pb-12">
-        <div className="space-y-8">
-          {/* Page Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Shield className="h-8 w-8 text-secondary" />
-              Admin Moderation
-            </h1>
-            <p className="text-muted-foreground">
-              Review and moderate community submissions, manage tokens, and view contribution logs
-            </p>
-          </div>
+              <TabsContent value="moderation" className="mt-6">
+                {itemsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <ModerationItemsList
+                    items={moderationItems || []}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onHide={handleHide}
+                    onDelete={handleDelete}
+                    pendingActions={pendingActions}
+                  />
+                )}
+              </TabsContent>
 
-          {/* Moderation Queue */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Moderation Queue</CardTitle>
-              <CardDescription>
-                Review pending proposals and take action
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {itemsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-                </div>
-              ) : isError ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <AlertTriangle className="h-12 w-12 text-destructive" />
-                  <p className="text-muted-foreground">Failed to load moderation items</p>
-                </div>
-              ) : (
-                <ModerationItemsList
-                  items={moderationItems || []}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onHide={handleHide}
-                  onDelete={handleDelete}
-                  pendingActions={pendingActions}
-                />
-              )}
-            </CardContent>
-          </Card>
+              <TabsContent value="posts" className="mt-6">
+                <FlaggedPostsSection isAdmin={!!isAdmin} />
+              </TabsContent>
 
-          {/* Flagged Posts Section */}
-          <FlaggedPostsSection isAdmin={isAdmin} />
+              <TabsContent value="tokens" className="mt-6">
+                <TokenOperationsSection />
+              </TabsContent>
 
-          {/* Token Operations */}
-          <TokenOperationsSection />
-
-          {/* Contribution Logs */}
-          <ContributionLogsSection isAdmin={isAdmin} />
-        </div>
-      </main>
-    </div>
+              <TabsContent value="contributions" className="mt-6">
+                <ContributionLogsSection isAdmin={!!isAdmin} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </PageLayout>
   );
 }

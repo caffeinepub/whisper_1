@@ -1,91 +1,118 @@
 {
   "kind": "build_request",
-  "title": "Profile page onboarding navigation + consistent styling/back navigation across Feed, Tasks, and Geography",
+  "title": "Restyle Whisper Profile page to grounded civic look (visual-only)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
+      "text": "Update the Whisper Profile page styling to a more solid, grounded, trustworthy civic aesthetic while preserving the existing page structure and all functionality. Apply the specified palette (deep navy/slate base, teal/cyan accents, warm gold highlights) and increase visual hierarchy using stronger elevation, subtle borders, and light glassmorphism. Implement changes only via Tailwind className updates and visual wrappers using existing UI components (e.g., Card) and existing dependencies.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Lets tackle the profile page and make sure the \"Get Started\" button directs towards becoming a user"
+          "Enhance and restyle the existing Profile page in the Whisper frontend... Do NOT change any logic, state, data fetching, or component structure — only update className props, add visual wrappers (e.g., Card from Radix)"
         ]
       },
       "acceptanceCriteria": [
-        "Clicking the “Get Started” CTA navigates to /profile (base-path-safe) and the Profile page renders",
-        "If the user is not authenticated, the flow prompts the user to log in (Internet Identity) and then lands them on /profile (or remains on /profile showing the authentication-required state until login completes)",
-        "The CTA no longer only scrolls or only opens the Secretary widget as the primary action for becoming a user"
+        "Profile page layout/sections remain in the same order and presence: header/back+menu (via PageLayout), profile card, WSP token balance, contribution points, staking section, governance section.",
+        "No changes to React state variables, hooks used, data fetching, mutations, or conditional rendering logic in ProfilePage.",
+        "Base/background appearance reads as deep navy/slate with soft white/gray typography; no pastel/fruity gradient look.",
+        "Cards use stronger elevation (shadow-md/shadow-lg/2xl acceptable), subtle dark borders (gray-700-ish), and optional backdrop blur with dark translucent backgrounds to create depth."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
+      "text": "Enhance the WSP Token Balance section styling in frontend/src/pages/ProfilePage.tsx to strongly accentuate the balance: make the numeric display larger/bolder with gradient text (teal→cyan) and subtle emphasis (e.g., glow/text-shadow via utilities where available). Add conditional visual flourish when the balance is > 0 (e.g., Sparkles icon and/or progress ring element) without changing balance logic. Keep existing loading and zero-balance subtext behavior.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "...and that the Feed, Tasks, Geography pages are all similarly styled with consistent backwards navigation"
+          "Balance display: Make \"0 WSP\" larger/bolder with a subtle glow or gradient text... add a progress ring or sparkles icon when balance > 0"
         ]
       },
       "acceptanceCriteria": [
-        "Feed page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
-        "Geography page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
-        "Tasks list already has Back to Home; keep behavior but ensure its styling matches the chosen shared Back pattern",
-        "Task detail and task create already have Back to List; keep behavior but ensure their Back control styling matches the chosen shared Back pattern"
+        "When balance is loading, the loading UI remains functionally identical (spinner + “Loading balance...” text).",
+        "When balance is 0, “Start earning today!” remains visible and styled to feel motivational/wholesome, using gold accent.",
+        "When balance is > 0, an additional accent element (Sparkles and/or a decorative ring) appears and is purely visual (no new state/hooks).",
+        "The balance typography is noticeably more prominent than surrounding text and CTAs."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+      "text": "Enhance the Contribution Points section styling in frontend/src/pages/ProfilePage.tsx: apply distinct accent treatments per category (City/Voting/Bounty/Token) using colored borders and/or icons, reinforce hierarchy (category label vs value), and add wholesome motivational subtext below the section header (e.g., “Your contributions build stronger communities”). For categories whose point value is 0, show a small visual hint such as a Sparkles icon and/or an “Earn more” link-styled element (non-navigating if no route exists) without changing component structure or data logic.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "...Feed, Tasks, Geography pages are all similarly styled..."
+          "Contribution Points: Use colored accent borders or icons per category... add a small \"Earn more\" link or sparkles when points are 0",
+          "Wholesome feel: Add subtle motivational subtext (e.g., \"Your contributions build stronger communities\" under points)"
         ]
       },
       "acceptanceCriteria": [
-        "Geography page no longer uses a one-off fixed black header; it visually matches the general page layout used by Feed/Tasks",
-        "Feed, Tasks list, Task detail, Task create, and Geography pages share consistent top padding/offset so content does not clash with the header",
-        "Typography (page title/subtitle), container widths, and primary Card styling are consistent across these pages"
+        "The points grid still renders the same four categories and uses the same data sources.",
+        "Each category card has a clear, distinct accent color (blue, purple, gold, green as requested) that is visible at a glance.",
+        "If a category’s displayed value is '0', a subtle extra visual cue appears within that card (e.g., small Sparkles + 'Earn more' text).",
+        "Motivational subtext appears under the Contribution Points heading/description and is readable on dark background."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+      "text": "Restyle the Staking and Governance sections (frontend/src/pages/profile/components/StakingSection.tsx and frontend/src/pages/profile/components/GovernanceSection.tsx) to match the new civic palette and improve CTA prominence: increase button size/weight and apply the requested gradient backgrounds (teal→cyan for staking CTAs; purple→pink for governance “Create Proposal”), add hover scale effects (using existing Tailwind utilities / tailwind-animate if already configured), and ensure icons use Lucide-react with accent colors. Do not change any staking/governance logic, validation, or dialog behavior.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Lets tackle the profile page..."
+          "Staking & Governance CTAs: Larger, bolder buttons with gradient backgrounds (teal-to-cyan for Stake, purple-to-pink for Create Proposal), hover scale effect using tailwind-animate",
+          "Icons: Use Lucide-react icons with accent colors (e.g., ... Link for staking, Gavel for governance)"
         ]
       },
       "acceptanceCriteria": [
-        "Profile page displays a Back control near the top of the main content area",
-        "Back control navigates to Home (/) using base-path-safe SPA navigation",
-        "Back control styling is consistent with the Back controls on Feed/Tasks/Geography"
+        "Stake/Unstake inputs, validation messages, pending states, and toast messages behave exactly as before.",
+        "Governance proposal list behavior, empty/loading/error states, and dialogs behave exactly as before.",
+        "Stake Tokens CTA is visually dominant and uses teal→cyan gradient styling with noticeable hover/active/focus states.",
+        "Create Proposal CTA is visually dominant and uses purple→pink gradient styling with noticeable hover/active/focus states.",
+        "All section cards match the darker, more grounded card styling (borders, elevation, backdrop blur) and avoid pastel/fruity gradients."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Apply mobile-first spacing and typography improvements across the Profile page and its sections: ensure vertical stacking, generous padding (p-6 where appropriate), touch-friendly buttons (min-h-12), bolder headings (text-xl/text-2xl, font-bold), and readable body text (text-base, font-medium). Ensure contrast and accessibility for text on dark backgrounds, including focus-visible rings consistent with accent colors.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Mobile-first: Stack sections vertically, generous padding (p-6), readable font sizes, touch-friendly buttons (min-h-12)",
+          "Typography: Bolder headings... clean body text..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On small screens, all sections stack cleanly with consistent spacing and no cramped tap targets.",
+        "Buttons meet touch-friendly sizing (e.g., min-h-12) without breaking layouts.",
+        "Headings/labels are consistently bolder than body text and establish clear hierarchy.",
+        "Focus rings are visible on interactive elements and use accent colors (teal/cyan/purple) while maintaining dark background contrast."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn components are read-only and must be composed)",
-    "Do not edit immutable frontend hook paths listed in SYSTEM_CONTEXT (compose around them instead)",
-    "Keep routing compatible with the existing pushState/popstate approach in frontend/src/App.tsx (no Next.js / React Router additions)"
+    "Do not change any logic, state, data fetching, mutations, types, or conditional rendering behavior; visual-only changes.",
+    "Keep the current Profile page structure intact (header, profile card, balance, points, staking, governance).",
+    "Use only existing dependencies (Tailwind, shadcn/radix UI components, Lucide-react icons, clsx/tailwind-merge/cva if already present).",
+    "Do not edit files under frontend/src/components/ui (read-only UI sources must be composed, not edited)."
   ],
   "nonGoals": [
-    "Do not redesign or change Secretary widget flows or intent/navigation registry beyond what is required for the updated Get Started CTA",
-    "Do not add new backend data models or change Motoko stable state for this request",
-    "Do not implement new Feed/Tasks/Geography features beyond styling and navigation consistency"
+    "Adding new backend endpoints, changing canister state, or updating token/staking/governance business logic.",
+    "Introducing new navigation routes for “Earn more” (if no route exists, keep it as non-navigating visual text).",
+    "Adding new authentication providers beyond existing Internet Identity."
   ],
   "imageRequirements": {
     "required": [],

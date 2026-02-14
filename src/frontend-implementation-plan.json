@@ -1,130 +1,106 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Base-path-safe onboarding navigation + shared Back pattern and consistent layout across Feed, Tasks, Geography, Profile",
+  "title": "Restyle Whisper Profile page to grounded civic look (visual-only)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update the Home “Get Started” CTA to navigate base-path-safely to /profile and trigger Internet Identity login when needed (instead of primarily opening the Secretary widget).",
+      "summary": "Restyle Profile page to a grounded civic aesthetic using the specified palette, elevation, borders, and subtle glassmorphism while preserving structure and functionality.",
       "acceptanceCriteria": [
-        "Clicking the “Get Started” CTA navigates to /profile (base-path-safe) and the Profile page renders",
-        "If the user is not authenticated, the flow prompts the user to log in (Internet Identity) and then lands them on /profile (or remains on /profile showing the authentication-required state until login completes)",
-        "The CTA no longer only scrolls or only opens the Secretary widget as the primary action for becoming a user"
+        "Profile page layout/sections remain in the same order and presence: header/back+menu (via PageLayout), profile card, WSP token balance, contribution points, staking section, governance section.",
+        "No changes to React state variables, hooks used, data fetching, mutations, or conditional rendering logic in ProfilePage.",
+        "Base/background appearance reads as deep navy/slate with soft white/gray typography; no pastel/fruity gradient look.",
+        "Cards use stronger elevation (shadow-md/shadow-lg/2xl acceptable), subtle dark borders (gray-700-ish), and optional backdrop blur with dark translucent backgrounds to create depth."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Change the “Get Started” section CTA (section id=\"get-started\") to navigate to joinBasePath('/profile') via pushState and dispatch PopStateEvent('popstate'); integrate Internet Identity prompt by using the authorization component’s frontend auth hook (useInternetIdentity) to call login() when identity is missing, with safe error handling."
-        },
-        {
           "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Enhance the unauthenticated state to include a clear Internet Identity login call-to-action (use existing LoginButton and/or useInternetIdentity login handler) so navigation to /profile reliably “prompts authentication if needed”; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/common/LoginButton.tsx",
-          "operation": "modify",
-          "description": "If needed to support the updated onboarding CTA, ensure LoginButton behavior cleanly handles repeated login attempts and preserves SPA location (/profile) on completion (no hard reload); Verify the component's usage instructions before implementing."
+          "description": "Update Tailwind className styling only to achieve deep navy/slate base with teal/cyan + warm gold accents, stronger elevation/shadows, subtle dark borders, and restrained dark glassmorphism; keep the section order/structure intact. Use existing shadcn-ui Card/Button/Input/Label components for visual wrappers and hierarchy (verify the component's usage instructions before implementing)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add a shared, consistently styled Back control pattern to Feed, Tasks, and Geography (and ensure existing Tasks back behaviors match the shared pattern) using base-path-safe SPA navigation.",
+      "summary": "Visually emphasize the WSP Token Balance section with larger/bolder gradient typography and a purely visual flourish when balance > 0, without changing loading/zero behaviors.",
       "acceptanceCriteria": [
-        "Feed page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
-        "Geography page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
-        "Tasks list already has Back to Home; keep behavior but ensure its styling matches the chosen shared Back pattern",
-        "Task detail and task create already have Back to List; keep behavior but ensure their Back control styling matches the chosen shared Back pattern"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/common/BackNav.tsx",
-          "operation": "create",
-          "description": "Create a shared BackNav component (consistent label + placement-friendly styling) built by composing existing shadcn Button (read-only) and a left-arrow icon; implement base-path-safe SPA navigation using joinBasePath + pushState + PopStateEvent (and optionally history.back when an explicit target is not provided). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/FeedPage.tsx",
-          "operation": "modify",
-          "description": "Add the shared BackNav control near the top of the main content that returns to Home (/) using joinBasePath and SPA popstate dispatch; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/GeographyPage.tsx",
-          "operation": "modify",
-          "description": "Replace the page-specific Back button with the shared BackNav control targeting Home (/) and using base-path-safe SPA navigation; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TasksListPage.tsx",
-          "operation": "modify",
-          "description": "Replace/compose the existing Back to Home control with the shared BackNav pattern while preserving existing base-path-safe navigation behavior; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "operation": "modify",
-          "description": "Replace/compose the existing Back to List control with the shared BackNav pattern while preserving navigation back to the tasks list for the current location; Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TaskCreatePage.tsx",
-          "operation": "modify",
-          "description": "Replace/compose the existing Back to List control with the shared BackNav pattern while preserving navigation back to the tasks list for the current location; Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Normalize layout styling across Feed, Tasks, and Geography (consistent header approach, spacing, and card styling), removing Geography’s bespoke fixed black header and aligning all pages’ top offsets with the app header.",
-      "acceptanceCriteria": [
-        "Geography page no longer uses a one-off fixed black header; it visually matches the general page layout used by Feed/Tasks",
-        "Feed, Tasks list, Task detail, Task create, and Geography pages share consistent top padding/offset so content does not clash with the header",
-        "Typography (page title/subtitle), container widths, and primary Card styling are consistent across these pages"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/GeographyPage.tsx",
-          "operation": "modify",
-          "description": "Remove the bespoke fixed black header; adopt the same header approach as other app sections by composing HomeHeader at the top and moving content into a consistent container with shared top padding and Card styling. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TasksListPage.tsx",
-          "operation": "modify",
-          "description": "Align Tasks List layout with Feed/Geography: add HomeHeader, standardize container width (e.g., container + max-w) and top padding so content clears the fixed header, and ensure primary Card styling matches the shared section style. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TaskDetailPage.tsx",
-          "operation": "modify",
-          "description": "Align Task Detail layout with the shared section style: add HomeHeader, standardize container sizing and top padding, and ensure Card/typography spacing is consistent with Feed/Tasks List. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/tasks/TaskCreatePage.tsx",
-          "operation": "modify",
-          "description": "Align Task Create layout with the shared section style: add HomeHeader, standardize container sizing and top padding, and ensure Card/typography spacing is consistent with Feed/Tasks List. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/FeedPage.tsx",
-          "operation": "modify",
-          "description": "Ensure Feed page header area and top spacing matches the shared section layout used across Tasks/Geography (consistent title/subtitle spacing and container widths), while keeping the existing HomeHeader composition. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add a consistent Back navigation control on the Profile page (matching the shared Back pattern) to return to Home using base-path-safe SPA navigation.",
-      "acceptanceCriteria": [
-        "Profile page displays a Back control near the top of the main content area",
-        "Back control navigates to Home (/) using base-path-safe SPA navigation",
-        "Back control styling is consistent with the Back controls on Feed/Tasks/Geography"
+        "When balance is loading, the loading UI remains functionally identical (spinner + “Loading balance...” text).",
+        "When balance is 0, “Start earning today!” remains visible and styled to feel motivational/wholesome, using gold accent.",
+        "When balance is > 0, an additional accent element (Sparkles and/or a decorative ring) appears and is purely visual (no new state/hooks).",
+        "The balance typography is noticeably more prominent than surrounding text and CTAs."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Add HomeHeader for consistency (if not already present after REQ-3 alignment work) and include the shared BackNav control near the top of the Profile main content to navigate to joinBasePath('/') via pushState + PopStateEvent; Verify the component's usage instructions before implementing."
+          "description": "Enhance the WSP Token Balance Card visuals: make the numeric line more prominent (size/weight), apply teal→cyan gradient text with subtle glow/elevation using existing Tailwind utilities, and add a conditional visual-only flourish when wspBalance > 0 (e.g., Lucide Sparkles icon and/or a decorative ring element) while keeping existing loading and zero-balance subtext behavior unchanged. Continue using lucide-react icons (verify the component's usage instructions before implementing)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Restyle Contribution Points section with distinct per-category accents, improved hierarchy, motivational subtext, and a subtle zero-value hint per category without changing data logic.",
+      "acceptanceCriteria": [
+        "The points grid still renders the same four categories and uses the same data sources.",
+        "Each category card has a clear, distinct accent color (blue, purple, gold, green as requested) that is visible at a glance.",
+        "If a category’s displayed value is '0', a subtle extra visual cue appears within that card (e.g., small Sparkles + 'Earn more' text).",
+        "Motivational subtext appears under the Contribution Points heading/description and is readable on dark background."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Update Contribution Points Card styling: add motivational subtext below the section header area; refine category label vs value hierarchy; apply distinct accent treatments per category via border/left-accent/icon color; and for any category where the displayed value is '0', render a small extra visual hint (e.g., Lucide Sparkles and a non-navigating 'Earn more' link-styled text) without introducing new hooks/state or altering data usage. Use lucide-react icons for accents (verify the component's usage instructions before implementing)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Restyle Staking and Governance sections to match the civic palette and make CTAs more prominent with specified gradients, hover scale, and accent Lucide icons—without changing behavior.",
+      "acceptanceCriteria": [
+        "Stake/Unstake inputs, validation messages, pending states, and toast messages behave exactly as before.",
+        "Governance proposal list behavior, empty/loading/error states, and dialogs behave exactly as before.",
+        "Stake Tokens CTA is visually dominant and uses teal→cyan gradient styling with noticeable hover/active/focus states.",
+        "Create Proposal CTA is visually dominant and uses purple→pink gradient styling with noticeable hover/active/focus states.",
+        "All section cards match the darker, more grounded card styling (borders, elevation, backdrop blur) and avoid pastel/fruity gradients."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/profile/components/StakingSection.tsx",
+          "operation": "modify",
+          "description": "Update Tailwind className styling only to align the staking section card with grounded dark civic styling (border/elevation/backdrop blur) and increase CTA prominence: larger button sizing/weight, min height for touch, teal→cyan gradient for primary staking CTA, hover scale transitions (leveraging existing Tailwind utilities / tailwindcss-animate if present), and Lucide icon accent coloring. Keep all validation, pending states, and toast behavior unchanged. Use existing shadcn-ui Card/Button/Input/Label components (verify the component's usage instructions before implementing)."
         },
         {
-          "path": "frontend/src/components/common/BackNav.tsx",
+          "path": "frontend/src/pages/profile/components/GovernanceSection.tsx",
           "operation": "modify",
-          "description": "If needed after integrating Profile, adjust the shared BackNav props/styling to ensure it can be reused consistently across Profile/Feed/Tasks/Geography without per-page custom classes. Verify the component's usage instructions before implementing."
+          "description": "Update Tailwind className styling only to align the governance section card with grounded dark civic styling (border/elevation/backdrop blur) and increase CTA prominence: larger 'Create Proposal' button with purple→pink gradient, hover scale transitions (leveraging existing Tailwind utilities / tailwindcss-animate if present), and Lucide icon accent coloring. Preserve proposal list rendering, empty/loading/error states, and dialog behavior. Use existing shadcn-ui Card/Button/Badge components (verify the component's usage instructions before implementing)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Apply mobile-first spacing, typography, touch-target sizing, and accessible focus rings across Profile page and sections using Tailwind classes.",
+      "acceptanceCriteria": [
+        "On small screens, all sections stack cleanly with consistent spacing and no cramped tap targets.",
+        "Buttons meet touch-friendly sizing (e.g., min-h-12) without breaking layouts.",
+        "Headings/labels are consistently bolder than body text and establish clear hierarchy.",
+        "Focus rings are visible on interactive elements and use accent colors (teal/cyan/purple) while maintaining dark background contrast."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Adjust Profile page typography and spacing using Tailwind className updates only: ensure mobile-first vertical stacking with consistent gaps, add generous padding (e.g., p-6 on major cards/sections where appropriate), standardize heading sizes/weights (text-xl/text-2xl font-bold) and body readability (text-base font-medium), enforce touch-friendly buttons (min-h-12), and ensure focus-visible rings on interactive elements use accent colors with sufficient contrast. Use existing shadcn-ui components for consistent styling (verify the component's usage instructions before implementing)."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/StakingSection.tsx",
+          "operation": "modify",
+          "description": "Apply mobile-first spacing and touch target improvements within staking controls via Tailwind classes only: increase padding, ensure inputs/buttons have comfortable vertical spacing, and add/align focus-visible rings with teal/cyan accents without altering logic. Use existing shadcn-ui Input/Button (verify the component's usage instructions before implementing)."
+        },
+        {
+          "path": "frontend/src/pages/profile/components/GovernanceSection.tsx",
+          "operation": "modify",
+          "description": "Apply mobile-first spacing and touch target improvements within governance section via Tailwind classes only: ensure header layout wraps cleanly on small screens, proposal rows remain readable, and interactive elements have visible focus rings and comfortable padding. Use existing shadcn-ui Button/Badge (verify the component's usage instructions before implementing)."
         }
       ]
     }
