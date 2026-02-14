@@ -1,23 +1,130 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "PostComposer: store selected photo file in component state (no upload)",
+  "title": "Base-path-safe onboarding navigation + shared Back pattern and consistent layout across Feed, Tasks, Geography, Profile",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add minimal React state to PostComposer to track the currently selected optional photo file and clear it after successful post submission, without adding any upload/storage behavior.",
+      "id": "REQ-1",
+      "summary": "Update the Home “Get Started” CTA to navigate base-path-safely to /profile and trigger Internet Identity login when needed (instead of primarily opening the Secretary widget).",
       "acceptanceCriteria": [
-        "`PostComposer` defines a new `useState` value to hold the selected photo file (e.g., `File | null`).",
-        "The `<Input id=\"photo\" type=\"file\" ...>` has an `onChange` handler that updates the new state from `e.target.files` (set to `null` when no file is selected).",
-        "On successful post submission (after `createPost.mutateAsync` resolves), the selected photo state is cleared back to `null` (alongside the existing content/instance-name resets).",
-        "No backend calls, upload logic, or changes to the `useCreatePost` payload are added in this step.",
-        "Changes are limited to this single file: `frontend/src/components/feed/PostComposer.tsx`."
+        "Clicking the “Get Started” CTA navigates to /profile (base-path-safe) and the Profile page renders",
+        "If the user is not authenticated, the flow prompts the user to log in (Internet Identity) and then lands them on /profile (or remains on /profile showing the authentication-required state until login completes)",
+        "The CTA no longer only scrolls or only opens the Secretary widget as the primary action for becoming a user"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/feed/PostComposer.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Introduce a `useState<File | null>` to hold the selected photo for the existing \"Photo (optional)\" file input; add an `onChange` handler that reads `e.target.files?.[0] ?? null` and stores it; after `createPost.mutateAsync` resolves successfully, clear the photo state back to `null` alongside existing resets. Do not add any upload logic or include the file in the create-post mutation payload; keep all changes within this file only."
+          "description": "Change the “Get Started” section CTA (section id=\"get-started\") to navigate to joinBasePath('/profile') via pushState and dispatch PopStateEvent('popstate'); integrate Internet Identity prompt by using the authorization component’s frontend auth hook (useInternetIdentity) to call login() when identity is missing, with safe error handling."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Enhance the unauthenticated state to include a clear Internet Identity login call-to-action (use existing LoginButton and/or useInternetIdentity login handler) so navigation to /profile reliably “prompts authentication if needed”; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/common/LoginButton.tsx",
+          "operation": "modify",
+          "description": "If needed to support the updated onboarding CTA, ensure LoginButton behavior cleanly handles repeated login attempts and preserves SPA location (/profile) on completion (no hard reload); Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add a shared, consistently styled Back control pattern to Feed, Tasks, and Geography (and ensure existing Tasks back behaviors match the shared pattern) using base-path-safe SPA navigation.",
+      "acceptanceCriteria": [
+        "Feed page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
+        "Geography page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
+        "Tasks list already has Back to Home; keep behavior but ensure its styling matches the chosen shared Back pattern",
+        "Task detail and task create already have Back to List; keep behavior but ensure their Back control styling matches the chosen shared Back pattern"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/common/BackNav.tsx",
+          "operation": "create",
+          "description": "Create a shared BackNav component (consistent label + placement-friendly styling) built by composing existing shadcn Button (read-only) and a left-arrow icon; implement base-path-safe SPA navigation using joinBasePath + pushState + PopStateEvent (and optionally history.back when an explicit target is not provided). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/FeedPage.tsx",
+          "operation": "modify",
+          "description": "Add the shared BackNav control near the top of the main content that returns to Home (/) using joinBasePath and SPA popstate dispatch; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/GeographyPage.tsx",
+          "operation": "modify",
+          "description": "Replace the page-specific Back button with the shared BackNav control targeting Home (/) and using base-path-safe SPA navigation; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TasksListPage.tsx",
+          "operation": "modify",
+          "description": "Replace/compose the existing Back to Home control with the shared BackNav pattern while preserving existing base-path-safe navigation behavior; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "operation": "modify",
+          "description": "Replace/compose the existing Back to List control with the shared BackNav pattern while preserving navigation back to the tasks list for the current location; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TaskCreatePage.tsx",
+          "operation": "modify",
+          "description": "Replace/compose the existing Back to List control with the shared BackNav pattern while preserving navigation back to the tasks list for the current location; Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Normalize layout styling across Feed, Tasks, and Geography (consistent header approach, spacing, and card styling), removing Geography’s bespoke fixed black header and aligning all pages’ top offsets with the app header.",
+      "acceptanceCriteria": [
+        "Geography page no longer uses a one-off fixed black header; it visually matches the general page layout used by Feed/Tasks",
+        "Feed, Tasks list, Task detail, Task create, and Geography pages share consistent top padding/offset so content does not clash with the header",
+        "Typography (page title/subtitle), container widths, and primary Card styling are consistent across these pages"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/GeographyPage.tsx",
+          "operation": "modify",
+          "description": "Remove the bespoke fixed black header; adopt the same header approach as other app sections by composing HomeHeader at the top and moving content into a consistent container with shared top padding and Card styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TasksListPage.tsx",
+          "operation": "modify",
+          "description": "Align Tasks List layout with Feed/Geography: add HomeHeader, standardize container width (e.g., container + max-w) and top padding so content clears the fixed header, and ensure primary Card styling matches the shared section style. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "operation": "modify",
+          "description": "Align Task Detail layout with the shared section style: add HomeHeader, standardize container sizing and top padding, and ensure Card/typography spacing is consistent with Feed/Tasks List. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/tasks/TaskCreatePage.tsx",
+          "operation": "modify",
+          "description": "Align Task Create layout with the shared section style: add HomeHeader, standardize container sizing and top padding, and ensure Card/typography spacing is consistent with Feed/Tasks List. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/FeedPage.tsx",
+          "operation": "modify",
+          "description": "Ensure Feed page header area and top spacing matches the shared section layout used across Tasks/Geography (consistent title/subtitle spacing and container widths), while keeping the existing HomeHeader composition. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add a consistent Back navigation control on the Profile page (matching the shared Back pattern) to return to Home using base-path-safe SPA navigation.",
+      "acceptanceCriteria": [
+        "Profile page displays a Back control near the top of the main content area",
+        "Back control navigates to Home (/) using base-path-safe SPA navigation",
+        "Back control styling is consistent with the Back controls on Feed/Tasks/Geography"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Add HomeHeader for consistency (if not already present after REQ-3 alignment work) and include the shared BackNav control near the top of the Profile main content to navigate to joinBasePath('/') via pushState + PopStateEvent; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/common/BackNav.tsx",
+          "operation": "modify",
+          "description": "If needed after integrating Profile, adjust the shared BackNav props/styling to ensure it can be reused consistently across Profile/Feed/Tasks/Geography without per-page custom classes. Verify the component's usage instructions before implementing."
         }
       ]
     }

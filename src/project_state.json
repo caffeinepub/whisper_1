@@ -1,16 +1,40 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project includes adding a photo upload field to a target form (UI file input, minimal state handling, and a backend placeholder to store a photo reference).",
+  "summary": "Build and refine core app pages with a focus on the Profile page, correct onboarding navigation from the \"Get Started\" button, and consistent styling/back navigation across Feed, Tasks, and Geography pages.",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-in-frontend-src-components-feed-postcomposer-tsx-add-minimal-react-state-handling-for-the-existing-photo-optional-file-input-so-the-component-stores-the-currently-selected-file-or-null-when-the-user-chooses-an-image-without-wiring-any-upload-storage-behavior",
-      "title": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
+      "id": "feature-update-the-home-page-get-started-call-to-action-so-it-directs-the-user-into-the-becoming-a-user-flow-by-taking-them-to-the-profile-page-and-prompting-authentication-if-needed-instead-of-only-opening-the-secretary-widget-apply-this-behavior-to-the-cta-in-the-get-started-section-app-tsx-section-id-get-started-and-ensure-the-interaction-is-base-path-safe-uses-joinbasepath-and-triggers-popstate-updates",
+      "title": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-consistent-backward-navigation-controls-to-the-feed-tasks-and-geography-pages-using-the-same-ui-pattern-labeling-placement-and-behavior-the-back-action-must-reliably-navigate-to-the-appropriate-previous-logical-destination-and-be-base-path-safe-pushstate-popstateevent-or-history-back-when-appropriate-with-consistent-styling",
+      "title": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-normalize-page-layout-styling-across-feed-tasks-and-geography-so-they-feel-like-the-same-application-section-consistent-header-approach-spacing-and-card-styling-in-particular-remove-the-bespoke-fixed-black-header-styling-on-geographypage-and-align-it-with-the-layout-used-on-other-pages-e-g-homeheader-consistent-main-container-spacing",
+      "title": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-profile-page-add-a-clear-consistent-back-navigation-control-matching-the-feed-tasks-geography-back-pattern-so-users-can-easily-return-to-the-home-page-after-onboarding-profile-edits",
+      "title": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -18,12 +42,24 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add a photo upload field to the target form (file input UI, minimal state handling, backend placeholder for photo reference).",
+      "summary": "Implement/Profile page UI and functionality",
       "reqIds": [],
-      "status": "in_progress"
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update \"Get Started\" button to route users into the onboarding/becoming-a-user flow",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Ensure Feed, Tasks, and Geography pages share consistent styling and backward navigation patterns",
+      "reqIds": [],
+      "status": "pending"
     }
   ],
-  "projectName": "Micro step 2: Store selected photo file in PostComposer state (no upload)",
+  "projectName": "Profile page onboarding navigation + consistent styling/back navigation across Feed, Tasks, and Geography",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

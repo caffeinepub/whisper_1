@@ -8,9 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { User, LogOut } from 'lucide-react';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import { uiCopy } from '@/lib/uiCopy';
 
 interface UserProfileMenuProps {
@@ -31,30 +31,6 @@ export function UserProfileMenu({ onNavigate }: UserProfileMenuProps) {
     onNavigate('/profile');
   };
 
-  // Generate initials from name
-  const getInitials = (name: string): string => {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) {
-      return parts[0].substring(0, 2).toUpperCase();
-    }
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
-  // Convert profile image bytes to blob URL
-  const getImageUrl = (imageBytes: Uint8Array | number[] | undefined): string | undefined => {
-    if (!imageBytes) return undefined;
-    try {
-      const bytes = imageBytes instanceof Uint8Array ? imageBytes : new Uint8Array(imageBytes);
-      // Create a new Uint8Array to ensure we have a proper ArrayBuffer
-      const properBytes = new Uint8Array(bytes);
-      const blob = new Blob([properBytes], { type: 'image/jpeg' });
-      return URL.createObjectURL(blob);
-    } catch (error) {
-      console.error('Failed to create image URL:', error);
-      return undefined;
-    }
-  };
-
   if (isLoading) {
     return (
       <Button variant="ghost" size="sm" disabled className="gap-2">
@@ -64,19 +40,17 @@ export function UserProfileMenu({ onNavigate }: UserProfileMenuProps) {
   }
 
   const displayName = userProfile?.name || 'User';
-  const initials = getInitials(displayName);
-  const imageUrl = userProfile?.profileImage ? getImageUrl(userProfile.profileImage) : undefined;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2 hover:bg-accent/10">
-          <Avatar className="h-8 w-8">
-            {imageUrl && <AvatarImage src={imageUrl} alt={displayName} />}
-            <AvatarFallback className="bg-secondary text-white text-xs font-medium">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            imageBytes={userProfile?.profileImage}
+            name={displayName}
+            className="h-8 w-8"
+            fallbackClassName="bg-secondary text-white text-xs font-medium"
+          />
           <span className="hidden sm:inline text-sm font-medium text-white">{displayName}</span>
         </Button>
       </DropdownMenuTrigger>

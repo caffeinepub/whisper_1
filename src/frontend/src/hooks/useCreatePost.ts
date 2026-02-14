@@ -24,8 +24,8 @@ export function useCreatePost() {
       return result.ok;
     },
     onSuccess: (post: Post, variables) => {
-      // Invalidate all posts queries for this instance
-      queryClient.invalidateQueries({ queryKey: ['posts', variables.instanceName] });
+      // Invalidate the instance feed query (matching useInstanceFeed query key)
+      queryClient.invalidateQueries({ queryKey: ['feed', variables.instanceName] });
       
       toast.success('Post created successfully');
     },

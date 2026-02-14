@@ -1,159 +1,107 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { HomeHeader } from '@/components/common/HomeHeader';
+import { BackNav } from '@/components/common/BackNav';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PostComposer } from '@/components/feed/PostComposer';
 import { FeedList } from '@/components/feed/FeedList';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare } from 'lucide-react';
-import { LocationAcquisitionCard } from '@/components/location/LocationAcquisitionCard';
-import { useInstanceScopeLocation } from '@/hooks/useInstanceScopeLocation';
-import { generateWhisperInstanceName } from '@/lib/whisperInstanceNaming';
-import { USHierarchyLevel } from '@/backend';
-import { getLocationMetadata, setLocationMetadata } from '@/utils/instanceScope';
+import { PostDetailDialog } from '@/components/feed/PostDetailDialog';
+import { FlagPostDialog } from '@/components/feed/FlagPostDialog';
+import { LocationSelector } from '@/components/location/LocationSelector';
+import { useLocationSelection } from '@/hooks/useLocationSelection';
+import { useInstanceFeed } from '@/hooks/useInstanceFeed';
 
 export default function FeedPage() {
+  const [selectedPostId, setSelectedPostId] = useState<bigint | null>(null);
+  const [flagPostId, setFlagPostId] = useState<bigint | null>(null);
+
   const {
     selection,
     setSelectedState,
     setSelectedCounty,
     setSelectedPlace,
     locationId,
-    displayName,
-  } = useInstanceScopeLocation();
+  } = useLocationSelection();
 
-  const [instanceName, setInstanceName] = useState<string>('');
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInstanceFeed(locationId || '');
 
-  // Restore location from localStorage on mount
-  useEffect(() => {
-    const metadata = getLocationMetadata();
-    if (metadata) {
-      // We have persisted metadata but not the full objects
-      // The user will need to reselect, but we can show the last instance name
-      try {
-        const level = metadata.placeName 
-          ? USHierarchyLevel.place 
-          : metadata.countyName 
-          ? USHierarchyLevel.county 
-          : USHierarchyLevel.state;
-        
-        const name = generateWhisperInstanceName(
-          level,
-          metadata.stateName,
-          metadata.countyName,
-          metadata.placeName
-        );
-        setInstanceName(name);
-      } catch (error) {
-        console.error('Error restoring instance name:', error);
-      }
-    }
-  }, []);
+  const posts = data?.pages.flatMap((page) => page) || [];
 
-  // Generate instance name when location changes
-  useEffect(() => {
-    if (locationId && selection.state) {
-      try {
-        const level = selection.place 
-          ? USHierarchyLevel.place 
-          : selection.county 
-          ? USHierarchyLevel.county 
-          : USHierarchyLevel.state;
+  const handleViewDetails = (postId: bigint) => {
+    setSelectedPostId(postId);
+  };
 
-        const name = generateWhisperInstanceName(
-          level,
-          selection.state.longName,
-          selection.county?.shortName,
-          selection.place?.shortName
-        );
-
-        setInstanceName(name);
-
-        // Persist metadata
-        setLocationMetadata({
-          locationId,
-          stateName: selection.state.longName,
-          countyName: selection.county?.shortName,
-          placeName: selection.place?.shortName,
-        });
-      } catch (error) {
-        console.error('Error generating instance name:', error);
-      }
-    }
-  }, [locationId, selection]);
-
-  // Scroll to top when instance changes
-  useEffect(() => {
-    if (instanceName) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [instanceName]);
+  const handleFlag = (postId: bigint) => {
+    setFlagPostId(postId);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <HomeHeader />
+      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
+        <BackNav to="/" />
+        
+        <div className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Feed</CardTitle>
+              <CardDescription>View and share posts from your community</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Select Location</h3>
+                <LocationSelector
+                  selectedState={selection.state}
+                  selectedCounty={selection.county}
+                  selectedPlace={selection.place}
+                  onStateChange={setSelectedState}
+                  onCountyChange={setSelectedCounty}
+                  onPlaceChange={setSelectedPlace}
+                />
+              </div>
 
-      <main className="container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-3xl mx-auto space-y-6">
-          {/* Page Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <MessageSquare className="h-8 w-8 text-secondary" />
-              Community Feed
-            </h1>
-            <p className="text-muted-foreground">
-              Share updates and connect with your community
-            </p>
-          </div>
+              {locationId && (
+                <PostComposer
+                  key={locationId}
+                  instanceName={locationId}
+                />
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Location Acquisition */}
-          <LocationAcquisitionCard
-            selectedState={selection.state}
-            selectedCounty={selection.county}
-            selectedPlace={selection.place}
-            onStateChange={setSelectedState}
-            onCountyChange={setSelectedCounty}
-            onPlaceChange={setSelectedPlace}
-          />
-
-          {/* Show selected location and instance name */}
-          {instanceName && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Current Location</CardTitle>
-                <CardDescription>
-                  Viewing posts for: <span className="font-semibold text-foreground">{displayName}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground">
-                  Instance: <span className="font-mono text-foreground">{instanceName}</span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Post Composer - only show when location is selected */}
-          {instanceName && <PostComposer instanceName={instanceName} />}
-
-          {/* Feed - remounts when instanceName changes via key */}
-          {instanceName && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Recent Posts</h2>
-              <FeedList key={instanceName} instanceName={instanceName} />
-            </div>
-          )}
-
-          {/* Prompt to select location if none selected */}
-          {!instanceName && (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  Please select your location above to view and create posts
-                </p>
-              </CardContent>
-            </Card>
+          {locationId && (
+            <FeedList
+              posts={posts}
+              hasNextPage={hasNextPage || false}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+              instanceName={locationId}
+              onViewDetails={handleViewDetails}
+              onFlag={handleFlag}
+            />
           )}
         </div>
-      </main>
+      </div>
+
+      {selectedPostId !== null && (
+        <PostDetailDialog
+          postId={selectedPostId}
+          open={selectedPostId !== null}
+          onOpenChange={(open) => !open && setSelectedPostId(null)}
+        />
+      )}
+
+      {flagPostId !== null && (
+        <FlagPostDialog
+          postId={flagPostId}
+          open={flagPostId !== null}
+          onOpenChange={(open) => !open && setFlagPostId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,24 +1,81 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T14:35:28.150Z",
+  "generatedAt": "2026-02-14T00:53:30.782Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-2",
-        "summary": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
+        "id": "REQ-1",
+        "summary": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/feed/PostComposer.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/components/common/LoginButton.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/feed/PostComposer.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/components/common/LoginButton.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/common/BackNav.tsx",
+          "frontend/src/pages/FeedPage.tsx",
+          "frontend/src/pages/GeographyPage.tsx",
+          "frontend/src/pages/tasks/TasksListPage.tsx",
+          "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "frontend/src/pages/tasks/TaskCreatePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/common/BackNav.tsx",
+          "frontend/src/pages/FeedPage.tsx",
+          "frontend/src/pages/GeographyPage.tsx",
+          "frontend/src/pages/tasks/TasksListPage.tsx",
+          "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "frontend/src/pages/tasks/TaskCreatePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/GeographyPage.tsx",
+          "frontend/src/pages/tasks/TasksListPage.tsx",
+          "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "frontend/src/pages/tasks/TaskCreatePage.tsx",
+          "frontend/src/pages/FeedPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/GeographyPage.tsx",
+          "frontend/src/pages/tasks/TasksListPage.tsx",
+          "frontend/src/pages/tasks/TaskDetailPage.tsx",
+          "frontend/src/pages/tasks/TaskCreatePage.tsx",
+          "frontend/src/pages/FeedPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/components/common/BackNav.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/components/common/BackNav.tsx"
         ]
       }
     ]
@@ -28,7 +85,15 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/feed/PostComposer.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/common/BackNav.tsx",
+    "frontend/src/components/common/LoginButton.tsx",
+    "frontend/src/pages/FeedPage.tsx",
+    "frontend/src/pages/GeographyPage.tsx",
+    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/tasks/TaskCreatePage.tsx",
+    "frontend/src/pages/tasks/TaskDetailPage.tsx",
+    "frontend/src/pages/tasks/TasksListPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

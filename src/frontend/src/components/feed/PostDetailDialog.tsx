@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { usePostDetail } from '@/hooks/usePostDetail';
 import { useUserProfileByPrincipal } from '@/hooks/useUserProfileByPrincipal';
-import { createProfileImageUrl, revokeProfileImageUrl } from '@/utils/profileImageUrl';
+import { UserAvatar } from '@/components/common/UserAvatar';
 
 interface PostDetailDialogProps {
   postId: bigint;
@@ -21,25 +19,8 @@ interface PostDetailDialogProps {
 export function PostDetailDialog({ postId, open, onOpenChange }: PostDetailDialogProps) {
   const { data: post, isLoading, isError } = usePostDetail(open ? postId : null);
   const { data: authorProfile } = useUserProfileByPrincipal(post?.author || null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (authorProfile?.profileImage) {
-      const url = createProfileImageUrl(authorProfile.profileImage);
-      setAvatarUrl(url);
-      return () => {
-        revokeProfileImageUrl(url);
-      };
-    }
-  }, [authorProfile?.profileImage]);
 
   const authorName = authorProfile?.name || 'Anonymous';
-  const initials = authorName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 
   const formatDate = (timestamp: bigint) => {
     const date = new Date(Number(timestamp) / 1000000);
@@ -78,12 +59,12 @@ export function PostDetailDialog({ postId, open, onOpenChange }: PostDetailDialo
             <div className="space-y-6">
               {/* Author info */}
               <div className="flex items-start gap-3">
-                <Avatar className="h-12 w-12">
-                  {avatarUrl && <AvatarImage src={avatarUrl} alt={authorName} />}
-                  <AvatarFallback className="bg-secondary text-secondary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  imageBytes={authorProfile?.profileImage}
+                  name={authorName}
+                  className="h-12 w-12"
+                  fallbackClassName="bg-secondary text-secondary-foreground"
+                />
                 <div className="flex-1">
                   <p className="font-semibold">{authorName}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

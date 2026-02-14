@@ -1,6 +1,8 @@
 /**
  * Converts a profile image byte array into a browser-safe display URL.
  * Creates an object URL that should be cleaned up when no longer needed.
+ * 
+ * Note: Prefer using the useObjectUrl hook or UserAvatar component for automatic cleanup.
  */
 export function createProfileImageUrl(imageBytes: Uint8Array | null | undefined): string | null {
   if (!imageBytes || imageBytes.length === 0) {
@@ -13,7 +15,7 @@ export function createProfileImageUrl(imageBytes: Uint8Array | null | undefined)
     const blob = new Blob([bytes], { type: 'image/jpeg' });
     return URL.createObjectURL(blob);
   } catch (error) {
-    console.error('Error creating profile image URL:', error);
+    // Silently handle expected failures (e.g., invalid data)
     return null;
   }
 }
@@ -27,7 +29,7 @@ export function revokeProfileImageUrl(url: string | null) {
     try {
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error revoking profile image URL:', error);
+      // Silently handle revocation errors
     }
   }
 }

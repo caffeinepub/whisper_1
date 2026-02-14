@@ -1,37 +1,91 @@
 {
   "kind": "build_request",
-  "title": "Micro step 2: Store selected photo file in PostComposer state (no upload)",
+  "title": "Profile page onboarding navigation + consistent styling/back navigation across Feed, Tasks, and Geography",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-2",
-      "text": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
+      "id": "REQ-1",
+      "text": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Run step 2"
+          "Lets tackle the profile page and make sure the \"Get Started\" button directs towards becoming a user"
         ]
       },
       "acceptanceCriteria": [
-        "`PostComposer` defines a new `useState` value to hold the selected photo file (e.g., `File | null`).",
-        "The `<Input id=\"photo\" type=\"file\" ...>` has an `onChange` handler that updates the new state from `e.target.files` (set to `null` when no file is selected).",
-        "On successful post submission (after `createPost.mutateAsync` resolves), the selected photo state is cleared back to `null` (alongside the existing content/instance-name resets).",
-        "No backend calls, upload logic, or changes to the `useCreatePost` payload are added in this step.",
-        "Changes are limited to this single file: `frontend/src/components/feed/PostComposer.tsx`."
+        "Clicking the “Get Started” CTA navigates to /profile (base-path-safe) and the Profile page renders",
+        "If the user is not authenticated, the flow prompts the user to log in (Internet Identity) and then lands them on /profile (or remains on /profile showing the authentication-required state until login completes)",
+        "The CTA no longer only scrolls or only opens the Secretary widget as the primary action for becoming a user"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "...and that the Feed, Tasks, Geography pages are all similarly styled with consistent backwards navigation"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Feed page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
+        "Geography page includes a clear Back control that returns to Home (/) using base-path-safe navigation",
+        "Tasks list already has Back to Home; keep behavior but ensure its styling matches the chosen shared Back pattern",
+        "Task detail and task create already have Back to List; keep behavior but ensure their Back control styling matches the chosen shared Back pattern"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "...Feed, Tasks, Geography pages are all similarly styled..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Geography page no longer uses a one-off fixed black header; it visually matches the general page layout used by Feed/Tasks",
+        "Feed, Tasks list, Task detail, Task create, and Geography pages share consistent top padding/offset so content does not clash with the header",
+        "Typography (page title/subtitle), container widths, and primary Card styling are consistent across these pages"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Lets tackle the profile page..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Profile page displays a Back control near the top of the main content area",
+        "Back control navigates to Home (/) using base-path-safe SPA navigation",
+        "Back control styling is consistent with the Back controls on Feed/Tasks/Geography"
       ]
     }
   ],
   "constraints": [
-    "Do not edit any frontend files under `frontend/src/components/ui` (read-only shadcn components).",
-    "Keep the change atomic: minimal state only; do not implement upload/storage or include the photo in the create-post mutation in this step."
+    "Do not edit files under frontend/src/components/ui (shadcn components are read-only and must be composed)",
+    "Do not edit immutable frontend hook paths listed in SYSTEM_CONTEXT (compose around them instead)",
+    "Keep routing compatible with the existing pushState/popstate approach in frontend/src/App.tsx (no Next.js / React Router additions)"
   ],
   "nonGoals": [
-    "Implementing photo upload to the Internet Computer or any blob storage.",
-    "Persisting the photo reference in backend types or post records (planned for a later micro step).",
-    "Adding image previews, validation, compression, or resizing."
+    "Do not redesign or change Secretary widget flows or intent/navigation registry beyond what is required for the updated Get Started CTA",
+    "Do not add new backend data models or change Motoko stable state for this request",
+    "Do not implement new Feed/Tasks/Geography features beyond styling and navigation consistency"
   ],
   "imageRequirements": {
     "required": [],

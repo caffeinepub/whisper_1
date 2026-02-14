@@ -1,58 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useInternetIdentity } from '@/hooks/useInternetIdentity';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from '@/hooks/useCallerUserProfile';
+import { useWspBalance } from '@/hooks/useWspBalance';
+import { useCallerContributionSummary } from '@/hooks/useCallerContributionSummary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Award, Upload, AlertCircle, Coins } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useInternetIdentity } from '@/hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from '@/hooks/useCallerUserProfile';
-import { useCallerContributionSummary } from '@/hooks/useCallerContributionSummary';
-import { useContributionEventLogger } from '@/hooks/useContributionEventLogger';
-import { useWspBalance } from '@/hooks/useWspBalance';
-import { CONTRIBUTION_ACTION_TYPES } from '@/lib/contributionActionTypes';
-import { showEarnedPointsToast } from '@/lib/earnedPointsToast';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { LoginButton } from '@/components/common/LoginButton';
+import { HomeHeader } from '@/components/common/HomeHeader';
+import { BackNav } from '@/components/common/BackNav';
+import { UserAvatar } from '@/components/common/UserAvatar';
+import { StakingSection } from './profile/components/StakingSection';
+import { GovernanceSection } from './profile/components/GovernanceSection';
 import { formatTokenAmount } from '@/lib/formatTokenAmount';
-import { IconBubble } from '@/components/common/IconBubble';
-import { StakingSection } from '@/pages/profile/components/StakingSection';
-import { GovernanceSection } from '@/pages/profile/components/GovernanceSection';
 import { uiCopy } from '@/lib/uiCopy';
-import type { UserProfile } from '@/backend';
 
 export default function ProfilePage() {
-  const { identity, loginStatus } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { identity, isInitializing } = useInternetIdentity();
+  const { data: userProfile, isLoading: profileLoading, isFetched, error: profileError, refetch } = useGetCallerUserProfile();
+  const { mutate: saveProfile, isPending: isSaving } = useSaveCallerUserProfile();
+  const { data: wspBalance, isLoading: balanceLoading } = useWspBalance();
   const { data: contributionSummary, isLoading: summaryLoading } = useCallerContributionSummary();
-  const { data: wspBalance, isLoading: balanceLoading, error: balanceError } = useWspBalance();
-  const saveProfile = useSaveCallerUserProfile();
-  const logContribution = useContributionEventLogger();
 
+  const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [contributionError, setContributionError] = useState<string | null>(null);
 
   const isAuthenticated = !!identity;
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
-
-  // Calculate total points for display
-  const totalPoints = contributionSummary ? Number(contributionSummary.totalPoints) : 0;
-  const hasZeroPoints = totalPoints === 0;
-
-  useEffect(() => {
-    if (userProfile) {
-      setName(userProfile.name);
-      if (userProfile.profileImage) {
-        const blob = new Blob([new Uint8Array(userProfile.profileImage)], { type: 'image/jpeg' });
-        const imageUrl = URL.createObjectURL(blob);
-        setImagePreview(imageUrl);
-      }
-    }
-  }, [userProfile]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,96 +44,118 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!name.trim()) return;
+  const handleSaveProfile = async () => {
+    if (!name.trim()) {
+      return;
+    }
 
-    // Clear any previous contribution errors
-    setContributionError(null);
+    let profileImageBytes: Uint8Array | undefined = undefined;
 
-    let profileImage: Uint8Array | undefined;
     if (imageFile) {
       const arrayBuffer = await imageFile.arrayBuffer();
-      profileImage = new Uint8Array(arrayBuffer);
+      profileImageBytes = new Uint8Array(arrayBuffer);
     } else if (userProfile?.profileImage) {
-      profileImage = userProfile.profileImage;
+      profileImageBytes = userProfile.profileImage;
     }
 
-    const profile: UserProfile = {
-      name: name.trim(),
-      profileImage,
-      tokenBalance: userProfile?.tokenBalance || {
-        staked: 0n,
-        voting: 0n,
-        bounty: 0n,
-        total: 0n,
+    saveProfile(
+      {
+        name: name.trim(),
+        profileImage: profileImageBytes || undefined,
+        tokenBalance: userProfile?.tokenBalance || {
+          staked: BigInt(0),
+          voting: BigInt(0),
+          bounty: BigInt(0),
+          total: BigInt(0),
+        },
+        contributionPoints: userProfile?.contributionPoints || {
+          city: BigInt(0),
+          voting: BigInt(0),
+          bounty: BigInt(0),
+          token: BigInt(0),
+        },
       },
-      contributionPoints: userProfile?.contributionPoints || {
-        city: 0n,
-        voting: 0n,
-        bounty: 0n,
-        token: 0n,
-      },
-    };
-
-    try {
-      await saveProfile.mutateAsync(profile);
-      setIsEditing(false);
-      setImageFile(null);
-
-      // Log contribution event for evidence upload if image was added
-      if (imageFile && !userProfile?.profileImage) {
-        try {
-          const timestamp = Date.now();
-          const contributionResult = await logContribution.mutateAsync({
-            actionType: CONTRIBUTION_ACTION_TYPES.EVIDENCE_ADDED,
-            referenceId: `profile-image-${timestamp}`,
-            details: 'Profile image uploaded',
-          });
-
-          // Show earned-points toast immediately if not a duplicate
-          if (!contributionResult.isDuplicate) {
-            showEarnedPointsToast({
-              pointsAwarded: contributionResult.pointsAwarded,
-              actionType: contributionResult.actionType,
-              origin: 'standard',
-              queryClient,
-            });
-          }
-        } catch (error: any) {
-          // Don't block the success flow, but show inline message
-          const errorMessage = error?.message || 'Could not record contribution points.';
-          setContributionError(errorMessage);
-          console.warn('Failed to log contribution for profile image upload:', error);
-        }
+      {
+        onSuccess: () => {
+          setEditMode(false);
+          setImageFile(null);
+          setImagePreview(null);
+        },
       }
-    } catch (error: any) {
-      console.error('Failed to save profile:', error);
-    }
+    );
   };
 
-  if (!isAuthenticated) {
+  const handleEditProfile = () => {
+    if (userProfile) {
+      setName(userProfile.name);
+    }
+    setEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setName('');
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  if (isInitializing || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-12">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Authentication Required</CardTitle>
-              <CardDescription>Please log in to view your profile.</CardDescription>
-            </CardHeader>
-          </Card>
-        </main>
+        <HomeHeader />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <BackNav to="/" />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (profileLoading || summaryLoading) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-12">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </main>
+        <HomeHeader />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <BackNav to="/" />
+          <Card className="max-w-md mx-auto mt-8">
+            <CardHeader>
+              <CardTitle>Login Required</CardTitle>
+              <CardDescription>Please log in to view your profile</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LoginButton />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <HomeHeader />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <BackNav to="/" />
+          <Card className="max-w-md mx-auto mt-8 border-destructive">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                Error Loading Profile
+              </CardTitle>
+              <CardDescription>
+                {profileError instanceof Error ? profileError.message : 'Failed to load profile'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => refetch()} variant="outline">
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -163,81 +163,44 @@ export default function ProfilePage() {
   if (showProfileSetup) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-12">
-          <Card className="max-w-md mx-auto">
+        <HomeHeader />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <BackNav to="/" />
+          <Card className="max-w-md mx-auto mt-8">
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <IconBubble size="md" variant="secondary">
-                  <User className="h-5 w-5" />
-                </IconBubble>
-                <div>
-                  <CardTitle>Welcome!</CardTitle>
-                  <CardDescription>Let's set up your profile</CardDescription>
-                </div>
-              </div>
+              <CardTitle>Setup Profile</CardTitle>
+              <CardDescription>Please provide your name to get started</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
-                    disabled={saveProfile.isPending}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image">Profile Image (Optional)</Label>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                      {imagePreview ? (
-                        <AvatarImage src={imagePreview} alt="Profile" />
-                      ) : (
-                        <AvatarFallback>
-                          <User className="h-8 w-8" />
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('image')?.click()}
-                      disabled={saveProfile.isPending}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Image
-                    </Button>
-                    <input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  disabled={isSaving}
+                />
               </div>
-
-              {contributionError && (
-                <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                    <p className="text-sm text-warning">{contributionError}</p>
+              <div className="space-y-2">
+                <Label htmlFor="image">Profile Image (Optional)</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={isSaving}
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img src={imagePreview} alt="Preview" className="h-20 w-20 rounded-full object-cover" />
                   </div>
-                </div>
-              )}
-
-              <Button
-                onClick={handleSave}
-                disabled={!name.trim() || saveProfile.isPending}
-                className="w-full"
-              >
-                {saveProfile.isPending ? (
+                )}
+              </div>
+              <Button onClick={handleSaveProfile} disabled={!name.trim() || isSaving} className="w-full">
+                {isSaving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -246,242 +209,151 @@ export default function ProfilePage() {
               </Button>
             </CardContent>
           </Card>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <HomeHeader />
+      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
+        <BackNav to="/" />
+        
+        <div className="mt-6 space-y-6">
+          {/* Profile Card */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <IconBubble size="md" variant="secondary">
-                  <User className="h-5 w-5" />
-                </IconBubble>
-                <div>
-                  <CardTitle>Profile</CardTitle>
-                  <CardDescription>Manage your account information</CardDescription>
-                </div>
-              </div>
+              <CardTitle>{uiCopy.profile.title}</CardTitle>
+              <CardDescription>Manage your profile and account settings</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row items-start gap-6">
-                <Avatar className="h-24 w-24">
-                  {imagePreview ? (
-                    <AvatarImage src={imagePreview} alt="Profile" />
-                  ) : (
-                    <AvatarFallback>
-                      <User className="h-12 w-12" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-
-                <div className="flex-1 space-y-4 w-full">
+            <CardContent className="space-y-4">
+              {editMode ? (
+                <>
                   <div className="space-y-2">
                     <Label htmlFor="edit-name">Name</Label>
-                    {isEditing ? (
-                      <Input
-                        id="edit-name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        disabled={saveProfile.isPending}
-                      />
-                    ) : (
-                      <p className="text-lg font-medium">{userProfile?.name}</p>
+                    <Input
+                      id="edit-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your name"
+                      disabled={isSaving}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-image">Profile Image (Optional)</Label>
+                    <Input
+                      id="edit-image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      disabled={isSaving}
+                    />
+                    {imagePreview && (
+                      <div className="mt-2">
+                        <img src={imagePreview} alt="Preview" className="h-20 w-20 rounded-full object-cover" />
+                      </div>
                     )}
                   </div>
-
-                  {isEditing && (
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-image">Profile Image</Label>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => document.getElementById('edit-image')?.click()}
-                          disabled={saveProfile.isPending}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Change Image
-                        </Button>
-                        <input
-                          id="edit-image"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {contributionError && (
-                <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                    <p className="text-sm text-warning">{contributionError}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3">
-                {isEditing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setName(userProfile?.name || '');
-                        setImageFile(null);
-                        if (userProfile?.profileImage) {
-                          const blob = new Blob([new Uint8Array(userProfile.profileImage)], {
-                            type: 'image/jpeg',
-                          });
-                          const imageUrl = URL.createObjectURL(blob);
-                          setImagePreview(imageUrl);
-                        } else {
-                          setImagePreview(null);
-                        }
-                      }}
-                      disabled={saveProfile.isPending}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSave} disabled={!name.trim() || saveProfile.isPending}>
-                      {saveProfile.isPending ? (
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveProfile} disabled={!name.trim() || isSaving}>
+                      {isSaving ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Saving...
                         </>
                       ) : (
-                        'Save Changes'
+                        'Save'
                       )}
                     </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                )}
-              </div>
+                    <Button onClick={handleCancelEdit} variant="outline" disabled={isSaving}>
+                      {uiCopy.common.cancel}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4">
+                    <UserAvatar
+                      imageBytes={userProfile?.profileImage}
+                      name={userProfile?.name || 'User'}
+                      className="h-16 w-16"
+                    />
+                    <div>
+                      <h3 className="text-xl font-semibold">{userProfile?.name}</h3>
+                      <p className="text-sm text-muted-foreground">{identity?.getPrincipal().toString()}</p>
+                    </div>
+                  </div>
+                  <Button onClick={handleEditProfile} variant="outline">
+                    Edit Profile
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
+          {/* WSP Token Balance */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <IconBubble size="md" variant="secondary">
-                  <Coins className="h-5 w-5" />
-                </IconBubble>
-                <div className="flex-1">
-                  <CardTitle>WSP Token Balance</CardTitle>
-                  <CardDescription>Your on-chain WSP token holdings</CardDescription>
-                </div>
-              </div>
+              <CardTitle>Token Balance</CardTitle>
             </CardHeader>
             <CardContent>
               {balanceLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : balanceError ? (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-                    <p className="text-sm text-destructive">
-                      Failed to load WSP balance. Please try again later.
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-muted-foreground">Loading...</span>
                 </div>
               ) : (
-                <div className="bg-secondary/10 border-2 border-secondary rounded-lg p-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                      Available Balance
-                    </p>
-                    <p className="text-5xl font-bold text-secondary">
-                      {formatTokenAmount(wspBalance || 0n, 0)}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">WSP</p>
+                <p className="text-2xl font-bold">{formatTokenAmount(wspBalance || BigInt(0))} WSP</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contribution Points */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution Points</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {summaryLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-muted-foreground">Loading...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">City Points</p>
+                    <p className="text-xl font-semibold">{contributionSummary?.totalCityPoints.toString() || '0'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Voting Points</p>
+                    <p className="text-xl font-semibold">{contributionSummary?.totalVotingPoints.toString() || '0'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Bounty Points</p>
+                    <p className="text-xl font-semibold">{contributionSummary?.totalBountyPoints.toString() || '0'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Token Points</p>
+                    <p className="text-xl font-semibold">{contributionSummary?.totalTokenPoints.toString() || '0'}</p>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <IconBubble size="md" variant="secondary">
-                  <Award className="h-5 w-5" />
-                </IconBubble>
-                <div className="flex-1">
-                  <CardTitle>{uiCopy.profile.contributionPointsLabel}</CardTitle>
-                  <CardDescription>{uiCopy.profile.contributionPointsHelper}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Prominent Total Points Display with Teal Accent */}
-              <div className="bg-secondary/10 border-2 border-secondary rounded-lg p-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-center sm:text-left">
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                      Total Contribution Points
-                    </p>
-                    <p className="text-5xl font-bold text-secondary">
-                      {totalPoints}
-                    </p>
-                  </div>
-                  {hasZeroPoints && (
-                    <div className="bg-muted/50 rounded-lg p-4 max-w-xs">
-                      <p className="text-sm text-muted-foreground">
-                        {uiCopy.profile.contributionPointsZeroFallback}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Staking Section */}
+          <div id="staking-section">
+            <StakingSection />
+          </div>
 
-              <Separator />
-
-              {/* Points Breakdown */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-                  Points Breakdown
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
-                    <p className="text-sm text-muted-foreground">City Points</p>
-                    <p className="text-2xl font-bold">
-                      {contributionSummary ? Number(contributionSummary.totalCityPoints) : 0}
-                    </p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
-                    <p className="text-sm text-muted-foreground">Voting Points</p>
-                    <p className="text-2xl font-bold">
-                      {contributionSummary ? Number(contributionSummary.totalVotingPoints) : 0}
-                    </p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-1">
-                    <p className="text-sm text-muted-foreground">Bounty Points</p>
-                    <p className="text-2xl font-bold">
-                      {contributionSummary ? Number(contributionSummary.totalBountyPoints) : 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <StakingSection />
-
-          <GovernanceSection />
+          {/* Governance Section */}
+          <div id="governance-section">
+            <GovernanceSection />
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

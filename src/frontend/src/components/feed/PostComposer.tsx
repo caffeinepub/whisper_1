@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useCreatePost } from '@/hooks/useCreatePost';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PostComposerProps {
@@ -17,12 +17,24 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
   const [localInstanceName, setLocalInstanceName] = useState('');
   const [content, setContent] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { identity } = useInternetIdentity();
   const createPost = useCreatePost();
 
   const isAuthenticated = !!identity;
   const showInstanceInput = !providedInstanceName;
   const effectiveInstanceName = providedInstanceName || localInstanceName;
+
+  // Reset form when instanceName prop changes (instance switching)
+  useEffect(() => {
+    if (providedInstanceName) {
+      setContent('');
+      setSelectedPhoto(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [providedInstanceName]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -56,6 +68,9 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
       // Clear form on success
       setContent('');
       setSelectedPhoto(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       if (showInstanceInput) {
         setLocalInstanceName('');
       }
@@ -67,7 +82,15 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
   return (
     <Card className="border-2">
       <CardHeader>
-        <CardTitle className="text-lg">Create a Post</CardTitle>
+        <CardTitle className="text-lg flex items-center gap-2">
+          Create a Post
+          {providedInstanceName && (
+            <span className="text-sm font-normal text-muted-foreground flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              Posting to current location
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,6 +124,7 @@ export function PostComposer({ instanceName: providedInstanceName }: PostCompose
             <Label htmlFor="photo">Photo (optional)</Label>
             <Input
               id="photo"
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}

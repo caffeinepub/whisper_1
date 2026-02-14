@@ -1,119 +1,69 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import type { Post } from '@/backend';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Flag } from 'lucide-react';
 import { useUserProfileByPrincipal } from '@/hooks/useUserProfileByPrincipal';
-import { createProfileImageUrl, revokeProfileImageUrl } from '@/utils/profileImageUrl';
-import { Flag, MessageSquare } from 'lucide-react';
-import { PostDetailDialog } from './PostDetailDialog';
-import { FlagPostDialog } from './FlagPostDialog';
+import { UserAvatar } from '@/components/common/UserAvatar';
+import type { Post } from '@/backend';
 
 interface PostCardProps {
   post: Post;
+  onViewDetails: () => void;
+  onFlag: () => void;
 }
 
-export function PostCard({ post }: PostCardProps) {
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [flagOpen, setFlagOpen] = useState(false);
+export function PostCard({ post, onViewDetails, onFlag }: PostCardProps) {
   const { data: authorProfile } = useUserProfileByPrincipal(post.author);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (authorProfile?.profileImage) {
-      const url = createProfileImageUrl(authorProfile.profileImage);
-      setAvatarUrl(url);
-      return () => {
-        revokeProfileImageUrl(url);
-      };
-    }
-  }, [authorProfile?.profileImage]);
 
   const authorName = authorProfile?.name || 'Anonymous';
-  const initials = authorName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 
   const formatDate = (timestamp: bigint) => {
-    const date = new Date(Number(timestamp) / 1000000); // Convert nanoseconds to milliseconds
+    const date = new Date(Number(timestamp) / 1000000);
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
     }).format(date);
   };
 
-  const contentPreview = post.content.length > 200 
-    ? post.content.slice(0, 200) + '...' 
-    : post.content;
+  const truncateContent = (content: string, maxLength: number = 200) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
+  };
 
   return (
-    <>
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <Avatar className="h-10 w-10">
-                {avatarUrl && <AvatarImage src={avatarUrl} alt={authorName} />}
-                <AvatarFallback className="bg-secondary text-secondary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">{authorName}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="text-xs">
-                    {post.instanceName}
-                  </Badge>
-                  <span>•</span>
-                  <span>{formatDate(post.createdAt)}</span>
-                </div>
-              </div>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <UserAvatar
+            imageBytes={authorProfile?.profileImage}
+            name={authorName}
+            className="h-10 w-10"
+            fallbackClassName="bg-secondary text-secondary-foreground text-sm"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold truncate">{authorName}</p>
+              <Badge variant="outline" className="text-xs">
+                {post.instanceName}
+              </Badge>
             </div>
+            <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm whitespace-pre-wrap">{contentPreview}</p>
-          
-          <div className="flex items-center gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDetailOpen(true)}
-              className="flex-1"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              View
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFlagOpen(true)}
-            >
-              <Flag className="h-4 w-4 mr-1" />
-              Flag
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <PostDetailDialog
-        postId={post.id}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
+        <p className="text-sm mb-4 whitespace-pre-wrap break-words">{truncateContent(post.content)}</p>
 
-      <FlagPostDialog
-        postId={post.id}
-        open={flagOpen}
-        onOpenChange={setFlagOpen}
-      />
-    </>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onViewDetails} className="flex-1">
+            View Details
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onFlag}>
+            <Flag className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

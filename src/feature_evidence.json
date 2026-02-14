@@ -2,10 +2,37 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-feed-postcomposer-tsx-add-minimal-react-state-handling-for-the-existing-photo-optional-file-input-so-the-component-stores-the-currently-selected-file-or-null-when-the-user-chooses-an-image-without-wiring-any-upload-storage-behavior",
-      "featureTitle": "In `frontend/src/components/feed/PostComposer.tsx`, add minimal React state handling for the existing \"Photo (optional)\" file input so the component stores the currently selected file (or null) when the user chooses an image, without wiring any upload/storage behavior.",
+      "featureId": "feature-update-the-home-page-get-started-call-to-action-so-it-directs-the-user-into-the-becoming-a-user-flow-by-taking-them-to-the-profile-page-and-prompting-authentication-if-needed-instead-of-only-opening-the-secretary-widget-apply-this-behavior-to-the-cta-in-the-get-started-section-app-tsx-section-id-get-started-and-ensure-the-interaction-is-base-path-safe-uses-joinbasepath-and-triggers-popstate-updates",
+      "featureTitle": "Update the Home page “Get Started” call-to-action so it directs the user into the “becoming a user” flow by taking them to the Profile page and prompting authentication if needed (instead of only opening the Secretary widget). Apply this behavior to the CTA in the “Get Started” section (App.tsx section id=\"get-started\") and ensure the interaction is base-path-safe (uses joinBasePath and triggers popstate updates).",
       "files": [
-        "frontend/src/components/feed/PostComposer.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/common/LoginButton.tsx",
+        "frontend/src/pages/ProfilePage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-consistent-backward-navigation-controls-to-the-feed-tasks-and-geography-pages-using-the-same-ui-pattern-labeling-placement-and-behavior-the-back-action-must-reliably-navigate-to-the-appropriate-previous-logical-destination-and-be-base-path-safe-pushstate-popstateevent-or-history-back-when-appropriate-with-consistent-styling",
+      "featureTitle": "Add consistent backward navigation controls to the Feed, Tasks, and Geography pages using the same UI pattern (labeling, placement, and behavior). The back action must reliably navigate to the appropriate previous logical destination and be base-path-safe (pushState + PopStateEvent, or history.back when appropriate) with consistent styling.",
+      "files": [
+        "frontend/src/components/common/BackNav.tsx",
+        "frontend/src/pages/FeedPage.tsx",
+        "frontend/src/pages/GeographyPage.tsx",
+        "frontend/src/pages/tasks/TaskCreatePage.tsx",
+        "frontend/src/pages/tasks/TaskDetailPage.tsx",
+        "frontend/src/pages/tasks/TasksListPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -18,6 +45,51 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-normalize-page-layout-styling-across-feed-tasks-and-geography-so-they-feel-like-the-same-application-section-consistent-header-approach-spacing-and-card-styling-in-particular-remove-the-bespoke-fixed-black-header-styling-on-geographypage-and-align-it-with-the-layout-used-on-other-pages-e-g-homeheader-consistent-main-container-spacing",
+      "featureTitle": "Normalize page layout styling across Feed, Tasks, and Geography so they feel like the same application section (consistent header approach, spacing, and card styling). In particular, remove the bespoke fixed black header styling on GeographyPage and align it with the layout used on other pages (e.g., HomeHeader + consistent main container spacing).",
+      "files": [
+        "frontend/src/pages/FeedPage.tsx",
+        "frontend/src/pages/GeographyPage.tsx",
+        "frontend/src/pages/tasks/TaskCreatePage.tsx",
+        "frontend/src/pages/tasks/TaskDetailPage.tsx",
+        "frontend/src/pages/tasks/TasksListPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-profile-page-add-a-clear-consistent-back-navigation-control-matching-the-feed-tasks-geography-back-pattern-so-users-can-easily-return-to-the-home-page-after-onboarding-profile-edits",
+      "featureTitle": "On the Profile page, add a clear, consistent Back navigation control (matching the Feed/Tasks/Geography back pattern) so users can easily return to the Home page after onboarding/profile edits.",
+      "files": [
+        "frontend/src/components/common/BackNav.tsx",
+        "frontend/src/pages/ProfilePage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }
