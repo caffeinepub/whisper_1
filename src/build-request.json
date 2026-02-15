@@ -1,121 +1,83 @@
 {
   "kind": "build_request",
-  "title": "Restyle Whisper Profile page to grounded civic look (visual-only)",
+  "title": "Expanded development: add placeholder backend domain types module (Issue, Task, FeedPost)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the Whisper Profile page styling to a more solid, grounded, trustworthy civic aesthetic while preserving the existing page structure and all functionality. Apply the specified palette (deep navy/slate base, teal/cyan accents, warm gold highlights) and increase visual hierarchy using stronger elevation, subtle borders, and light glassmorphism. Implement changes only via Tailwind className updates and visual wrappers using existing UI components (e.g., Card) and existing dependencies.",
-      "target": "frontend",
+      "text": "Create a shared backend types module at `backend/types.mo` (it does not currently exist) and define an empty placeholder domain type for `Issue` as a public type alias (e.g., `public type Issue = {};`).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Enhance and restyle the existing Profile page in the Whisper frontend... Do NOT change any logic, state, data fetching, or component structure — only update className props, add visual wrappers (e.g., Card from Radix)"
+          "What are the next 3 atomic micro steps, aside from the profile or design, and solely focused on the expanded development steps"
         ]
       },
       "acceptanceCriteria": [
-        "Profile page layout/sections remain in the same order and presence: header/back+menu (via PageLayout), profile card, WSP token balance, contribution points, staking section, governance section.",
-        "No changes to React state variables, hooks used, data fetching, mutations, or conditional rendering logic in ProfilePage.",
-        "Base/background appearance reads as deep navy/slate with soft white/gray typography; no pastel/fruity gradient look.",
-        "Cards use stronger elevation (shadow-md/shadow-lg/2xl acceptable), subtle dark borders (gray-700-ish), and optional backdrop blur with dark translucent backgrounds to create depth."
+        "A new file `backend/types.mo` exists in the backend canister codebase.",
+        "`backend/types.mo` contains `public type Issue = {};` (or equivalent empty record type alias) and compiles.",
+        "`dfx build` (or equivalent canister build) succeeds without requiring a state migration."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Enhance the WSP Token Balance section styling in frontend/src/pages/ProfilePage.tsx to strongly accentuate the balance: make the numeric display larger/bolder with gradient text (teal→cyan) and subtle emphasis (e.g., glow/text-shadow via utilities where available). Add conditional visual flourish when the balance is > 0 (e.g., Sparkles icon and/or progress ring element) without changing balance logic. Keep existing loading and zero-balance subtext behavior.",
-      "target": "frontend",
+      "text": "In `backend/types.mo`, define an empty placeholder domain type for `Task` as a public type alias (e.g., `public type Task = {};`).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Balance display: Make \"0 WSP\" larger/bolder with a subtle glow or gradient text... add a progress ring or sparkles icon when balance > 0"
+          "What are the next 3 atomic micro steps, aside from the profile or design, and solely focused on the expanded development steps"
         ]
       },
       "acceptanceCriteria": [
-        "When balance is loading, the loading UI remains functionally identical (spinner + “Loading balance...” text).",
-        "When balance is 0, “Start earning today!” remains visible and styled to feel motivational/wholesome, using gold accent.",
-        "When balance is > 0, an additional accent element (Sparkles and/or a decorative ring) appears and is purely visual (no new state/hooks).",
-        "The balance typography is noticeably more prominent than surrounding text and CTAs."
+        "`backend/types.mo` contains `public type Task = {};` (or equivalent empty record type alias) and compiles.",
+        "Backend canister build succeeds."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Enhance the Contribution Points section styling in frontend/src/pages/ProfilePage.tsx: apply distinct accent treatments per category (City/Voting/Bounty/Token) using colored borders and/or icons, reinforce hierarchy (category label vs value), and add wholesome motivational subtext below the section header (e.g., “Your contributions build stronger communities”). For categories whose point value is 0, show a small visual hint such as a Sparkles icon and/or an “Earn more” link-styled element (non-navigating if no route exists) without changing component structure or data logic.",
-      "target": "frontend",
+      "text": "In `backend/types.mo`, define an empty placeholder domain type for `FeedPost` as a public type alias (e.g., `public type FeedPost = {};`).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Contribution Points: Use colored accent borders or icons per category... add a small \"Earn more\" link or sparkles when points are 0",
-          "Wholesome feel: Add subtle motivational subtext (e.g., \"Your contributions build stronger communities\" under points)"
+          "What are the next 3 atomic micro steps, aside from the profile or design, and solely focused on the expanded development steps"
         ]
       },
       "acceptanceCriteria": [
-        "The points grid still renders the same four categories and uses the same data sources.",
-        "Each category card has a clear, distinct accent color (blue, purple, gold, green as requested) that is visible at a glance.",
-        "If a category’s displayed value is '0', a subtle extra visual cue appears within that card (e.g., small Sparkles + 'Earn more' text).",
-        "Motivational subtext appears under the Contribution Points heading/description and is readable on dark background."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Restyle the Staking and Governance sections (frontend/src/pages/profile/components/StakingSection.tsx and frontend/src/pages/profile/components/GovernanceSection.tsx) to match the new civic palette and improve CTA prominence: increase button size/weight and apply the requested gradient backgrounds (teal→cyan for staking CTAs; purple→pink for governance “Create Proposal”), add hover scale effects (using existing Tailwind utilities / tailwind-animate if already configured), and ensure icons use Lucide-react with accent colors. Do not change any staking/governance logic, validation, or dialog behavior.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Staking & Governance CTAs: Larger, bolder buttons with gradient backgrounds (teal-to-cyan for Stake, purple-to-pink for Create Proposal), hover scale effect using tailwind-animate",
-          "Icons: Use Lucide-react icons with accent colors (e.g., ... Link for staking, Gavel for governance)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Stake/Unstake inputs, validation messages, pending states, and toast messages behave exactly as before.",
-        "Governance proposal list behavior, empty/loading/error states, and dialogs behave exactly as before.",
-        "Stake Tokens CTA is visually dominant and uses teal→cyan gradient styling with noticeable hover/active/focus states.",
-        "Create Proposal CTA is visually dominant and uses purple→pink gradient styling with noticeable hover/active/focus states.",
-        "All section cards match the darker, more grounded card styling (borders, elevation, backdrop blur) and avoid pastel/fruity gradients."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Apply mobile-first spacing and typography improvements across the Profile page and its sections: ensure vertical stacking, generous padding (p-6 where appropriate), touch-friendly buttons (min-h-12), bolder headings (text-xl/text-2xl, font-bold), and readable body text (text-base, font-medium). Ensure contrast and accessibility for text on dark backgrounds, including focus-visible rings consistent with accent colors.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Mobile-first: Stack sections vertically, generous padding (p-6), readable font sizes, touch-friendly buttons (min-h-12)",
-          "Typography: Bolder headings... clean body text..."
-        ]
-      },
-      "acceptanceCriteria": [
-        "On small screens, all sections stack cleanly with consistent spacing and no cramped tap targets.",
-        "Buttons meet touch-friendly sizing (e.g., min-h-12) without breaking layouts.",
-        "Headings/labels are consistently bolder than body text and establish clear hierarchy.",
-        "Focus rings are visible on interactive elements and use accent colors (teal/cyan/purple) while maintaining dark background contrast."
+        "`backend/types.mo` contains `public type FeedPost = {};` (or equivalent empty record type alias) and compiles.",
+        "Backend canister build succeeds."
       ]
     }
   ],
   "constraints": [
-    "Do not change any logic, state, data fetching, mutations, types, or conditional rendering behavior; visual-only changes.",
-    "Keep the current Profile page structure intact (header, profile card, balance, points, staking, governance).",
-    "Use only existing dependencies (Tailwind, shadcn/radix UI components, Lucide-react icons, clsx/tailwind-merge/cva if already present).",
-    "Do not edit files under frontend/src/components/ui (read-only UI sources must be composed, not edited)."
+    "Backend must remain a single Motoko actor (all executable logic stays in `backend/main.mo`).",
+    "Do not modify files under `frontend/src/components/ui` or any other paths listed as immutable in SYSTEM_CONTEXT.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Adding new backend endpoints, changing canister state, or updating token/staking/governance business logic.",
-    "Introducing new navigation routes for “Earn more” (if no route exists, keep it as non-navigating visual text).",
-    "Adding new authentication providers beyond existing Internet Identity."
+    "Do not address the Profile page infinite spinner/loading issue as part of this change.",
+    "Do not perform any UI redesign or visual theme changes as part of this change.",
+    "Do not add new backend methods/endpoints for issues/tasks/feed beyond the requested placeholder type aliases."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

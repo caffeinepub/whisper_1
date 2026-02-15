@@ -1,86 +1,46 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T22:47:58.756Z",
+  "generatedAt": "2026-02-15T00:17:16.325Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 3,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Whisper Profile page styling to a more solid, grounded, trustworthy civic aesthetic while preserving the existing page structure and all functionality. Apply the specified palette (deep navy/slate base, teal/cyan accents, warm gold highlights) and increase visual hierarchy using stronger elevation, subtle borders, and light glassmorphism. Implement changes only via Tailwind className updates and visual wrappers using existing UI components (e.g., Card) and existing dependencies.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
+        "summary": "Create a shared backend types module at `backend/types.mo` (it does not currently exist) and define an empty placeholder domain type for `Issue` as a public type alias (e.g., `public type Issue = {};`).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Enhance the WSP Token Balance section styling in frontend/src/pages/ProfilePage.tsx to strongly accentuate the balance: make the numeric display larger/bolder with gradient text (teal→cyan) and subtle emphasis (e.g., glow/text-shadow via utilities where available). Add conditional visual flourish when the balance is > 0 (e.g., Sparkles icon and/or progress ring element) without changing balance logic. Keep existing loading and zero-balance subtext behavior.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
+        "summary": "In `backend/types.mo`, define an empty placeholder domain type for `Task` as a public type alias (e.g., `public type Task = {};`).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Enhance the Contribution Points section styling in frontend/src/pages/ProfilePage.tsx: apply distinct accent treatments per category (City/Voting/Bounty/Token) using colored borders and/or icons, reinforce hierarchy (category label vs value), and add wholesome motivational subtext below the section header (e.g., “Your contributions build stronger communities”). For categories whose point value is 0, show a small visual hint such as a Sparkles icon and/or an “Earn more” link-styled element (non-navigating if no route exists) without changing component structure or data logic.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Restyle the Staking and Governance sections (frontend/src/pages/profile/components/StakingSection.tsx and frontend/src/pages/profile/components/GovernanceSection.tsx) to match the new civic palette and improve CTA prominence: increase button size/weight and apply the requested gradient backgrounds (teal→cyan for staking CTAs; purple→pink for governance “Create Proposal”), add hover scale effects (using existing Tailwind utilities / tailwind-animate if already configured), and ensure icons use Lucide-react with accent colors. Do not change any staking/governance logic, validation, or dialog behavior.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Apply mobile-first spacing and typography improvements across the Profile page and its sections: ensure vertical stacking, generous padding (p-6 where appropriate), touch-friendly buttons (min-h-12), bolder headings (text-xl/text-2xl, font-bold), and readable body text (text-base, font-medium). Ensure contrast and accessibility for text on dark backgrounds, including focus-visible rings consistent with accent colors.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/pages/profile/components/StakingSection.tsx",
-          "frontend/src/pages/profile/components/GovernanceSection.tsx"
-        ]
+        "summary": "In `backend/types.mo`, define an empty placeholder domain type for `FeedPost` as a public type alias (e.g., `public type FeedPost = {};`).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/profile/components/GovernanceSection.tsx",
-    "frontend/src/pages/profile/components/StakingSection.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
